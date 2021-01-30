@@ -8,12 +8,13 @@ public:
 	Graphics();
 	~Graphics();
 
-	void Init(HWND m_Hwnd);
+	void Init();
 	void Shutdown();
 
 private:
-	void InitializeShaderCompiler(D3D12ShaderCompilerInfo &m_ShaderCompilerInfo);
-	void CreateDevice(D3D12Objects m_D3DObjects);
+	void InitializeShaderCompiler();
+	void CreateDevice();
+	void CreateCommandQueue();
 
 private:
 	D3D12Objects m_D3DObjects;

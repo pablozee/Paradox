@@ -27,6 +27,8 @@ struct D3D12Objects
 	IDXGIFactory4* factory = nullptr;
 	IDXGIAdapter1* adapter = nullptr;
 	ID3D12Device5* device = nullptr;
+	ID3D12CommandQueue* commandQueue = nullptr;
+	
 };
 
 struct D3D12ShaderCompilerInfo

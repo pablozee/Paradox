@@ -16,9 +16,10 @@ Graphics::~Graphics()
 	Shutdown();
 }
 
-void Graphics::Init(HWND m_Hwnd)
+void Graphics::Init()
 {
-	InitializeShaderCompiler(m_ShaderCompilerInfo);
+	InitializeShaderCompiler();
+	CreateCommandQueue();
 }
 
 void Graphics::Shutdown()
@@ -26,7 +27,7 @@ void Graphics::Shutdown()
 
 }
 
-void Graphics::InitializeShaderCompiler(D3D12ShaderCompilerInfo &m_ShaderCompilerInfo)
+void Graphics::InitializeShaderCompiler()
 {
 	HRESULT hr = m_ShaderCompilerInfo.DxcDllHelper.Initialize();
 	Helpers::Validate(hr, L"Failed to initialize DxCDllSupport!");
@@ -38,7 +39,7 @@ void Graphics::InitializeShaderCompiler(D3D12ShaderCompilerInfo &m_ShaderCompile
 	Helpers::Validate(hr, L"Failed to create DxcLibrary!");
 }
 
-void Graphics::CreateDevice(D3D12Objects m_D3DObjects)
+void Graphics::CreateDevice()
 {
 #if defined (_DEBUG)
 	ComPtr<ID3D12Debug> debugController;
@@ -85,5 +86,18 @@ void Graphics::CreateDevice(D3D12Objects m_D3DObjects)
 			Helpers::Validate(E_FAIL, L"Failed to create ray tracing device!");
 		}
 	}
+}
 
+void Graphics::CreateCommandQueue()
+{
+	D3D12_COMMAND_QUEUE_DESC cmdQueueDesc = {};
+	cmdQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	cmdQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+	HRESULT hr = m_D3DObjects.device->CreateCommandQueue(&cmdQueueDesc, IID_PPV_ARGS(&m_D3DObjects.commandQueue));
+	Helpers::Validate(hr, L"Failed to create command queue!");
+
+#if NAME_D3D_RESOURCES
+	m_D3DObjects.commandQueue->SetName(L"D3D12 Command Queue");
+#endif
 }
