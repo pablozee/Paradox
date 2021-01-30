@@ -2,6 +2,9 @@
 #include <Windows.h>
 #include "dxc/dxcapi.h"
 #include "dxc/dxcapi.use.h"
+#include <dxgi1_6.h>
+#include <d3d12.h>
+#include <wrl.h>
 
 struct D3D12Params
 {
@@ -21,6 +24,9 @@ struct D3D12Params
 
 struct D3D12Objects
 {
+	IDXGIFactory4* factory = nullptr;
+	IDXGIAdapter1* adapter = nullptr;
+	ID3D12Device5* device = nullptr;
 };
 
 struct D3D12ShaderCompilerInfo

@@ -12,9 +12,10 @@ public:
 	void Shutdown();
 
 private:
-	void Initialize_Shader_Compiler(D3D12ShaderCompilerInfo &shaderCompilerInfo);
+	void InitializeShaderCompiler(D3D12ShaderCompilerInfo &m_ShaderCompilerInfo);
+	void CreateDevice(D3D12Objects m_D3DObjects);
 
 private:
-	D3D12Objects m_D3dObjects = {};
+	D3D12Objects m_D3DObjects;
 	D3D12ShaderCompilerInfo m_ShaderCompilerInfo;
 };
