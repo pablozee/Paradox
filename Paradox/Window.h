@@ -3,6 +3,8 @@
 #include <optional>
 #include "Events/Event.h"
 #include "Input.h"
+#include "Structures.h"
+#include "Graphics/Graphics.h"
 
 struct WindowProps
 {
@@ -42,7 +44,7 @@ private:
 	};
 
 public:
-	Window(const WindowProps& props);
+	Window(const WindowProps& props, Config config);
 	~Window();
 
 	void OnUpdate();
@@ -67,7 +69,7 @@ private:
 		EventCallbackFn EventCallback;
 	};
 
-	void Init(const WindowProps& props);
+	void Init(const WindowProps& props, Config config);
 	void Shutdown();
 
 	static LRESULT CALLBACK HandleMessageSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -84,4 +86,5 @@ private:
 
 	HWND m_Hwnd;
 
+	Graphics* m_Graphics;
 };

@@ -1,9 +1,9 @@
 #pragma once
 #include <string>
 
-struct AppConfig
+struct Config
 {
-	AppConfig(const std::string windowTitle = "Paradox",
+	Config(const std::string windowTitle = "Paradox",
 		unsigned int width = 1280,
 		unsigned int height = 960)
 		:

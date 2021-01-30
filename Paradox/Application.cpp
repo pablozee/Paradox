@@ -5,12 +5,12 @@
 
 Application* Application::s_Instance = nullptr;
 
-Application::Application(AppConfig config)
+Application::Application(Config config)
 {
 	assert(!s_Instance);
 	s_Instance = this;
 	WindowProps props(config.windowTitle, config.width, config.height);
-	m_Window = std::unique_ptr<Window>(new Window(props));
+	m_Window = std::unique_ptr<Window>(new Window(props, config));
 	m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 };
 

@@ -2,6 +2,8 @@
 #include "Events/ApplicationEvent.h"
 #include "Events/KeyEvent.h"
 #include "Events/MouseEvent.h"
+#include "Graphics/D3D12Structures.h"
+#include "Graphics/Graphics.h"
 
 Window::WindowClass Window::WindowClass::wndClass;
 
@@ -41,9 +43,9 @@ HINSTANCE Window::WindowClass::GetInstance()
 	return wndClass.hInstance;
 }
 
-Window::Window(const WindowProps& props)
+Window::Window(const WindowProps& props, Config config)
 {
-	Init(props);
+	Init(props, config);
 }
 
 Window::~Window()
@@ -51,7 +53,7 @@ Window::~Window()
 	Shutdown();
 }
 
-void Window::Init(const WindowProps& props)
+void Window::Init(const WindowProps& props, Config config)
 {
 	m_Data.Title = props.Title;
 	m_Data.Width = props.Width;
@@ -78,7 +80,11 @@ void Window::Init(const WindowProps& props)
 	HCURSOR cursor = LoadCursor(0, IDC_ARROW);
 	SetCursor(cursor);
 
-	SetVSync(true);
+	D3D12Params params(config.width, config.height, true);
+	m_Graphics = new Graphics();
+	m_Graphics->Init(m_Hwnd);
+
+	SetVSync(params.vsync);
 }
 
 void Window::Shutdown()
