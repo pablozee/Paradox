@@ -154,6 +154,7 @@
     <ClInclude Include="Events\Event.h" />
     <ClInclude Include="Events\KeyEvent.h" />
     <ClInclude Include="Events\MouseEvent.h" />
+    <ClInclude Include="Structs.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

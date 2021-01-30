@@ -2,12 +2,13 @@
 #include "Events/Event.h"
 #include "Events/ApplicationEvent.h"
 #include "Window.h"
+#include "Structs.h"
 
 
 class Application
 {
 public:
-	Application();
+	Application(AppConfig config);
 	virtual ~Application();
 
 	int Run();

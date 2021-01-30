@@ -10,9 +10,9 @@ struct WindowProps
 	unsigned int Width;
 	unsigned int Height;
 
-	WindowProps(const std::string& title = "Windows Framework",
-		unsigned int width = 1280,
-		unsigned int height = 960)
+	WindowProps(const std::string& title,
+		unsigned int width,
+		unsigned int height)
 		:
 		Title(title),
 		Width(width),
@@ -42,7 +42,7 @@ private:
 	};
 
 public:
-	Window(const WindowProps& props = WindowProps());
+	Window(const WindowProps& props);
 	~Window();
 
 	void OnUpdate();
@@ -67,7 +67,7 @@ private:
 		EventCallbackFn EventCallback;
 	};
 
-	void Init(const WindowProps& props = WindowProps());
+	void Init(const WindowProps& props);
 	void Shutdown();
 
 	static LRESULT CALLBACK HandleMessageSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

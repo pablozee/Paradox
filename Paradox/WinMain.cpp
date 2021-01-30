@@ -3,7 +3,8 @@
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	Application* app = new Application();
+	AppConfig config;
+	Application* app = new Application(config);
 	app->Run();
 	delete app;
 }

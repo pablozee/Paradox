@@ -1,16 +1,16 @@
-#include "Application.h"
 #include <assert.h>
+#include "Application.h"
 
 #define BIND_EVENT_FN(x) std::bind(&x, this, std::placeholders::_1)
 
 Application* Application::s_Instance = nullptr;
 
-Application::Application()
+Application::Application(AppConfig config)
 {
 	assert(!s_Instance);
 	s_Instance = this;
-
-	m_Window = std::unique_ptr<Window>(new Window());
+	WindowProps props(config.windowTitle, config.width, config.height);
+	m_Window = std::unique_ptr<Window>(new Window(props));
 	m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 };
 
