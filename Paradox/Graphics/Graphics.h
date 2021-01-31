@@ -1,14 +1,15 @@
 #pragma once
 #include <Windows.h>
 #include "D3D12Structures.h"
+#include "../Structures.h"
 
 class Graphics
 {
 public:
-	Graphics();
+	Graphics(Config config);
 	~Graphics();
 
-	void Init();
+	void Init(HWND hwnd);
 	void Shutdown();
 
 private:
@@ -17,8 +18,10 @@ private:
 	void CreateCommandQueue();
 	void CreateCommandAllocator();
 	void CreateFence();
+	void CreateSwapChain(HWND hwnd);
 
 private:
+	D3D12Params m_D3DParams;
 	D3D12Objects m_D3DObjects;
 	D3D12Values m_D3DValues;
 	D3D12ShaderCompilerInfo m_ShaderCompilerInfo;

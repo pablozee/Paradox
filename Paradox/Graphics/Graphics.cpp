@@ -8,7 +8,9 @@
 
 using namespace Microsoft::WRL;
 
-Graphics::Graphics()
+Graphics::Graphics(Config config)
+	:
+	m_D3DParams(config.width, config.height, true)
 {}
 
 Graphics::~Graphics()
@@ -16,13 +18,14 @@ Graphics::~Graphics()
 	Shutdown();
 }
 
-void Graphics::Init()
+void Graphics::Init(HWND hwnd)
 {
 	InitializeShaderCompiler();
 	CreateDevice();
 	CreateCommandQueue();
 	CreateCommandAllocator();
 	CreateFence();
+	CreateSwapChain(hwnd);
 }
 
 void Graphics::Shutdown()
@@ -93,11 +96,11 @@ void Graphics::CreateDevice()
 
 void Graphics::CreateCommandQueue()
 {
-	D3D12_COMMAND_QUEUE_DESC cmdQueueDesc = {};
-	cmdQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	cmdQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+	D3D12_COMMAND_QUEUE_DESC desc = {};
+	desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-	HRESULT hr = m_D3DObjects.device->CreateCommandQueue(&cmdQueueDesc, IID_PPV_ARGS(&m_D3DObjects.commandQueue));
+	HRESULT hr = m_D3DObjects.device->CreateCommandQueue(&desc, IID_PPV_ARGS(&m_D3DObjects.commandQueue));
 	Helpers::Validate(hr, L"Failed to create command queue!");
 
 #if NAME_D3D_RESOURCES
@@ -137,4 +140,29 @@ void Graphics::CreateFence()
 		hr = HRESULT_FROM_WIN32(GetLastError());
 		Helpers::Validate(hr, L"Failed to create fence event!");
 	}
+}
+
+void Graphics::CreateSwapChain(HWND hwnd)
+{
+	DXGI_SWAP_CHAIN_DESC1 desc = {};
+	desc.BufferCount = 2;
+	desc.Width = m_D3DParams.width;
+	desc.Height = m_D3DParams.height;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	desc.SampleDesc.Count = 1;
+
+	IDXGISwapChain1* swapChain;
+	HRESULT hr = m_D3DObjects.factory->CreateSwapChainForHwnd(m_D3DObjects.commandQueue, hwnd, &desc, nullptr, nullptr, &swapChain);
+	Helpers::Validate(hr, L"Failed to create swap chain!");
+
+	hr = m_D3DObjects.factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
+	Helpers::Validate(hr, L"Failed to make window association");
+
+	hr = swapChain->QueryInterface(__uuidof(IDXGISwapChain3), reinterpret_cast<void**>(&m_D3DObjects.swapChain));
+	Helpers::Validate(hr, L"Failed to cast swap chain!");
+
+	swapChain->Release();
+	m_D3DValues.frameIndex = m_D3DObjects.swapChain->GetCurrentBackBufferIndex();
 }

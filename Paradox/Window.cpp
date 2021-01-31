@@ -80,11 +80,10 @@ void Window::Init(const WindowProps& props, Config config)
 	HCURSOR cursor = LoadCursor(0, IDC_ARROW);
 	SetCursor(cursor);
 
-	D3D12Params params(config.width, config.height, true);
-	m_Graphics = new Graphics();
-	m_Graphics->Init();
+	m_Graphics = new Graphics(config);
+	m_Graphics->Init(m_Hwnd);
 
-	SetVSync(params.vsync);
+	SetVSync(true);
 }
 
 void Window::Shutdown()
