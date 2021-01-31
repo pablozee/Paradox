@@ -40,6 +40,7 @@ private:
 
 	void CreateBottomLevelAS();
 	void CreateTopLevelAS();
+	void CreateDXROutput();
 
 private:
 	D3D12Params m_D3DParams;

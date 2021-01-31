@@ -42,7 +42,7 @@ void Graphics::Init(HWND hwnd)
 
 	CreateBottomLevelAS();
 	CreateTopLevelAS();
-
+	CreateDXROutput();
 }
 
 void Graphics::Shutdown()
@@ -629,4 +629,26 @@ void Graphics::CreateTopLevelAS()
 	uavBarrier.UAV.pResource = m_DXRObjects.TLAS.pResult;
 	uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	m_D3DObjects.commandList->ResourceBarrier(1, &uavBarrier);
+}
+
+void Graphics::CreateDXROutput()
+{
+	D3D12_RESOURCE_DESC desc = {};
+	desc.DepthOrArraySize = 1;
+	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	desc.Width = m_D3DParams.width;
+	desc.Height = m_D3DParams.height;
+	desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	desc.MipLevels = 1;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+
+	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(&DefaultHeapProperties, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COPY_SOURCE, nullptr, IID_PPV_ARGS(&m_D3DResources.DXROutputBuffer));
+	Helpers::Validate(hr, L"Failed to create DXR Output Buffer");
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.DXROutputBuffer->SetName(L"DXR Output Buffer");
+#endif
 }
