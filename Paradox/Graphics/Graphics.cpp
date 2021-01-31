@@ -42,6 +42,8 @@ void Graphics::Init(HWND hwnd)
 	CreateIndexBuffer(tempModel);
 
 //	CreateTexture(material);
+
+	CreateViewCB();
 }
 
 void Graphics::Shutdown()
@@ -390,3 +392,25 @@ void Graphics::UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcRe
 
 	m_D3DObjects.commandList->ResourceBarrier(1, &barrier);
 }
+
+void Graphics::CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size)
+{
+	D3D12BufferCreateInfo bufferInfo((size + 255) & ~255, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	CreateBuffer(bufferInfo, buffer);
+}
+
+void Graphics::CreateViewCB()
+{
+	CreateConstantBuffer(&m_D3DResources.viewCB, sizeof(ViewCB));
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.viewCB->SetName(L"View Constant Buffer");
+#endif
+
+	HRESULT hr = m_D3DResources.viewCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.viewCBStart));
+	Helpers::Validate(hr, L"Failed to map view constant buffer");
+
+	memcpy(m_D3DResources.viewCBStart, &m_D3DResources.viewCBData, sizeof(m_D3DResources.viewCBData));
+}
+
+

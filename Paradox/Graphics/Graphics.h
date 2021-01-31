@@ -32,6 +32,9 @@ private:
 	void CreateTexture(Material &material);
 	void UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture);
 
+	void CreateViewCB();
+	void CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size);
+
 private:
 	D3D12Params m_D3DParams;
 	D3D12Objects m_D3DObjects;

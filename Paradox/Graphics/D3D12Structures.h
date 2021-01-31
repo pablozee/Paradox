@@ -1,10 +1,13 @@
 #pragma once
 #include <Windows.h>
+#include <DirectXMath.h>
 #include "dxc/dxcapi.h"
 #include "dxc/dxcapi.use.h"
 #include <dxgi1_6.h>
 #include <d3d12.h>
 #include <wrl.h>
+
+using namespace DirectX;
 
 struct D3D12Params
 {
@@ -20,6 +23,13 @@ struct D3D12Params
 	unsigned int width;
 	unsigned int height;
 	bool vsync = true;
+};
+
+struct ViewCB
+{
+	XMMATRIX view = XMMatrixIdentity();
+	XMFLOAT4 viewOriginAndTanHalfFovY = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+	XMFLOAT2 resolution = XMFLOAT2(1280, 960);
 };
 
 struct D3D12Values
@@ -57,16 +67,20 @@ struct D3D12ShaderCompilerInfo
 
 struct D3D12Resources
 {
-	ID3D12DescriptorHeap* rtvHeap;
+	ID3D12DescriptorHeap*		rtvHeap;
 
-	ID3D12Resource* vertexBuffer = nullptr;
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+	ID3D12Resource*				vertexBuffer = nullptr;
+	D3D12_VERTEX_BUFFER_VIEW	vertexBufferView;
 
-	ID3D12Resource* indexBuffer = nullptr;
-	D3D12_INDEX_BUFFER_VIEW indexBufferView;
+	ID3D12Resource*				indexBuffer = nullptr;
+	D3D12_INDEX_BUFFER_VIEW		indexBufferView;
 
-	ID3D12Resource* texture = nullptr;
-	ID3D12Resource* textureUploadResource = nullptr;
+	ID3D12Resource*				texture = nullptr;
+	ID3D12Resource*				textureUploadResource = nullptr;
+
+	ID3D12Resource*				viewCB = nullptr;
+	ViewCB						viewCBData;
+	UINT8*						viewCBStart = nullptr;
 };
 
 struct D3D12BufferCreateInfo
