@@ -31,6 +31,13 @@ void Graphics::Init(HWND hwnd)
 	ResetCommandList();
 
 	CreateDescriptorHeaps();
+
+	Model tempModel;
+	Vertex vert;
+	vert.position = XMFLOAT3{ 0, 0, 0 };
+	vert.uv = XMFLOAT2{ 0, 0 };
+	tempModel.vertices = { vert };
+	CreateVertexBuffer(tempModel);
 }
 
 void Graphics::Shutdown()
@@ -207,4 +214,73 @@ void Graphics::CreateDescriptorHeaps()
 #endif
 
 	m_D3DValues.rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+}
+
+void Graphics::CreateBackBufferRtv()
+{
+	HRESULT hr;
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_D3DResources.rtvHeap->GetCPUDescriptorHandleForHeapStart();
+
+	for (UINT n = 0; n < m_D3DValues.swapChainBufferCount; ++n)
+	{
+		hr = m_D3DObjects.swapChain->GetBuffer(n, IID_PPV_ARGS(&m_D3DObjects.backBuffer[n]));
+		Helpers::Validate(hr, L"Failed to create back buffers!");
+
+		m_D3DObjects.device->CreateRenderTargetView(m_D3DObjects.backBuffer[n], nullptr, rtvHandle);
+
+#if NAME_D3D_RESOURCES
+		if (n == 0) m_D3DObjects.backBuffer[0]->SetName(L"Back Buffer 0");
+		m_D3DObjects.backBuffer[1]->SetName(L"Back Buffer 1");
+#endif
+
+		rtvHandle.ptr += m_D3DValues.rtvDescSize;
+
+	}
+}
+
+void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource)
+{
+	D3D12_HEAP_PROPERTIES heapDesc = {};
+	heapDesc.Type = info.heapType;
+	heapDesc.CreationNodeMask = 1;
+	heapDesc.VisibleNodeMask = 1;
+
+	D3D12_RESOURCE_DESC resourceDesc = {};
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Alignment = info.alignment;
+	resourceDesc.Height = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resourceDesc.Width = info.size;
+	resourceDesc.Flags = info.flags;
+
+	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(&heapDesc, D3D12_HEAP_FLAG_NONE, &resourceDesc, info.state, nullptr, IID_PPV_ARGS(ppResource));
+	Helpers::Validate(hr, L"Failed to create buffer resource!");
+}
+
+void Graphics::CreateVertexBuffer(Model& model)
+{
+	D3D12BufferCreateInfo info(((UINT)model.vertices.size() * sizeof(Vertex)), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	CreateBuffer(info, &m_D3DResources.vertexBuffer);
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.vertexBuffer->SetName(L"Vertex Buffer");
+#endif
+
+	UINT8* pVertexDataBegin;
+	D3D12_RANGE readRange = {};
+	HRESULT hr = m_D3DResources.vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
+	Helpers::Validate(hr, L"Failed to map vertex buffer");
+
+	memcpy(pVertexDataBegin, model.vertices.data(), info.size);
+	m_D3DResources.vertexBuffer->Unmap(0, nullptr);
+
+	m_D3DResources.vertexBufferView.BufferLocation = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
+	m_D3DResources.vertexBufferView.SizeInBytes = static_cast<UINT>(info.size);
+	m_D3DResources.vertexBufferView.StrideInBytes = sizeof(Vertex);
+
 }
