@@ -20,6 +20,7 @@ Graphics::~Graphics()
 
 void Graphics::Init(HWND hwnd)
 {
+	LoadModel("models/cinema.obj", model, material);
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -32,18 +33,93 @@ void Graphics::Init(HWND hwnd)
 
 	CreateDescriptorHeaps();
 
-//	CreateVertexBuffer(tempModel);
-//	CreateIndexBuffer(tempModel);
+	CreateVertexBuffer(model);
+	CreateIndexBuffer(model);
 
-//	CreateTexture(material);
+	CreateTexture(material);
 
 	CreateViewCB();
-//	CreateMaterialConstantBuffer();
+	CreateMaterialConstantBuffer(material);
 }
 
 void Graphics::Shutdown()
 {
 
+}
+
+namespace std
+{
+	void hash_combine(size_t& seed, size_t hash)
+	{
+		hash += 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		seed ^= hash;
+	}
+
+	template<> struct hash<Vertex>
+	{
+		size_t operator()(Vertex const& vertex) const
+		{
+			size_t seed = 0;
+			hash<float> hasher;
+			hash_combine(seed, hasher(vertex.position.x));
+			hash_combine(seed, hasher(vertex.position.y));
+			hash_combine(seed, hasher(vertex.position.z));
+
+			hash_combine(seed, hasher(vertex.uv.x));
+			hash_combine(seed, hasher(vertex.uv.y));
+
+			return seed;
+		}
+	};
+}
+
+using namespace std;
+
+void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
+{
+	using namespace tinyobj;
+	attrib_t attrib;
+	std::vector<shape_t> shapes;
+	std::vector<material_t> materials;
+	std::string err;
+
+	if (!LoadObj(&attrib, &shapes, &materials, &err, filepath.c_str(), "materials\\"))
+	{
+		throw std::runtime_error(err);
+	}
+
+	material.name = materials[0].name;
+	material.texturePath = materials[0].diffuse_texname;
+
+
+	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+	for (const auto& shape : shapes)
+	{
+		for (const auto& index : shape.mesh.indices)
+		{
+			Vertex vertex = {};
+			vertex.position =
+			{
+				attrib.vertices[3 * index.vertex_index + 2],
+				attrib.vertices[3 * index.vertex_index + 1],
+				attrib.vertices[3 * index.vertex_index + 0]
+			};
+
+			vertex.uv =
+			{
+				attrib.texcoords[2 * index.texcoord_index + 0],
+				1 - attrib.texcoords[2 * index.texcoord_index + 1]
+			};
+
+			if (uniqueVertices.count(vertex) == 0)
+			{
+				uniqueVertices[vertex] = static_cast<uint32_t>(model.vertices.size());
+				model.vertices.push_back(vertex);
+			}
+
+			model.indices.push_back(uniqueVertices[vertex]);
+		};
+	}
 }
 
 void Graphics::InitializeShaderCompiler()

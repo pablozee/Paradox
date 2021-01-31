@@ -13,6 +13,8 @@ public:
 	void Shutdown();
 
 private:
+	void LoadModel(std::string filepath, Model &model, Material &material);
+
 	void InitializeShaderCompiler();
 	
 	void CreateDevice();
@@ -42,4 +44,6 @@ private:
 	D3D12Values m_D3DValues;
 	D3D12ShaderCompilerInfo m_ShaderCompilerInfo;
 	D3D12Resources m_D3DResources;
+	Model model;
+	Material material;
 };
