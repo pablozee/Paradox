@@ -270,11 +270,6 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					data.EventCallback(event);
 				}
 			}
-			else
-			{
-				ReleaseCapture();
-				input.OnMouseLeave();
-			}
 		}
 		break;
 	}

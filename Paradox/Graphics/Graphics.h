@@ -20,6 +20,7 @@ private:
 	void CreateFence();
 	void CreateSwapChain(HWND hwnd);
 	void CreateCommandList();
+	void ResetCommandList();
 
 private:
 	D3D12Params m_D3DParams;

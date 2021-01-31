@@ -27,6 +27,7 @@ void Graphics::Init(HWND hwnd)
 	CreateFence();
 	CreateSwapChain(hwnd);
 	CreateCommandList();
+	ResetCommandList();
 }
 
 void Graphics::Shutdown()
@@ -177,4 +178,13 @@ void Graphics::CreateCommandList()
 #if NAME_D3D_RESOURCES
 	m_D3DObjects.commandList->SetName(L"D3D12 Command List");
 #endif
+}
+
+void Graphics::ResetCommandList()
+{
+	HRESULT hr = m_D3DObjects.commandAllocators[m_D3DValues.frameIndex]->Reset();
+	Helpers::Validate(hr, L"Failed to reset command allocator!");
+
+	hr = m_D3DObjects.commandList->Reset(m_D3DObjects.commandAllocators[m_D3DValues.frameIndex], nullptr);
+	Helpers::Validate(hr, L"Failed to reset command list!");
 }
