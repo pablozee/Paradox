@@ -38,9 +38,12 @@ private:
 	void CreateViewCB();
 	void CreateMaterialConstantBuffer(const Material& material);
 
+	void CreateBottomLevelAS();
+
 private:
 	D3D12Params m_D3DParams;
 	D3D12Objects m_D3DObjects;
+	DXRObjects m_DXRObjects;
 	D3D12Values m_D3DValues;
 	D3D12ShaderCompilerInfo m_ShaderCompilerInfo;
 	D3D12Resources m_D3DResources;

@@ -4,9 +4,8 @@
 #include <d3d12.h>
 #include "dxc/dxcapi.h"
 #include "dxc/dxcapi.use.h"
-#include <wrl.h>
 
-using namespace Microsoft::WRL;
+#define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 
 Graphics::Graphics(Config config)
 	:
@@ -40,6 +39,8 @@ void Graphics::Init(HWND hwnd)
 
 	CreateViewCB();
 	CreateMaterialConstantBuffer(material);
+
+	CreateBottomLevelAS();
 }
 
 void Graphics::Shutdown()
@@ -137,7 +138,7 @@ void Graphics::InitializeShaderCompiler()
 void Graphics::CreateDevice()
 {
 #if defined (_DEBUG)
-	ComPtr<ID3D12Debug> debugController;
+	ID3D12Debug* debugController;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 	{
 		debugController->EnableDebugLayer();
@@ -498,6 +499,64 @@ void Graphics::CreateMaterialConstantBuffer(const Material& material)
 	Helpers::Validate(hr, L"Failed to map material constant buffer");
 
 	memcpy(m_D3DResources.materialCBStart, &m_D3DResources.materialCBData, sizeof(m_D3DResources.materialCB));
+};
+
+void Graphics::CreateBottomLevelAS()
+{
+	D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
+	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+	geometryDesc.Triangles.VertexBuffer.StartAddress = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
+	geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_D3DResources.vertexBufferView.StrideInBytes;
+	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(model.vertices.size());
+	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+	geometryDesc.Triangles.IndexBuffer = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
+	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(model.indices.size());
+	geometryDesc.Triangles.IndexFormat = m_D3DResources.indexBufferView.Format;
+	geometryDesc.Triangles.Transform3x4 = 0;
+	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+
+	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS ASInputs = {};
+	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+	ASInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+	ASInputs.pGeometryDescs = &geometryDesc;
+	ASInputs.NumDescs = 1;
+	ASInputs.Flags = buildFlags;
+
+	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO ASPreBuildInfo = {};
+	m_D3DObjects.device->GetRaytracingAccelerationStructurePrebuildInfo(&ASInputs, &ASPreBuildInfo);
+
+	ASPreBuildInfo.ScratchDataSizeInBytes = ALIGN(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, ASPreBuildInfo.ScratchDataSizeInBytes);
+	ASPreBuildInfo.ResultDataMaxSizeInBytes = ALIGN(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, ASPreBuildInfo.ResultDataMaxSizeInBytes);
+
+	D3D12BufferCreateInfo bufferInfo(ASPreBuildInfo.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
+	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pSratch);
+#if NAME_D3D_RESOURCES
+	m_DXRObjects.BLAS.pScratch->SetName(L"DXR BLAS Scratch");
+#endif
+
+	bufferInfo.size = ASPreBuildInfo.ResultDataMaxSizeInBytes;
+	bufferInfo.state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pResult);
+#if NAME_D3D_RESOURCES
+	m_DXRObjects.BLAS.pResult->SetName(L"DXR BLAS");
+#endif
+
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
+	buildDesc.Inputs = ASInputs;
+	buildDesc.ScratchAccelerationStructureData = m_DXRObjects.BLAS.pSratch->GetGPUVirtualAddress();
+	buildDesc.DestAccelerationStructureData = m_DXRObjects.BLAS.pResult->GetGPUVirtualAddress();
+
+	m_D3DObjects.commandList->BuildRaytracingAccelerationStructure(&buildDesc, 1u, nullptr);
+
+	D3D12_RESOURCE_BARRIER uavBarrier;
+	uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+	uavBarrier.UAV.pResource = m_DXRObjects.BLAS.pResult;
+	uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	
+	m_D3DObjects.commandList->ResourceBarrier(1, &uavBarrier);
 };
 
 

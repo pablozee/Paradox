@@ -53,7 +53,7 @@ struct D3D12Objects
 
 	ID3D12CommandQueue* commandQueue = nullptr;
 	ID3D12CommandAllocator* commandAllocators[2] = { nullptr, nullptr };
-	ID3D12GraphicsCommandList* commandList = nullptr;
+	ID3D12GraphicsCommandList4* commandList = nullptr;
 
 	ID3D12Fence* fence = nullptr;
 	HANDLE fenceEvent;
@@ -90,6 +90,20 @@ struct D3D12Resources
 	ID3D12Resource*				materialCB = nullptr;
 	MaterialCB					materialCBData;
 	UINT8*						materialCBStart = nullptr;
+};
+
+struct AccelerationStructureBuffer
+{
+	ID3D12Resource* pSratch = nullptr;
+	ID3D12Resource* pResult = nullptr;
+	ID3D12Resource* pInstanceDesc = nullptr;
+};
+
+struct DXRObjects
+{
+	AccelerationStructureBuffer		TLAS;
+	AccelerationStructureBuffer		BLAS;
+	uint64_t						tlasSize;
 };
 
 struct D3D12BufferCreateInfo
