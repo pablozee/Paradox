@@ -32,6 +32,11 @@ struct ViewCB
 	XMFLOAT2 resolution = XMFLOAT2(1280, 960);
 };
 
+struct MaterialCB
+{
+	XMFLOAT4 resolution;
+};
+
 struct D3D12Values
 {
 	UINT swapChainBufferCount = 2;
@@ -81,6 +86,10 @@ struct D3D12Resources
 	ID3D12Resource*				viewCB = nullptr;
 	ViewCB						viewCBData;
 	UINT8*						viewCBStart = nullptr;
+
+	ID3D12Resource*				materialCB = nullptr;
+	MaterialCB					materialCBData;
+	UINT8*						materialCBStart = nullptr;
 };
 
 struct D3D12BufferCreateInfo

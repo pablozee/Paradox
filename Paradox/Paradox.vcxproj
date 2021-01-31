@@ -168,6 +168,7 @@
     <ClInclude Include="include\dxc\dxcapi.h" />
     <ClInclude Include="include\dxc\dxcapi.use.h" />
     <ClInclude Include="Helpers.h" />
+    <ClInclude Include="include\stb_image.h" />
     <ClInclude Include="Structures.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Window.h" />

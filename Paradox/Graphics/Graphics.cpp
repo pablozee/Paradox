@@ -32,18 +32,13 @@ void Graphics::Init(HWND hwnd)
 
 	CreateDescriptorHeaps();
 
-	Model tempModel;
-	Vertex vert;
-	vert.position = XMFLOAT3{ 0, 0, 0 };
-	vert.uv = XMFLOAT2{ 0, 0 };
-	tempModel.vertices = { vert };
-	tempModel.indices = { 0 };
-	CreateVertexBuffer(tempModel);
-	CreateIndexBuffer(tempModel);
+//	CreateVertexBuffer(tempModel);
+//	CreateIndexBuffer(tempModel);
 
 //	CreateTexture(material);
 
 	CreateViewCB();
+//	CreateMaterialConstantBuffer();
 }
 
 void Graphics::Shutdown()
@@ -412,5 +407,21 @@ void Graphics::CreateViewCB()
 
 	memcpy(m_D3DResources.viewCBStart, &m_D3DResources.viewCBData, sizeof(m_D3DResources.viewCBData));
 }
+
+void Graphics::CreateMaterialConstantBuffer(const Material& material)
+{
+	CreateConstantBuffer(&m_D3DResources.materialCB, sizeof(MaterialCB));
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.materialCB->SetName(L"Material Constant Buffer");
+#endif
+
+	m_D3DResources.materialCBData.resolution = XMFLOAT4(material.textureResolution, 0.0f, 0.0f, 0.0f);
+
+	HRESULT hr = m_D3DResources.materialCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.materialCBStart));
+	Helpers::Validate(hr, L"Failed to map material constant buffer");
+
+	memcpy(m_D3DResources.materialCBStart, &m_D3DResources.materialCBData, sizeof(m_D3DResources.materialCB));
+};
 
 
