@@ -62,3 +62,19 @@ struct Model
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 };
+
+struct Material
+{
+	std::string name = "defaultMaterial";
+	std::string texturePath = "";
+	float textureResolution = 512;
+};
+
+struct TextureInfo
+{
+	std::vector<UINT8> pixels;
+	int width = 0;
+	int height = 0;
+	int stride = 0;
+	int offset = 0;
+};

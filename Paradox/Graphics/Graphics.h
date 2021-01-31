@@ -27,7 +27,10 @@ private:
 	void CreateBackBufferRtv();
 	void CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource);
 	void CreateVertexBuffer(Model &model);
-	void CreateIndexBuffer(Model& model);
+	void CreateIndexBuffer(Model &model);
+	
+	void CreateTexture(Material &material);
+	void UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture);
 
 private:
 	D3D12Params m_D3DParams;

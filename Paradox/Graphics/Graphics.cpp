@@ -40,6 +40,8 @@ void Graphics::Init(HWND hwnd)
 	tempModel.indices = { 0 };
 	CreateVertexBuffer(tempModel);
 	CreateIndexBuffer(tempModel);
+
+//	CreateTexture(material);
 }
 
 void Graphics::Shutdown()
@@ -306,4 +308,85 @@ void Graphics::CreateIndexBuffer(Model& model)
 	m_D3DResources.indexBufferView.BufferLocation = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
 	m_D3DResources.indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 	m_D3DResources.indexBufferView.SizeInBytes = static_cast<UINT>(info.size);
+}
+
+void Graphics::CreateTexture(Material& material)
+{
+	TextureInfo texture = Helpers::LoadTexture(material.texturePath);
+	material.textureResolution = static_cast<float>(texture.width);
+
+	D3D12_RESOURCE_DESC textureDesc = {};
+	textureDesc.Width = texture.width;
+	textureDesc.Height = texture.height;
+	textureDesc.MipLevels = 1;
+	textureDesc.DepthOrArraySize = 1;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(&DefaultHeapProperties, D3D12_HEAP_FLAG_NONE, &textureDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m_D3DResources.texture));
+	Helpers::Validate(hr, L"Failed to create texture!");
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.texture->SetName(L"Texture");
+#endif
+
+	D3D12_RESOURCE_DESC resourceDesc = {};
+	resourceDesc.Width = (texture.width * texture.height * texture.stride);
+	resourceDesc.Height = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+
+	hr = m_D3DObjects.device->CreateCommittedResource(&UploadHeapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_D3DResources.textureUploadResource));
+	Helpers::Validate(hr, L"Failed to create texture upload heap!");
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.textureUploadResource->SetName(L"Texture Upload Buffer");
+#endif
+
+	UploadTexture(m_D3DResources.texture, m_D3DResources.textureUploadResource, texture);
+}
+
+void Graphics::UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture)
+{
+	UINT8* pData;
+	HRESULT hr = srcResource->Map(0, nullptr, reinterpret_cast<void**>(&pData));
+	memcpy(pData, texture.pixels.data(), texture.width * texture.height * texture.stride);
+	srcResource->Unmap(0, nullptr);
+
+	D3D12_SUBRESOURCE_FOOTPRINT subresource = {};
+	subresource.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	subresource.Width = texture.width;
+	subresource.Height = texture.height;
+	subresource.RowPitch = texture.width * texture.stride;
+	subresource.Depth = 1;
+
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
+	footprint.Offset = texture.offset;
+	footprint.Footprint = subresource;
+
+	D3D12_TEXTURE_COPY_LOCATION source = {};
+	source.pResource = srcResource;
+	source.PlacedFootprint = footprint;
+	source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+
+	D3D12_TEXTURE_COPY_LOCATION destination = {}; 
+	destination.pResource = destResource;
+	destination.SubresourceIndex = 0;
+	destination.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+
+	m_D3DObjects.commandList->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
+
+	D3D12_RESOURCE_BARRIER barrier = {};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Transition.pResource = destResource;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+	m_D3DObjects.commandList->ResourceBarrier(1, &barrier);
 }

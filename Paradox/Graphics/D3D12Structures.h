@@ -59,11 +59,14 @@ struct D3D12Resources
 {
 	ID3D12DescriptorHeap* rtvHeap;
 
-	ID3D12Resource* vertexBuffer;
+	ID3D12Resource* vertexBuffer = nullptr;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 
-	ID3D12Resource* indexBuffer;
+	ID3D12Resource* indexBuffer = nullptr;
 	D3D12_INDEX_BUFFER_VIEW indexBufferView;
+
+	ID3D12Resource* texture = nullptr;
+	ID3D12Resource* textureUploadResource = nullptr;
 };
 
 struct D3D12BufferCreateInfo
@@ -104,4 +107,23 @@ struct D3D12BufferCreateInfo
 		flags(InFlags),
 		state(InState)
 	{};
+};
+
+static const D3D12_HEAP_PROPERTIES UploadHeapProperties =
+{
+	D3D12_HEAP_TYPE_UPLOAD,
+	D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+	D3D12_MEMORY_POOL_UNKNOWN,
+	0,
+	0
+
+};
+
+static const D3D12_HEAP_PROPERTIES DefaultHeapProperties =
+{
+	D3D12_HEAP_TYPE_DEFAULT,
+	D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+	D3D12_MEMORY_POOL_UNKNOWN,
+	0,
+	0
 };
