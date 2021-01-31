@@ -14,6 +14,7 @@ public:
 
 private:
 	void InitializeShaderCompiler();
+	
 	void CreateDevice();
 	void CreateCommandQueue();
 	void CreateCommandAllocator();
@@ -22,9 +23,12 @@ private:
 	void CreateCommandList();
 	void ResetCommandList();
 
+	void CreateDescriptorHeaps();
+
 private:
 	D3D12Params m_D3DParams;
 	D3D12Objects m_D3DObjects;
 	D3D12Values m_D3DValues;
 	D3D12ShaderCompilerInfo m_ShaderCompilerInfo;
+	D3D12Resources m_D3DResources;
 };

@@ -21,6 +21,7 @@ Graphics::~Graphics()
 void Graphics::Init(HWND hwnd)
 {
 	InitializeShaderCompiler();
+
 	CreateDevice();
 	CreateCommandQueue();
 	CreateCommandAllocator();
@@ -28,6 +29,8 @@ void Graphics::Init(HWND hwnd)
 	CreateSwapChain(hwnd);
 	CreateCommandList();
 	ResetCommandList();
+
+	CreateDescriptorHeaps();
 }
 
 void Graphics::Shutdown()
@@ -147,7 +150,7 @@ void Graphics::CreateFence()
 void Graphics::CreateSwapChain(HWND hwnd)
 {
 	DXGI_SWAP_CHAIN_DESC1 desc = {};
-	desc.BufferCount = 2;
+	desc.BufferCount = m_D3DValues.swapChainBufferCount;
 	desc.Width = m_D3DParams.width;
 	desc.Height = m_D3DParams.height;
 	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -187,4 +190,21 @@ void Graphics::ResetCommandList()
 
 	hr = m_D3DObjects.commandList->Reset(m_D3DObjects.commandAllocators[m_D3DValues.frameIndex], nullptr);
 	Helpers::Validate(hr, L"Failed to reset command list!");
+}
+
+void Graphics::CreateDescriptorHeaps()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+	desc.NumDescriptors = m_D3DValues.swapChainBufferCount;
+	desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_D3DResources.rtvHeap));
+	Helpers::Validate(hr, L"Failed to create RTV descriptor heap!");
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.rtvHeap->SetName(L"Render Target View Descriptor Heap");
+#endif
+
+	m_D3DValues.rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 }

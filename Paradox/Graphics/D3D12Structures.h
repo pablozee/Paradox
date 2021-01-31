@@ -41,8 +41,10 @@ struct D3D12Objects
 
 struct D3D12Values
 {
+	UINT swapChainBufferCount = 2;
 	UINT64 fenceValues[2] = { 0, 0 };
 	UINT frameIndex = 0;
+	UINT rtvDescSize = 0;
 };
 
 struct D3D12ShaderCompilerInfo
@@ -50,4 +52,9 @@ struct D3D12ShaderCompilerInfo
 	dxc::DxcDllSupport DxcDllHelper;
 	IDxcCompiler* compiler = nullptr;
 	IDxcLibrary* library = nullptr;
+};
+
+struct D3D12Resources
+{
+	ID3D12DescriptorHeap* rtvHeap;
 };
