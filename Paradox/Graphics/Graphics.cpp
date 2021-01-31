@@ -37,7 +37,9 @@ void Graphics::Init(HWND hwnd)
 	vert.position = XMFLOAT3{ 0, 0, 0 };
 	vert.uv = XMFLOAT2{ 0, 0 };
 	tempModel.vertices = { vert };
+	tempModel.indices = { 0 };
 	CreateVertexBuffer(tempModel);
+	CreateIndexBuffer(tempModel);
 }
 
 void Graphics::Shutdown()
@@ -264,7 +266,7 @@ void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppReso
 
 void Graphics::CreateVertexBuffer(Model& model)
 {
-	D3D12BufferCreateInfo info(((UINT)model.vertices.size() * sizeof(Vertex)), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	D3D12BufferCreateInfo info((UINT)model.vertices.size() * sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
 	CreateBuffer(info, &m_D3DResources.vertexBuffer);
 
 #if NAME_D3D_RESOURCES
@@ -282,5 +284,26 @@ void Graphics::CreateVertexBuffer(Model& model)
 	m_D3DResources.vertexBufferView.BufferLocation = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
 	m_D3DResources.vertexBufferView.SizeInBytes = static_cast<UINT>(info.size);
 	m_D3DResources.vertexBufferView.StrideInBytes = sizeof(Vertex);
+}
 
+void Graphics::CreateIndexBuffer(Model& model)
+{
+	D3D12BufferCreateInfo info((UINT)model.indices.size() * sizeof(UINT), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	CreateBuffer(info, &m_D3DResources.indexBuffer);
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.indexBuffer->SetName(L"Index Buffer");
+#endif
+
+	UINT8* pIndexDataBegin;
+	D3D12_RANGE readRange = {};
+	HRESULT hr = m_D3DResources.indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pIndexDataBegin));
+	Helpers::Validate(hr, L"Failed to map index buffer");
+
+	memcpy(pIndexDataBegin, model.indices.data(), info.size);
+	m_D3DResources.indexBuffer->Unmap(0, nullptr);
+
+	m_D3DResources.indexBufferView.BufferLocation = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
+	m_D3DResources.indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+	m_D3DResources.indexBufferView.SizeInBytes = static_cast<UINT>(info.size);
 }
