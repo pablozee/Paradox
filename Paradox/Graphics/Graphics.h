@@ -15,8 +15,11 @@ private:
 	void InitializeShaderCompiler();
 	void CreateDevice();
 	void CreateCommandQueue();
+	void CreateCommandAllocator();
+	void CreateFence();
 
 private:
 	D3D12Objects m_D3DObjects;
+	D3D12Values m_D3DValues;
 	D3D12ShaderCompilerInfo m_ShaderCompilerInfo;
 };

@@ -82,7 +82,7 @@ void Window::Init(const WindowProps& props, Config config)
 
 	D3D12Params params(config.width, config.height, true);
 	m_Graphics = new Graphics();
-	m_Graphics->Init(m_Hwnd);
+	m_Graphics->Init();
 
 	SetVSync(params.vsync);
 }

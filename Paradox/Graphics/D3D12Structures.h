@@ -28,7 +28,15 @@ struct D3D12Objects
 	IDXGIAdapter1* adapter = nullptr;
 	ID3D12Device5* device = nullptr;
 	ID3D12CommandQueue* commandQueue = nullptr;
-	
+	ID3D12CommandAllocator* commandAllocators[2] = { nullptr, nullptr };
+	ID3D12Fence* fence = nullptr;
+	HANDLE fenceEvent;
+};
+
+struct D3D12Values
+{
+	UINT64 fenceValues[2] = { 0, 0 };
+	UINT frameIndex = 0;
 };
 
 struct D3D12ShaderCompilerInfo

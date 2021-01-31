@@ -19,7 +19,10 @@ Graphics::~Graphics()
 void Graphics::Init()
 {
 	InitializeShaderCompiler();
+	CreateDevice();
 	CreateCommandQueue();
+	CreateCommandAllocator();
+	CreateFence();
 }
 
 void Graphics::Shutdown()
@@ -35,7 +38,7 @@ void Graphics::InitializeShaderCompiler()
 	hr = m_ShaderCompilerInfo.DxcDllHelper.CreateInstance(CLSID_DxcCompiler, &m_ShaderCompilerInfo.compiler);
 	Helpers::Validate(hr, L"Failed to create DxcCompiler!");
 
-	hr = m_ShaderCompilerInfo.DxcDllHelper.CreateInstance(CLSID_DxcCompiler, &m_ShaderCompilerInfo.library);
+	hr = m_ShaderCompilerInfo.DxcDllHelper.CreateInstance(CLSID_DxcLibrary, &m_ShaderCompilerInfo.library);
 	Helpers::Validate(hr, L"Failed to create DxcLibrary!");
 }
 
@@ -100,4 +103,38 @@ void Graphics::CreateCommandQueue()
 #if NAME_D3D_RESOURCES
 	m_D3DObjects.commandQueue->SetName(L"D3D12 Command Queue");
 #endif
+}
+
+void Graphics::CreateCommandAllocator()
+{
+	for (int n = 0; n < 2; ++n)
+	{
+		HRESULT hr = m_D3DObjects.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_D3DObjects.commandAllocators[n]));
+		Helpers::Validate(hr, L"Failed to create command allocator!");
+	}
+
+#if NAME_D3D_RESOURCES
+	if (n = 0) m_D3DObjects.commandAllocators[n]->SetName(L"D3D12 Command Allocator 0");
+	else m_D3DObjects.commandAllocators[n]->SetName(L"D3D12 Command Allocator 1");
+#endif
+}
+
+void Graphics::CreateFence()
+{
+	HRESULT hr = m_D3DObjects.device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_D3DObjects.fence));
+	Helpers::Validate(hr, L"Failed to create fence!");
+
+#if NAME_D3D_RESOURCES
+	m_D3DObjects.fence->SetName(L"D3D12 Fence");
+#endif
+
+	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
+
+	m_D3DObjects.fenceEvent = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
+	
+	if (m_D3DObjects.fenceEvent == nullptr)
+	{
+		hr = HRESULT_FROM_WIN32(GetLastError());
+		Helpers::Validate(hr, L"Failed to create fence event!");
+	}
 }
