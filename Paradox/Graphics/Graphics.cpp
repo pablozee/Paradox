@@ -41,6 +41,8 @@ void Graphics::Init(HWND hwnd)
 	CreateMaterialConstantBuffer(material);
 
 	CreateBottomLevelAS();
+	CreateTopLevelAS();
+
 }
 
 void Graphics::Shutdown()
@@ -559,4 +561,72 @@ void Graphics::CreateBottomLevelAS()
 	m_D3DObjects.commandList->ResourceBarrier(1, &uavBarrier);
 };
 
+void Graphics::CreateTopLevelAS()
+{
+	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc = {};
+	instanceDesc.InstanceID = 0;
+	instanceDesc.InstanceContributionToHitGroupIndex = 0;
+	instanceDesc.InstanceMask = 0xFF;
+	instanceDesc.Transform[0][0] = instanceDesc.Transform[1][1] = instanceDesc.Transform[2][2] = 1;
+	instanceDesc.AccelerationStructure = m_DXRObjects.BLAS.pResult->GetGPUVirtualAddress();
+	instanceDesc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
 
+	D3D12BufferCreateInfo instanceBufferInfo = {};
+	instanceBufferInfo.size = sizeof(instanceDesc);
+	instanceBufferInfo.heapType = D3D12_HEAP_TYPE_UPLOAD;
+	instanceBufferInfo.flags = D3D12_RESOURCE_FLAG_NONE;
+	instanceBufferInfo.state = D3D12_RESOURCE_STATE_GENERIC_READ;
+	CreateBuffer(instanceBufferInfo, &m_DXRObjects.TLAS.pInstanceDesc);
+#if NAME_D3D_RESOURCES
+	m_DXRObjects.TLAS.pInstanceDesc->SetName(L"DXR TLAS Instance Descriptors");
+#endif
+
+	UINT8* pData;
+	m_DXRObjects.TLAS.pInstanceDesc->Map(0, nullptr, reinterpret_cast<void**>(&pData));
+	memcpy(pData, &instanceDesc, sizeof(instanceDesc));
+	m_DXRObjects.TLAS.pInstanceDesc->Unmap(0, nullptr);
+
+	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS ASInputs = {};
+	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+	ASInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+	ASInputs.InstanceDescs = m_DXRObjects.TLAS.pInstanceDesc->GetGPUVirtualAddress();
+	ASInputs.NumDescs = 1;
+	ASInputs.Flags = buildFlags;
+
+	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO ASPreBuildInfo = {};
+	m_D3DObjects.device->GetRaytracingAccelerationStructurePrebuildInfo(&ASInputs, &ASPreBuildInfo);
+
+	ASPreBuildInfo.ResultDataMaxSizeInBytes = ALIGN(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, ASPreBuildInfo.ResultDataMaxSizeInBytes);
+	ASPreBuildInfo.ScratchDataSizeInBytes = ALIGN(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, ASPreBuildInfo.ScratchDataSizeInBytes);
+
+	m_DXRObjects.tlasSize = ASPreBuildInfo.ResultDataMaxSizeInBytes;
+
+	D3D12BufferCreateInfo bufferInfo(ASPreBuildInfo.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
+	CreateBuffer(bufferInfo, &m_DXRObjects.TLAS.pSratch);
+#if NAME_D3D_RESOURCES
+	m_DXRObjects.TLAS.pScratch->SetName(L"DXR TLAS Scratch");
+#endif
+
+	bufferInfo.size = ASPreBuildInfo.ResultDataMaxSizeInBytes;
+	bufferInfo.state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+	CreateBuffer(bufferInfo, &m_DXRObjects.TLAS.pResult);
+#if NAME_D3D_RESOURCES
+	m_DXRObjects.TLAS.pScratch->SetName(L"DXR TLAS");
+#endif
+
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
+	buildDesc.Inputs = ASInputs;
+	buildDesc.ScratchAccelerationStructureData = m_DXRObjects.TLAS.pSratch->GetGPUVirtualAddress();
+	buildDesc.DestAccelerationStructureData = m_DXRObjects.TLAS.pResult->GetGPUVirtualAddress();
+
+	m_D3DObjects.commandList->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
+
+	D3D12_RESOURCE_BARRIER uavBarrier;
+	uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+	uavBarrier.UAV.pResource = m_DXRObjects.TLAS.pResult;
+	uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	m_D3DObjects.commandList->ResourceBarrier(1, &uavBarrier);
+}

@@ -39,6 +39,7 @@ private:
 	void CreateMaterialConstantBuffer(const Material& material);
 
 	void CreateBottomLevelAS();
+	void CreateTopLevelAS();
 
 private:
 	D3D12Params m_D3DParams;
