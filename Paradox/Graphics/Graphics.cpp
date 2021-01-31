@@ -26,6 +26,7 @@ void Graphics::Init(HWND hwnd)
 	CreateCommandAllocator();
 	CreateFence();
 	CreateSwapChain(hwnd);
+	CreateCommandList();
 }
 
 void Graphics::Shutdown()
@@ -165,4 +166,15 @@ void Graphics::CreateSwapChain(HWND hwnd)
 
 	swapChain->Release();
 	m_D3DValues.frameIndex = m_D3DObjects.swapChain->GetCurrentBackBufferIndex();
+}
+
+void Graphics::CreateCommandList()
+{
+	HRESULT hr = m_D3DObjects.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_D3DObjects.commandAllocators[m_D3DValues.frameIndex], nullptr, IID_PPV_ARGS(&m_D3DObjects.commandList));
+	hr = m_D3DObjects.commandList->Close();
+	Helpers::Validate(hr, L"Failed to create command list!");
+
+#if NAME_D3D_RESOURCES
+	m_D3DObjects.commandList->SetName(L"D3D12 Command List");
+#endif
 }

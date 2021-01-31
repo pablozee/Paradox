@@ -30,10 +30,13 @@ struct D3D12Objects
 	
 	ID3D12CommandQueue* commandQueue = nullptr;
 	ID3D12CommandAllocator* commandAllocators[2] = { nullptr, nullptr };
+	ID3D12GraphicsCommandList* commandList = nullptr;
+
 	ID3D12Fence* fence = nullptr;
 	HANDLE fenceEvent;
 
 	IDXGISwapChain3* swapChain = nullptr;
+
 };
 
 struct D3D12Values

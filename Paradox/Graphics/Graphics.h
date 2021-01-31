@@ -19,6 +19,7 @@ private:
 	void CreateCommandAllocator();
 	void CreateFence();
 	void CreateSwapChain(HWND hwnd);
+	void CreateCommandList();
 
 private:
 	D3D12Params m_D3DParams;
