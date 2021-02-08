@@ -92,6 +92,8 @@ struct D3D12Resources
 	UINT8*						materialCBStart = nullptr;
 
 	ID3D12Resource*				DXROutputBuffer;
+
+	ID3D12DescriptorHeap*		descriptorHeap;
 };
 
 struct AccelerationStructureBuffer

@@ -43,6 +43,9 @@ void Graphics::Init(HWND hwnd)
 	CreateBottomLevelAS();
 	CreateTopLevelAS();
 	CreateDXROutput();
+
+	CreateDescriptorHeaps(model);
+
 }
 
 void Graphics::Shutdown()
@@ -651,4 +654,90 @@ void Graphics::CreateDXROutput()
 #if NAME_D3D_RESOURCES
 	m_D3DResources.DXROutputBuffer->SetName(L"DXR Output Buffer");
 #endif
+}
+
+void Graphics::CreateDescriptorHeaps(const Model& model)
+{
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+	heapDesc.NumDescriptors = 7;
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_D3DResources.descriptorHeap));
+	Helpers::Validate(hr, L"Failed to create descriptor heap!");
+
+	D3D12_CPU_DESCRIPTOR_HANDLE handle = m_D3DResources.descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	UINT handleIncrement = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.descriptorHeap->SetName(L"DXR Descriptor Heap");
+#endif
+
+	// Create View Constant Buffer CBV
+	D3D12_CONSTANT_BUFFER_VIEW_DESC viewCBDesc = {};
+	viewCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.viewCBData));
+	viewCBDesc.BufferLocation = m_D3DResources.viewCB->GetGPUVirtualAddress();
+
+	m_D3DObjects.device->CreateConstantBufferView(&viewCBDesc, handle);
+
+	// Create MaterialCB CBV
+	viewCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.materialCBData));
+	viewCBDesc.BufferLocation = m_D3DResources.materialCB->GetGPUVirtualAddress();
+
+	handle.ptr += handleIncrement;
+	m_D3DObjects.device->CreateConstantBufferView(&viewCBDesc, handle);
+
+	// Create DXR Output Buffer UAV 
+	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+
+	handle.ptr += handleIncrement;
+	m_D3DObjects.device->CreateUnorderedAccessView(m_D3DResources.DXROutputBuffer, nullptr, &uavDesc, handle);
+
+	// Create the DXR Top Level Acceleration Structure SRV
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.RaytracingAccelerationStructure.Location = m_DXRObjects.TLAS.pResult->GetGPUVirtualAddress();
+
+	handle.ptr += handleIncrement;
+	m_D3DObjects.device->CreateShaderResourceView(nullptr, &srvDesc, handle);
+
+	// Create the Index Buffer SRV
+	D3D12_SHADER_RESOURCE_VIEW_DESC indexSrvDesc = {};
+	indexSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+	indexSrvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	indexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+	indexSrvDesc.Buffer.StructureByteStride = 0;
+	indexSrvDesc.Buffer.FirstElement = 0;
+	indexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model.indices.size()) * sizeof(UINT)) / sizeof(float);
+	indexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	handle.ptr += handleIncrement;
+	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.indexBuffer, &indexSrvDesc, handle);
+
+	// Create the Vertex Buffer SRV
+	D3D12_SHADER_RESOURCE_VIEW_DESC vertexSrvDesc = {};
+	vertexSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+	vertexSrvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	vertexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+	vertexSrvDesc.Buffer.StructureByteStride = 0;
+	vertexSrvDesc.Buffer.FirstElement = 0;
+	vertexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model.vertices.size()) * sizeof(UINT)) / sizeof(float);
+	vertexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	handle.ptr += handleIncrement;
+	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.vertexBuffer, &vertexSrvDesc, handle);
+
+	// Create the material texture SRV
+	D3D12_SHADER_RESOURCE_VIEW_DESC textureSrvDesc = {};
+	textureSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	textureSrvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureSrvDesc.Texture2D.MipLevels = 1;
+	textureSrvDesc.Texture2D.MostDetailedMip = 0;
+	textureSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	handle.ptr += handleIncrement;
+	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.materialCB, &textureSrvDesc, handle);
 }
