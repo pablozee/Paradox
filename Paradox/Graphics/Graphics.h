@@ -44,6 +44,10 @@ private:
 
 	void CreateDescriptorHeaps(const Model &model);
 
+	void CreateRayGenProgram();
+	void CompileShader(RtProgram program);
+	void CompileShader(D3D12ShaderInfo &info, IDxcBlob** blob);
+
 private:
 	D3D12Params m_D3DParams;
 	D3D12Objects m_D3DObjects;

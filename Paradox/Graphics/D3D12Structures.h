@@ -37,6 +37,44 @@ struct MaterialCB
 	XMFLOAT4 resolution;
 };
 
+struct RtProgram
+{
+	D3D12ShaderInfo			info = {};
+	IDxcBlob*				blob = nullptr;
+	ID3D12RootSignature*	pRootSignature = nullptr;
+
+	D3D12_DXIL_LIBRARY_DESC	dxilLibDesc;
+	D3D12_EXPORT_DESC		exportDesc;
+	D3D12_STATE_SUBOBJECT	subobject;
+	std::wstring			exportName;
+
+	RtProgram()
+	{
+		exportDesc.ExportToRename = nullptr;
+	}
+
+	RtProgram(D3D12ShaderInfo shaderInfo)
+	{
+		info = shaderInfo;
+		subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
+		exportName = shaderInfo.entryPoint;
+		exportDesc.ExportToRename = nullptr;
+		exportDesc.Flags = D3D12_EXPORT_FLAG_NONE;
+	}
+
+	void SetBytecode()
+	{
+		exportDesc.Name = exportName.c_str();
+
+		dxilLibDesc.NumExports = 1;
+		dxilLibDesc.pExports = &exportDesc;
+		dxilLibDesc.DXILLibrary.BytecodeLength = blob->GetBufferSize();
+		dxilLibDesc.DXILLibrary.pShaderBytecode = blob->GetBufferPointer();
+
+		subobject.pDesc = &dxilLibDesc;
+	}
+};
+
 struct D3D12Values
 {
 	UINT swapChainBufferCount = 2;
@@ -68,6 +106,27 @@ struct D3D12ShaderCompilerInfo
 	dxc::DxcDllSupport DxcDllHelper;
 	IDxcCompiler* compiler = nullptr;
 	IDxcLibrary* library = nullptr;
+};
+
+struct D3D12ShaderInfo
+{
+	LPCWSTR		filename = nullptr;
+	LPCWSTR		entryPoint = nullptr;
+	LPCWSTR		targetProfile = nullptr;
+	LPCWSTR*	arguments = nullptr;
+	DxcDefine*  defines = nullptr;
+	UINT32		argCount = 0;
+	UINT32		defineCount = 0;
+
+	D3D12ShaderInfo()
+	{}
+
+	D3D12ShaderInfo(LPCWSTR inFilename, LPCWSTR inEntryPoint, LPCWSTR inProfile)
+	{
+		filename = inFilename;
+		entryPoint = inEntryPoint;
+		targetProfile = inProfile;
+	}
 };
 
 struct D3D12Resources
@@ -108,6 +167,8 @@ struct DXRObjects
 	AccelerationStructureBuffer		TLAS;
 	AccelerationStructureBuffer		BLAS;
 	uint64_t						tlasSize;
+
+	RtProgram						rgs;
 };
 
 struct D3D12BufferCreateInfo

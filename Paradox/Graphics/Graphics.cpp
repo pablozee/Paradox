@@ -45,6 +45,7 @@ void Graphics::Init(HWND hwnd)
 	CreateDXROutput();
 
 	CreateDescriptorHeaps(model);
+	CreateRayGenProgram();
 
 }
 
@@ -740,4 +741,21 @@ void Graphics::CreateDescriptorHeaps(const Model& model)
 
 	handle.ptr += handleIncrement;
 	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.materialCB, &textureSrvDesc, handle);
+}
+
+void Graphics::CreateRayGenProgram()
+{
+	m_DXRObjects.rgs = RtProgram(D3D12ShaderInfo(L"shaders\\RayGen.hlsl", L"", L"lib_6_3"));
+	CompileShader(m_DXRObjects.rgs);
+}
+
+void Graphics::CompileShader(RtProgram program)
+{
+	CompileShader(program.info, &program.blob);
+	program.SetBytecode();
+}
+
+void Graphics::CompileShader(D3D12ShaderInfo shaderInfo, IDxcBlob** blob)
+{
+
 }
