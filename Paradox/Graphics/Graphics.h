@@ -47,6 +47,7 @@ private:
 	void CreateRayGenProgram();
 	void CompileShader(RtProgram program);
 	void CompileShader(D3D12ShaderInfo &info, IDxcBlob** blob);
+	ID3D12RootSignature* CreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& desc);
 
 private:
 	D3D12Params m_D3DParams;

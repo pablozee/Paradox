@@ -6,6 +6,7 @@
 #include <dxgi1_6.h>
 #include <d3d12.h>
 #include <wrl.h>
+#include <string>
 
 using namespace DirectX;
 
@@ -35,44 +36,6 @@ struct ViewCB
 struct MaterialCB
 {
 	XMFLOAT4 resolution;
-};
-
-struct RtProgram
-{
-	D3D12ShaderInfo			info = {};
-	IDxcBlob*				blob = nullptr;
-	ID3D12RootSignature*	pRootSignature = nullptr;
-
-	D3D12_DXIL_LIBRARY_DESC	dxilLibDesc;
-	D3D12_EXPORT_DESC		exportDesc;
-	D3D12_STATE_SUBOBJECT	subobject;
-	std::wstring			exportName;
-
-	RtProgram()
-	{
-		exportDesc.ExportToRename = nullptr;
-	}
-
-	RtProgram(D3D12ShaderInfo shaderInfo)
-	{
-		info = shaderInfo;
-		subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
-		exportName = shaderInfo.entryPoint;
-		exportDesc.ExportToRename = nullptr;
-		exportDesc.Flags = D3D12_EXPORT_FLAG_NONE;
-	}
-
-	void SetBytecode()
-	{
-		exportDesc.Name = exportName.c_str();
-
-		dxilLibDesc.NumExports = 1;
-		dxilLibDesc.pExports = &exportDesc;
-		dxilLibDesc.DXILLibrary.BytecodeLength = blob->GetBufferSize();
-		dxilLibDesc.DXILLibrary.pShaderBytecode = blob->GetBufferPointer();
-
-		subobject.pDesc = &dxilLibDesc;
-	}
 };
 
 struct D3D12Values
@@ -162,6 +125,44 @@ struct AccelerationStructureBuffer
 	ID3D12Resource* pInstanceDesc = nullptr;
 };
 
+struct RtProgram
+{
+	D3D12ShaderInfo			info = {};
+	IDxcBlob* blob = nullptr;
+	ID3D12RootSignature* pRootSignature = nullptr;
+
+	D3D12_DXIL_LIBRARY_DESC	dxilLibDesc;
+	D3D12_EXPORT_DESC		exportDesc;
+	D3D12_STATE_SUBOBJECT	subobject;
+	std::wstring			exportName;
+
+	RtProgram()
+	{
+		exportDesc.ExportToRename = nullptr;
+	}
+
+	RtProgram(D3D12ShaderInfo shaderInfo)
+	{
+		info = shaderInfo;
+		subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
+		exportName = shaderInfo.entryPoint;
+		exportDesc.ExportToRename = nullptr;
+		exportDesc.Flags = D3D12_EXPORT_FLAG_NONE;
+	}
+
+	void SetBytecode()
+	{
+		exportDesc.Name = exportName.c_str();
+
+		dxilLibDesc.NumExports = 1;
+		dxilLibDesc.pExports = &exportDesc;
+		dxilLibDesc.DXILLibrary.BytecodeLength = blob->GetBufferSize();
+		dxilLibDesc.DXILLibrary.pShaderBytecode = blob->GetBufferPointer();
+
+		subobject.pDesc = &dxilLibDesc;
+	}
+};
+
 struct DXRObjects
 {
 	AccelerationStructureBuffer		TLAS;
@@ -229,3 +230,4 @@ static const D3D12_HEAP_PROPERTIES DefaultHeapProperties =
 	0,
 	0
 };
+

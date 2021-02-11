@@ -6,6 +6,7 @@
 #include "dxc/dxcapi.use.h"
 
 #define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
+#define SAFE_RELEASE(x) { if (x) { x->Release(); x = NULL; } }
 
 Graphics::Graphics(Config config)
 	:
@@ -747,15 +748,122 @@ void Graphics::CreateRayGenProgram()
 {
 	m_DXRObjects.rgs = RtProgram(D3D12ShaderInfo(L"shaders\\RayGen.hlsl", L"", L"lib_6_3"));
 	CompileShader(m_DXRObjects.rgs);
+
+	//Describe the ray generation root signature
+	D3D12_DESCRIPTOR_RANGE ranges[3];
+
+	ranges[0].BaseShaderRegister = 0;
+	ranges[0].NumDescriptors = 2;
+	ranges[0].RegisterSpace = 0;
+	ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	ranges[0].OffsetInDescriptorsFromTableStart = 0;
+
+	ranges[1].BaseShaderRegister = 0;
+	ranges[1].NumDescriptors = 1;
+	ranges[1].RegisterSpace = 0;
+	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+	ranges[1].OffsetInDescriptorsFromTableStart = 2;
+
+	ranges[2].BaseShaderRegister = 0;
+	ranges[2].NumDescriptors = 4;
+	ranges[2].RegisterSpace = 0;
+	ranges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	ranges[2].OffsetInDescriptorsFromTableStart = 3;
+
+	D3D12_ROOT_PARAMETER param0 = {};
+	param0.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	param0.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	param0.DescriptorTable.NumDescriptorRanges = _countof(ranges);
+	param0.DescriptorTable.pDescriptorRanges = ranges;
+
+	D3D12_ROOT_PARAMETER rootParams[1] = { param0 };
+	
+	D3D12_ROOT_SIGNATURE_DESC rootDesc = {};
+	rootDesc.NumParameters = _countof(rootParams);
+	rootDesc.pParameters = rootParams;
+	rootDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
+
+	//Create the root signature
+	m_DXRObjects.rgs.pRootSignature = CreateRootSignature(rootDesc);
+#if NAME_D3D_RESOURCES
+	m_DXRObjects.rgs.pRootSignature->SetName(L"DXR RGS Root Signature");
+#endif
+}
+
+ID3D12RootSignature* Graphics::CreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& desc)
+{
+	ID3DBlob* sig;
+	ID3DBlob* error;
+	HRESULT hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &sig, &error);
+	Helpers::Validate(hr, L"Failed to serialize root signature!");
+
+	ID3D12RootSignature* pRootSig;
+	hr = m_D3DObjects.device->CreateRootSignature(0, sig->GetBufferPointer(), sig->GetBufferSize(), IID_PPV_ARGS(&pRootSig));
+	Helpers::Validate(hr, L"Failed to create root signature!");
+
+	SAFE_RELEASE(sig);
+	SAFE_RELEASE(error);
+
+	return pRootSig;
+}
+
+void Graphics::CompileShader(D3D12ShaderInfo& info, IDxcBlob** blob)
+{
+	HRESULT hr;
+	UINT code(0);
+	IDxcBlobEncoding* pShaderText(nullptr);
+
+	//Load and encode the shader file
+	hr = m_ShaderCompilerInfo.library->CreateBlobFromFile(info.filename, &code, &pShaderText);
+	Helpers::Validate(hr, L"Failed to create blob from shader file!");
+
+	//Create the compiler include handler
+	IDxcIncludeHandler* dxcIncludeHandler;
+	hr = m_ShaderCompilerInfo.library->CreateIncludeHandler(&dxcIncludeHandler);
+	Helpers::Validate(hr, L"Failed to create include handler!");
+
+	//Compile the shader
+	IDxcOperationResult* result;
+	hr = m_ShaderCompilerInfo.compiler->Compile(
+		pShaderText,
+		info.filename,
+		info.entryPoint,
+		info.targetProfile,
+		info.arguments,
+		info.argCount,
+		info.defines,
+		info.defineCount,
+		dxcIncludeHandler,
+		&result);
+
+	Helpers::Validate(hr, L"Failed to compile shader!");
+
+	//Verify the result
+	result->GetStatus(&hr);
+	if (FAILED(hr))
+	{
+		IDxcBlobEncoding* error;
+		hr = result->GetErrorBuffer(&error);
+		Helpers::Validate(hr, L"Failed to get shader compiler error buffer!");
+
+		//Convert error blob to a string
+		vector<char> infoLog(error->GetBufferSize() + 1);
+		memcpy(infoLog.data(), error->GetBufferPointer(), error->GetBufferSize());
+		infoLog[error->GetBufferSize()] = 0;
+
+		string errorMsg = "Shader Compiler Error: \n";
+		errorMsg.append(infoLog.data());
+
+		MessageBoxA(nullptr, errorMsg.c_str(), "Error!", MB_OK);
+		return;
+	}
+
+	hr = result->GetResult(blob);
+	Helpers::Validate(hr, L"Failed to get shader blob result!");
 }
 
 void Graphics::CompileShader(RtProgram program)
 {
 	CompileShader(program.info, &program.blob);
 	program.SetBytecode();
-}
-
-void Graphics::CompileShader(D3D12ShaderInfo shaderInfo, IDxcBlob** blob)
-{
-
 }
