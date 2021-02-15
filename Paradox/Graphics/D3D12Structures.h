@@ -163,6 +163,35 @@ struct RtProgram
 	}
 };
 
+struct HitProgram
+{
+	RtProgram ahs;
+	RtProgram chs;
+
+	std::wstring exportName;
+	D3D12_HIT_GROUP_DESC desc = {};
+	D3D12_STATE_SUBOBJECT subobject = {};
+
+	HitProgram() {}
+
+	HitProgram(LPCWSTR name)
+		:
+		exportName(name)
+	{
+		desc = {};
+		desc.HitGroupExport = exportName.c_str();
+		subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
+		subobject.pDesc = &desc;
+	}
+
+	void SetExports(bool anyHit)
+	{
+		desc.HitGroupExport = exportName.c_str();
+		if (anyHit) desc.AnyHitShaderImport = ahs.exportDesc.Name;
+		desc.ClosestHitShaderImport = chs.exportDesc.Name;
+	}
+};
+
 struct DXRObjects
 {
 	AccelerationStructureBuffer		TLAS;
@@ -170,6 +199,8 @@ struct DXRObjects
 	uint64_t						tlasSize;
 
 	RtProgram						rgs;
+	RtProgram						miss;
+	HitProgram						hit;
 };
 
 struct D3D12BufferCreateInfo

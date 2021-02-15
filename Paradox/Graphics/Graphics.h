@@ -44,10 +44,12 @@ private:
 
 	void CreateDescriptorHeaps(const Model &model);
 
-	void CreateRayGenProgram();
 	void CompileShader(RtProgram program);
 	void CompileShader(D3D12ShaderInfo &info, IDxcBlob** blob);
 	ID3D12RootSignature* CreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& desc);
+	void CreateRayGenProgram();
+	void CreateMissProgram();
+	void CreateClosestHitProgram();
 
 private:
 	D3D12Params m_D3DParams;
