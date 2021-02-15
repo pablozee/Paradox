@@ -50,6 +50,8 @@ private:
 	void CreateRayGenProgram();
 	void CreateMissProgram();
 	void CreateClosestHitProgram();
+	
+	void CreatePipelineStateObject();
 
 private:
 	D3D12Params m_D3DParams;

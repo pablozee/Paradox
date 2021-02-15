@@ -201,6 +201,9 @@ struct DXRObjects
 	RtProgram						rgs;
 	RtProgram						miss;
 	HitProgram						hit;
+
+	ID3D12StateObject*				rtpso = nullptr;
+	ID3D12StateObjectProperties*	rtpsoInfo = nullptr;
 };
 
 struct D3D12BufferCreateInfo
