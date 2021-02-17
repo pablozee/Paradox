@@ -52,6 +52,7 @@ private:
 	void CreateClosestHitProgram();
 	
 	void CreatePipelineStateObject();
+	void CreateShaderTable();
 
 
 private:

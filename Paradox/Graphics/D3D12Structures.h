@@ -198,6 +198,9 @@ struct DXRObjects
 	AccelerationStructureBuffer		BLAS;
 	uint64_t						tlasSize;
 
+	ID3D12Resource*					shaderTable = nullptr;
+	uint32_t						shaderTableRecordSize = 0;
+
 	RtProgram						rgs;
 	RtProgram						miss;
 	HitProgram						hit;

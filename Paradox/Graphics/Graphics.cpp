@@ -51,7 +51,7 @@ void Graphics::Init(HWND hwnd)
 	CreateClosestHitProgram();
 
 	CreatePipelineStateObject();
-
+	CreateShaderTable();
 }
 
 void Graphics::Shutdown()
@@ -1032,4 +1032,62 @@ void Graphics::CreatePipelineStateObject()
 	// Get the RTPSO properties
 	hr = m_DXRObjects.rtpso->QueryInterface(IID_PPV_ARGS(&m_DXRObjects.rtpsoInfo));
 	Helpers::Validate(hr, L"Failed to get RTPSO info object");
+}
+
+void Graphics::CreateShaderTable()
+{
+	/*
+	The Shader Table layout is:
+		Entry 0 - Ray Generation shader
+		Entry 1 - Miss shader
+		Entry 2 - Closest Hit shader
+	All shader records in the Shader Table must have the same size, so we set shader record size based on the largest required entry.
+	The ray generation program requires the largest entry:
+		32 bytes - D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES
+	+	8 bytes  - a CBV/SRV/UAV descriptor table point (64-bits)
+	=	40 bytes ->> aligns to 64 bytes
+	The entry size must be aligned up to D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT
+	*/
+	
+	uint32_t shaderIdSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
+	uint32_t shaderTableSize = 0;
+
+	m_DXRObjects.shaderTableRecordSize = shaderIdSize;
+	m_DXRObjects.shaderTableRecordSize += 8;
+	m_DXRObjects.shaderTableRecordSize = ALIGN(D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT, m_DXRObjects.shaderTableRecordSize);
+
+	shaderTableSize = (m_DXRObjects.shaderTableRecordSize * 3);
+	shaderTableSize = ALIGN(D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT, shaderTableSize);
+
+	// Create the shader table buffer
+	D3D12BufferCreateInfo bufferInfo(shaderTableSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	CreateBuffer(bufferInfo, &m_DXRObjects.shaderTable);
+#if NAME_D3D_RESOURCES
+	m_DXRObjects.shaderTable->SetName(L"DXR Shader Table");
+#endif
+
+	// Map the buffer
+	uint8_t* pData;
+	HRESULT hr = m_DXRObjects.shaderTable->Map(0, nullptr, (void**)pData);
+	Helpers::Validate(hr, L"Failed to map shader table!");
+
+	// Shader Record 0 - Ray Generation program and local root parameter data (descriptor table with constant buffer and index buffer / vertex buffer pointers)
+	memcpy(pData, m_DXRObjects.rtpsoInfo->GetShaderIdentifier(L"RayGen_12"), shaderIdSize);
+
+	// Set the root parameter data. Point to the start of the descriptor heap.
+	*reinterpret_cast<D3D12_GPU_DESCRIPTOR_HANDLE*>(pData + shaderIdSize) = m_D3DResources.descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+
+	// Shader Record 1 - Miss program (no local root arguments to set)
+	pData += m_DXRObjects.shaderTableRecordSize;
+	memcpy(pData, m_DXRObjects.rtpsoInfo->GetShaderIdentifier(L"Miss_5"), shaderIdSize);
+
+	// Shader Record 2 - Closest Hit program and local root parameter data (descriptor table with constant buffer and index buffer / vertex buffer pointers)
+	pData += m_DXRObjects.shaderTableRecordSize;
+	memcpy(pData, m_DXRObjects.rtpsoInfo->GetShaderIdentifier(L"HitGroup"), shaderIdSize);
+
+	// Set the root parameter data. Point to start to descriptor heap.
+	*reinterpret_cast<D3D12_GPU_DESCRIPTOR_HANDLE*>(pData + shaderIdSize) = m_D3DResources.descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+
+	// Unmap
+	m_DXRObjects.shaderTable->Unmap(0, nullptr);
 }
