@@ -78,4 +78,8 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="shaders\RayGen.hlsl" />
+    <FxCompile Include="shaders\Common.hlsl" />
+  </ItemGroup>
 </Project>

@@ -53,6 +53,7 @@ private:
 	
 	void CreatePipelineStateObject();
 
+
 private:
 	D3D12Params m_D3DParams;
 	D3D12Objects m_D3DObjects;

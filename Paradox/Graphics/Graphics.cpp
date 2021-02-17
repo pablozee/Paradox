@@ -51,6 +51,7 @@ void Graphics::Init(HWND hwnd)
 	CreateClosestHitProgram();
 
 	CreatePipelineStateObject();
+
 }
 
 void Graphics::Shutdown()
