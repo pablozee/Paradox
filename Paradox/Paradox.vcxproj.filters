@@ -78,10 +78,4 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="shaders\RayGen.hlsl" />
-    <FxCompile Include="shaders\Common.hlsl" />
-    <FxCompile Include="shaders\Miss.hlsl" />
-    <FxCompile Include="shaders\ClosestHit.hlsl" />
-  </ItemGroup>
 </Project>

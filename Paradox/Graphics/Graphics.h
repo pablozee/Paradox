@@ -54,6 +54,7 @@ private:
 	void CreatePipelineStateObject();
 	void CreateShaderTable();
 
+	void WaitForGPU();
 
 private:
 	D3D12Params m_D3DParams;

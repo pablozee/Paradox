@@ -52,6 +52,13 @@ void Graphics::Init(HWND hwnd)
 
 	CreatePipelineStateObject();
 	CreateShaderTable();
+
+	m_D3DObjects.commandList->Close();
+	ID3D12CommandList* pGraphicsList = { m_D3DObjects.commandList };
+	m_D3DObjects.commandQueue->ExecuteCommandLists(1, &pGraphicsList);
+
+	WaitForGPU();
+	ResetCommandList();
 }
 
 void Graphics::Shutdown()
@@ -1067,7 +1074,7 @@ void Graphics::CreateShaderTable()
 #endif
 
 	// Map the buffer
-	uint8_t* pData;
+	uint8_t* pData = nullptr;
 	HRESULT hr = m_DXRObjects.shaderTable->Map(0, nullptr, (void**)pData);
 	Helpers::Validate(hr, L"Failed to map shader table!");
 
@@ -1090,4 +1097,20 @@ void Graphics::CreateShaderTable()
 
 	// Unmap
 	m_DXRObjects.shaderTable->Unmap(0, nullptr);
+}
+
+void Graphics::WaitForGPU()
+{
+	// Schedule a signal command in the queue
+	HRESULT hr = m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, m_D3DValues.fenceValues[m_D3DValues.frameIndex]);
+	Helpers::Validate(hr, L"Failed to signal fence!");
+
+	// Wait until the fence has been processed
+	hr = m_D3DObjects.fence->SetEventOnCompletion(m_D3DValues.fenceValues[m_D3DValues.frameIndex], m_D3DObjects.fenceEvent);
+	Helpers::Validate(hr, L"Failed to set fence event!");
+
+	WaitForSingleObjectEx(m_D3DObjects.fenceEvent, INFINITE, FALSE);
+
+	// Increment the fence value for the current frame
+	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
 }

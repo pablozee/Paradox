@@ -174,12 +174,6 @@
     <ClInclude Include="Input.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="shaders\ClosestHit.hlsl" />
-    <FxCompile Include="shaders\Common.hlsl" />
-    <FxCompile Include="shaders\Miss.hlsl" />
-    <FxCompile Include="shaders\RayGen.hlsl" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
