@@ -59,6 +59,8 @@ public:
 
 	inline virtual void* GetNativeWindow() const { return m_Window; }
 
+	inline Graphics* GetGraphics() const { return m_Graphics; }
+
 private:
 	struct WindowData
 	{

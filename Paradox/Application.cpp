@@ -34,6 +34,8 @@ int Application::Run()
 		{
 			return *ecode;
 		}
+		m_Window->GetGraphics()->Update();
+		m_Window->GetGraphics()->Render();
 	}
 
 	return 0;

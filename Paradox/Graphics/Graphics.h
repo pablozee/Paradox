@@ -63,6 +63,9 @@ private:
 	void BuildCommandList();
 	void SubmitCommandList();
 
+	void Present();
+	void MoveToNextFrame();
+
 
 private:
 	D3D12Params m_D3DParams;

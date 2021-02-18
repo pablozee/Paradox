@@ -32,7 +32,7 @@ void Graphics::Init(HWND hwnd)
 	ResetCommandList();
 
 	CreateDescriptorHeaps();
-
+	CreateBackBufferRtv();
 	CreateVertexBuffer(model);
 	CreateIndexBuffer(model);
 
@@ -68,6 +68,9 @@ void Graphics::Update()
 void Graphics::Render()
 {
 	BuildCommandList();
+	Present();
+	MoveToNextFrame();
+	ResetCommandList();
 }
 
 void Graphics::Shutdown()
@@ -1255,4 +1258,39 @@ void Graphics::SubmitCommandList()
 	m_D3DObjects.commandQueue->ExecuteCommandLists(1, &pGraphicsList);
 	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
 	m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, m_D3DValues.fenceValues[m_D3DValues.frameIndex]);
+}
+
+void Graphics::Present()
+{
+	HRESULT hr = m_D3DObjects.swapChain->Present(m_D3DParams.vsync, 0);
+	if (FAILED(hr))
+	{
+		hr = m_D3DObjects.device->GetDeviceRemovedReason();
+		Helpers::Validate(hr, L"Failed to present!");
+	}
+}
+
+
+// Prepare to render the next frame
+void Graphics::MoveToNextFrame()
+{
+	// Schedule a Signal command in the queue
+	const UINT64 currentFenceValue = m_D3DValues.fenceValues[m_D3DValues.frameIndex];
+	HRESULT hr = m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, currentFenceValue);
+	Helpers::Validate(hr, L"Failed to signal the command queue!");
+
+	// Update the frame index
+	m_D3DValues.frameIndex = m_D3DObjects.swapChain->GetCurrentBackBufferIndex();
+
+	// If the next frame is not ready to be rendered yet, wait until it is
+	if (m_D3DObjects.fence->GetCompletedValue() < m_D3DValues.fenceValues[m_D3DValues.frameIndex])
+	{
+		hr = m_D3DObjects.fence->SetEventOnCompletion(m_D3DValues.fenceValues[m_D3DValues.frameIndex], m_D3DObjects.fenceEvent);
+		Helpers::Validate(hr, L"Failed to set fence value!");
+
+		WaitForSingleObjectEx(m_D3DObjects.fenceEvent, INFINITE, FALSE);
+	}
+
+	// Set the fence value for the next frame
+	m_D3DValues.fenceValues[m_D3DValues.frameIndex] = currentFenceValue + 1;
 }
