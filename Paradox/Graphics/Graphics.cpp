@@ -124,9 +124,9 @@ void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
 
 
 	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
-	for (const auto& shape : shapes)
+	for (const auto &shape : shapes)
 	{
-		for (const auto& index : shape.mesh.indices)
+		for (const auto &index : shape.mesh.indices)
 		{
 			Vertex vertex = {};
 			vertex.position =
@@ -749,7 +749,7 @@ void Graphics::CreateDescriptorHeaps(const Model& model)
 	vertexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	vertexSrvDesc.Buffer.StructureByteStride = 0;
 	vertexSrvDesc.Buffer.FirstElement = 0;
-	vertexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model.vertices.size()) * sizeof(UINT)) / sizeof(float);
+	vertexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model.vertices.size()) * sizeof(Vertex)) / sizeof(float);
 	vertexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	handle.ptr += handleIncrement;
@@ -1152,16 +1152,16 @@ void Graphics::UpdateViewCB()
 	m_D3DResources.eyeAngle.x += rotationSpeed;
 
 /*
-#if _DEBUG
 	float x = 2.f * cosf(m_D3DResources.eyeAngle.x);
 	float y = 0.f;
 	float z = 2.25f + 2.f * sinf(m_D3DResources.eyeAngle.x);
 
 	focus = XMFLOAT3(0.f, 0.f, 0.f);
+#if _DEBUG
 #else
 #endif
-*/
 
+*/
 	float x = 8.f * cosf(m_D3DResources.eyeAngle.x);
 	float y = 1.5f + 1.5f * cosf(m_D3DResources.eyeAngle.x);
 	float z = 8.f + 2.25f * sinf(m_D3DResources.eyeAngle.x);
