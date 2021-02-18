@@ -119,7 +119,7 @@ struct D3D12Resources
 
 	float						translationOffset = 0;
 	float						rotationOffset = 0;
-	XMFLOAT3					eyeAngle;
+	XMFLOAT3					eyeAngle{ 0.f, 0.f, 0.f };
 	XMFLOAT3					eyePosition;
 };
 

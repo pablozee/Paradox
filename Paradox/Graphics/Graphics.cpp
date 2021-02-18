@@ -1151,6 +1151,7 @@ void Graphics::UpdateViewCB()
 
 	m_D3DResources.eyeAngle.x += rotationSpeed;
 
+/*
 #if _DEBUG
 	float x = 2.f * cosf(m_D3DResources.eyeAngle.x);
 	float y = 0.f;
@@ -1158,12 +1159,14 @@ void Graphics::UpdateViewCB()
 
 	focus = XMFLOAT3(0.f, 0.f, 0.f);
 #else
+#endif
+*/
+
 	float x = 8.f * cosf(m_D3DResources.eyeAngle.x);
 	float y = 1.5f + 1.5f * cosf(m_D3DResources.eyeAngle.x);
 	float z = 8.f + 2.25f * sinf(m_D3DResources.eyeAngle.x);
 
 	focus = XMFLOAT3(0.f, 1.75f, 0.f);
-#endif
 
 	eye = XMFLOAT3(x, y, z);
 	up = XMFLOAT3(0.f, 1.f, 0.f);
