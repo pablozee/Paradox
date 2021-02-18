@@ -47,20 +47,8 @@ void Graphics::Init(HWND hwnd)
 
 	CreateDescriptorHeaps(model);
 	CreateRayGenProgram();
-	if (true)
-	{
-		m_DXRObjects.rgs.blob->GetBufferPointer();
-	}
 	CreateMissProgram();
-	if (true)
-	{
-		m_DXRObjects.rgs.blob->GetBufferPointer();
-	}
 	CreateClosestHitProgram();
-	if (true)
-	{
-		m_DXRObjects.rgs.blob->GetBufferPointer();
-	}
 	CreatePipelineStateObject();
 	CreateShaderTable();
 
@@ -75,6 +63,11 @@ void Graphics::Init(HWND hwnd)
 void Graphics::Update()
 {
 	UpdateViewCB();
+}
+
+void Graphics::Render()
+{
+	BuildCommandList();
 }
 
 void Graphics::Shutdown()
@@ -1105,8 +1098,8 @@ void Graphics::CreateShaderTable()
 #endif
 
 	// Map the buffer
-	uint8_t* pData = NULL;
-	HRESULT hr = m_DXRObjects.shaderTable->Map(0, nullptr, (void**)pData);
+	uint8_t* pData = 0;
+	HRESULT hr = m_DXRObjects.shaderTable->Map(0, nullptr, (void**)&pData);
 	Helpers::Validate(hr, L"Failed to map shader table!");
 
 	// Shader Record 0 - Ray Generation program and local root parameter data (descriptor table with constant buffer and index buffer / vertex buffer pointers)
@@ -1184,6 +1177,82 @@ void Graphics::UpdateViewCB()
 	m_D3DResources.viewCBData.viewOriginAndTanHalfFovY = XMFLOAT4(eye.x, eye.y, eye.z, tanf(fov * 0.5f));
 	m_D3DResources.viewCBData.resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
 	memcpy(m_D3DResources.viewCBStart, &m_D3DResources.viewCBData, sizeof(m_D3DResources.viewCBData));
+}
 
+void Graphics::BuildCommandList()
+{
+	D3D12_RESOURCE_BARRIER OutputBarriers[2] = {};
+	D3D12_RESOURCE_BARRIER CounterBarriers[2] = {};
+	D3D12_RESOURCE_BARRIER UAVBarriers[3] = {};
 
+	// Transition the back buffer to a copy destination
+	OutputBarriers[0].Transition.pResource = m_D3DObjects.backBuffer[m_D3DValues.frameIndex];
+	OutputBarriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	OutputBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+	OutputBarriers[0].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+	// Transition the DXR Output Buffer to a copy source
+	OutputBarriers[1].Transition.pResource = m_D3DResources.DXROutputBuffer;
+	OutputBarriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
+	OutputBarriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+	OutputBarriers[1].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+	// Wait for the transitions to complete
+	m_D3DObjects.commandList->ResourceBarrier(2, OutputBarriers);
+
+	// Set the UAV/SRV/CBV and sampler heaps
+	ID3D12DescriptorHeap* ppHeaps[] = { m_D3DResources.descriptorHeap };
+	m_D3DObjects.commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+
+	// Dispatch Rays
+	D3D12_DISPATCH_RAYS_DESC desc = {};
+	desc.RayGenerationShaderRecord.StartAddress = m_DXRObjects.shaderTable->GetGPUVirtualAddress();
+	desc.RayGenerationShaderRecord.SizeInBytes = m_DXRObjects.shaderTableRecordSize;
+
+	desc.MissShaderTable.StartAddress = m_DXRObjects.shaderTable->GetGPUVirtualAddress() + m_DXRObjects.shaderTableRecordSize;
+	desc.MissShaderTable.SizeInBytes = m_DXRObjects.shaderTableRecordSize;
+	desc.MissShaderTable.StrideInBytes = m_DXRObjects.shaderTableRecordSize;
+
+	desc.HitGroupTable.StartAddress = m_DXRObjects.shaderTable->GetGPUVirtualAddress() + (2 * m_DXRObjects.shaderTableRecordSize);
+	desc.HitGroupTable.SizeInBytes = m_DXRObjects.shaderTableRecordSize;
+	desc.HitGroupTable.StrideInBytes = m_DXRObjects.shaderTableRecordSize;
+
+	desc.Width = m_D3DParams.width;
+	desc.Height = m_D3DParams.height;
+	desc.Depth = 1;
+
+	m_D3DObjects.commandList->SetPipelineState1(m_DXRObjects.rtpso);
+	m_D3DObjects.commandList->DispatchRays(&desc);
+
+	// Transition DXR output to a copy source
+	OutputBarriers[1].Transition.pResource = m_D3DResources.DXROutputBuffer;
+	OutputBarriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+	OutputBarriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
+
+	// Wait for the transitions to complete
+	m_D3DObjects.commandList->ResourceBarrier(1, &OutputBarriers[1]);
+
+	// Copy the DXR Output Buffer to the back buffer
+	m_D3DObjects.commandList->CopyResource(m_D3DObjects.backBuffer[m_D3DValues.frameIndex], m_D3DResources.DXROutputBuffer);
+
+	// Transition back buffer to present
+	OutputBarriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	OutputBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
+	// Wait for transitions to complete
+	m_D3DObjects.commandList->ResourceBarrier(1, &OutputBarriers[0]);
+
+	// Submit the command list and wait for the GPU to idle
+	SubmitCommandList();
+	WaitForGPU();
+}
+
+void Graphics::SubmitCommandList()
+{
+	m_D3DObjects.commandList->Close();
+
+	ID3D12CommandList* pGraphicsList = { m_D3DObjects.commandList };
+	m_D3DObjects.commandQueue->ExecuteCommandLists(1, &pGraphicsList);
+	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
+	m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, m_D3DValues.fenceValues[m_D3DValues.frameIndex]);
 }

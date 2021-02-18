@@ -11,6 +11,7 @@ public:
 
 	void Init(HWND hwnd);
 	void Update();
+	void Render();
 	void Shutdown();
 
 private:
@@ -58,6 +59,9 @@ private:
 	void WaitForGPU();
 
 	void UpdateViewCB();
+
+	void BuildCommandList();
+	void SubmitCommandList();
 
 
 private:
