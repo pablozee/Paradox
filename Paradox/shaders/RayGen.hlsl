@@ -19,7 +19,7 @@ void RayGen()
 
 	// Trace the ray
 	HitInfo payload;
-	payload.ShaderColourAndHitT = float4(0.f, 0.f, 0.f, 0.f);
+	payload.shadedColourAndHitT = float4(0.f, 0.f, 0.f, 0.f);
 
 	TraceRay(
 		SceneBVH,
@@ -31,5 +31,5 @@ void RayGen()
 		ray,
 		payload);
 
-	RTOutput[LaunchIndex.xy] = float4(payload.ShadedColourAndHitT.rgb, 1.f);
+	RTOutput[LaunchIndex.xy] = float4(payload.shadedColourAndHitT.rgb, 1.f);
 }

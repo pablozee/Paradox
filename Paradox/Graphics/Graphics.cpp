@@ -47,9 +47,20 @@ void Graphics::Init(HWND hwnd)
 
 	CreateDescriptorHeaps(model);
 	CreateRayGenProgram();
+	if (true)
+	{
+		m_DXRObjects.rgs.blob->GetBufferPointer();
+	}
 	CreateMissProgram();
+	if (true)
+	{
+		m_DXRObjects.rgs.blob->GetBufferPointer();
+	}
 	CreateClosestHitProgram();
-
+	if (true)
+	{
+		m_DXRObjects.rgs.blob->GetBufferPointer();
+	}
 	CreatePipelineStateObject();
 	CreateShaderTable();
 
@@ -59,6 +70,11 @@ void Graphics::Init(HWND hwnd)
 
 	WaitForGPU();
 	ResetCommandList();
+}
+
+void Graphics::Update()
+{
+	UpdateViewCB();
 }
 
 void Graphics::Shutdown()
@@ -477,7 +493,7 @@ void Graphics::UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcRe
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Transition.pResource = destResource;
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
 	m_D3DObjects.commandList->ResourceBarrier(1, &barrier);
@@ -567,7 +583,7 @@ void Graphics::CreateBottomLevelAS()
 	buildDesc.ScratchAccelerationStructureData = m_DXRObjects.BLAS.pSratch->GetGPUVirtualAddress();
 	buildDesc.DestAccelerationStructureData = m_DXRObjects.BLAS.pResult->GetGPUVirtualAddress();
 
-	m_D3DObjects.commandList->BuildRaytracingAccelerationStructure(&buildDesc, 1u, nullptr);
+	m_D3DObjects.commandList->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
 
 	D3D12_RESOURCE_BARRIER uavBarrier;
 	uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
@@ -752,7 +768,7 @@ void Graphics::CreateDescriptorHeaps(const Model& model)
 	textureSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	handle.ptr += handleIncrement;
-	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.materialCB, &textureSrvDesc, handle);
+	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.texture, &textureSrvDesc, handle);
 }
 
 ID3D12RootSignature* Graphics::CreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& desc)
@@ -827,7 +843,7 @@ void Graphics::CompileShader(D3D12ShaderInfo& info, IDxcBlob** blob)
 	Helpers::Validate(hr, L"Failed to get shader blob result!");
 }
 
-void Graphics::CompileShader(RtProgram program)
+void Graphics::CompileShader(RtProgram &program)
 {
 	CompileShader(program.info, &program.blob);
 	program.SetBytecode();
@@ -1007,6 +1023,21 @@ void Graphics::CreatePipelineStateObject()
 
 	subobjects[index++] = rayGenRootSigObject;
 
+	// Create a list of the shader export names that use the root signature
+	const WCHAR* rootSigExports[] = { L"RayGen_12", L"HitGroup", L"Miss_5" };
+
+	// Add a state subobject for the association between the RayGen shader and the local root signature
+	D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION rayGenShaderRootSigAssociation = {};
+	rayGenShaderRootSigAssociation.NumExports = _countof(rootSigExports);
+	rayGenShaderRootSigAssociation.pExports = rootSigExports;
+	rayGenShaderRootSigAssociation.pSubobjectToAssociate = &subobjects[(index - 1)];
+
+	D3D12_STATE_SUBOBJECT rayGenShaderRootSigAssociationObject = {};
+	rayGenShaderRootSigAssociationObject.Type = D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
+	rayGenShaderRootSigAssociationObject.pDesc = &rayGenShaderRootSigAssociation;
+
+	subobjects[index++] = rayGenShaderRootSigAssociationObject;
+
 	D3D12_STATE_SUBOBJECT globalRootSig = {};
 	globalRootSig.Type = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
 	globalRootSig.pDesc = &m_DXRObjects.miss.pRootSignature;
@@ -1074,7 +1105,7 @@ void Graphics::CreateShaderTable()
 #endif
 
 	// Map the buffer
-	uint8_t* pData = nullptr;
+	uint8_t* pData = NULL;
 	HRESULT hr = m_DXRObjects.shaderTable->Map(0, nullptr, (void**)pData);
 	Helpers::Validate(hr, L"Failed to map shader table!");
 
@@ -1113,4 +1144,46 @@ void Graphics::WaitForGPU()
 
 	// Increment the fence value for the current frame
 	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
+}
+
+void Graphics::UpdateViewCB()
+{
+	const float rotationSpeed = 0.005f;
+	XMMATRIX view, invView;
+	XMFLOAT3 eye, focus, up;
+	float aspect, fov;
+
+	m_D3DResources.eyeAngle.x += rotationSpeed;
+
+#if _DEBUG
+	float x = 2.f * cosf(m_D3DResources.eyeAngle.x);
+	float y = 0.f;
+	float z = 2.25f + 2.f * sinf(m_D3DResources.eyeAngle.x);
+
+	focus = XMFLOAT3(0.f, 0.f, 0.f);
+#else
+	float x = 8.f * cosf(m_D3DResources.eyeAngle.x);
+	float y = 1.5f + 1.5f * cosf(m_D3DResources.eyeAngle.x);
+	float z = 8.f + 2.25f * sinf(m_D3DResources.eyeAngle.x);
+
+	focus = XMFLOAT3(0.f, 1.75f, 0.f);
+#endif
+
+	eye = XMFLOAT3(x, y, z);
+	up = XMFLOAT3(0.f, 1.f, 0.f);
+
+	aspect = (float)m_D3DParams.width / (float)m_D3DParams.height;
+	fov = 65.f * (XM_PI / 180.f);
+
+	m_D3DResources.rotationOffset += rotationSpeed;
+
+	view = DirectX::XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&focus), XMLoadFloat3(&up));
+	invView = DirectX::XMMatrixInverse(NULL, view);
+
+	m_D3DResources.viewCBData.view = DirectX::XMMatrixTranspose(invView);
+	m_D3DResources.viewCBData.viewOriginAndTanHalfFovY = XMFLOAT4(eye.x, eye.y, eye.z, tanf(fov * 0.5f));
+	m_D3DResources.viewCBData.resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
+	memcpy(m_D3DResources.viewCBStart, &m_D3DResources.viewCBData, sizeof(m_D3DResources.viewCBData));
+
+
 }

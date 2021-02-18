@@ -116,6 +116,11 @@ struct D3D12Resources
 	ID3D12Resource*				DXROutputBuffer;
 
 	ID3D12DescriptorHeap*		descriptorHeap;
+
+	float						translationOffset = 0;
+	float						rotationOffset = 0;
+	XMFLOAT3					eyeAngle;
+	XMFLOAT3					eyePosition;
 };
 
 struct AccelerationStructureBuffer
@@ -128,8 +133,8 @@ struct AccelerationStructureBuffer
 struct RtProgram
 {
 	D3D12ShaderInfo			info = {};
-	IDxcBlob* blob = nullptr;
-	ID3D12RootSignature* pRootSignature = nullptr;
+	IDxcBlob*				blob = nullptr;
+	ID3D12RootSignature*	pRootSignature = nullptr;
 
 	D3D12_DXIL_LIBRARY_DESC	dxilLibDesc;
 	D3D12_EXPORT_DESC		exportDesc;
