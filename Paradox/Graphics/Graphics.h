@@ -66,6 +66,10 @@ private:
 	void Present();
 	void MoveToNextFrame();
 
+	void DestroyDXRObjects();
+	void DestroyD3D12Resources();
+	void DestroyShaders();
+	void DestroyD3D12Objects();
 
 private:
 	D3D12Params m_D3DParams;

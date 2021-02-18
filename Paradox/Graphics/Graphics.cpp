@@ -75,7 +75,13 @@ void Graphics::Render()
 
 void Graphics::Shutdown()
 {
+	WaitForGPU();
+	CloseHandle(m_D3DObjects.fenceEvent);
 
+	DestroyDXRObjects();
+	DestroyD3D12Resources();
+	DestroyShaders();
+	DestroyD3D12Objects();
 }
 
 namespace std
@@ -1157,11 +1163,8 @@ void Graphics::UpdateViewCB()
 	float z = 2.25f + 2.f * sinf(m_D3DResources.eyeAngle.x);
 
 	focus = XMFLOAT3(0.f, 0.f, 0.f);
-#if _DEBUG
-#else
-#endif
-
 */
+
 	float x = 8.f * cosf(m_D3DResources.eyeAngle.x);
 	float y = 1.5f + 1.5f * cosf(m_D3DResources.eyeAngle.x);
 	float z = 8.f + 2.25f * sinf(m_D3DResources.eyeAngle.x);
@@ -1296,4 +1299,61 @@ void Graphics::MoveToNextFrame()
 
 	// Set the fence value for the next frame
 	m_D3DValues.fenceValues[m_D3DValues.frameIndex] = currentFenceValue + 1;
+}
+
+void Graphics::DestroyDXRObjects()
+{
+	SAFE_RELEASE(m_DXRObjects.TLAS.pSratch);
+	SAFE_RELEASE(m_DXRObjects.TLAS.pResult);
+	SAFE_RELEASE(m_DXRObjects.TLAS.pInstanceDesc);
+	SAFE_RELEASE(m_DXRObjects.BLAS.pSratch);
+	SAFE_RELEASE(m_DXRObjects.BLAS.pResult);
+	SAFE_RELEASE(m_DXRObjects.BLAS.pInstanceDesc);
+	SAFE_RELEASE(m_DXRObjects.shaderTable);
+	SAFE_RELEASE(m_DXRObjects.rgs.blob);
+	SAFE_RELEASE(m_DXRObjects.rgs.pRootSignature);
+	SAFE_RELEASE(m_DXRObjects.miss.blob);
+	SAFE_RELEASE(m_DXRObjects.hit.chs.blob);
+	SAFE_RELEASE(m_DXRObjects.rtpso);
+	SAFE_RELEASE(m_DXRObjects.rtpsoInfo);
+}
+
+void Graphics::DestroyD3D12Resources()
+{
+	if (m_D3DResources.viewCB) m_D3DResources.viewCB->Unmap(0, nullptr);
+	if (m_D3DResources.viewCBStart) m_D3DResources.viewCBStart = nullptr;
+	if (m_D3DResources.materialCB) m_D3DResources.materialCB->Unmap(0, nullptr);
+	if (m_D3DResources.materialCBStart) m_D3DResources.materialCBStart = nullptr;
+
+	SAFE_RELEASE(m_D3DResources.DXROutputBuffer);
+	SAFE_RELEASE(m_D3DResources.vertexBuffer);
+	SAFE_RELEASE(m_D3DResources.indexBuffer);
+	SAFE_RELEASE(m_D3DResources.viewCB);
+	SAFE_RELEASE(m_D3DResources.materialCB);
+	SAFE_RELEASE(m_D3DResources.rtvHeap);
+	SAFE_RELEASE(m_D3DResources.descriptorHeap);
+	SAFE_RELEASE(m_D3DResources.texture);
+	SAFE_RELEASE(m_D3DResources.textureUploadResource);
+};
+
+void Graphics::DestroyShaders()
+{
+	SAFE_RELEASE(m_ShaderCompilerInfo.compiler);
+	SAFE_RELEASE(m_ShaderCompilerInfo.library);
+	m_ShaderCompilerInfo.DxcDllHelper.Cleanup();
+}
+
+void Graphics::DestroyD3D12Objects()
+{
+	SAFE_RELEASE(m_D3DObjects.fence);
+	SAFE_RELEASE(m_D3DObjects.backBuffer[1]);
+	SAFE_RELEASE(m_D3DObjects.backBuffer[0]);
+	SAFE_RELEASE(m_D3DObjects.swapChain);
+	SAFE_RELEASE(m_D3DObjects.commandAllocators[0]);
+	SAFE_RELEASE(m_D3DObjects.commandAllocators[1]);
+	SAFE_RELEASE(m_D3DObjects.commandQueue);
+	SAFE_RELEASE(m_D3DObjects.commandList);
+	SAFE_RELEASE(m_D3DObjects.device);
+	SAFE_RELEASE(m_D3DObjects.adapter);
+	SAFE_RELEASE(m_D3DObjects.factory);
 }

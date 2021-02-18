@@ -30,7 +30,7 @@ struct ViewCB
 {
 	XMMATRIX view = XMMatrixIdentity();
 	XMFLOAT4 viewOriginAndTanHalfFovY = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-	XMFLOAT2 resolution = XMFLOAT2(1920, 1080);
+	XMFLOAT2 resolution = XMFLOAT2(1280, 960);
 };
 
 struct MaterialCB
