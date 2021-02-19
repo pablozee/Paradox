@@ -43,6 +43,7 @@ private:
 
 	void CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size);
 	void CreateSceneCB();
+	void SeedRandomVector(XMFLOAT3 seed);
 	void CreateMaterialConstantBuffer(const Material& material);
 
 	void CreateBottomLevelAS();
@@ -92,4 +93,7 @@ private:
 	XMVECTOR m_Eye = m_EyeInit;
 	XMVECTOR m_Focus = m_FocusInit;
 	XMVECTOR m_Up = m_UpInit;
+	XMFLOAT3 m_RandomVectorSeed0;
+	XMFLOAT3 m_RandomVectorSeed1;
+	int m_Samples = 8;
 };

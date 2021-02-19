@@ -39,6 +39,8 @@ void Graphics::Init(HWND hwnd)
 	CreateTexture(m_Material);
 
 	CreateSceneCB();
+	SeedRandomVector(m_RandomVectorSeed0);
+	SeedRandomVector(m_RandomVectorSeed1);
 	CreateMaterialConstantBuffer(m_Material);
 
 	CreateBottomLevelAS();
@@ -1168,6 +1170,9 @@ void Graphics::UpdateSceneCB()
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(fov * 0.5f));
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].eyePosition = floatEye;
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector0 = m_RandomVectorSeed0;
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector1 = m_RandomVectorSeed1;
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].samples = m_Samples;
 	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
 }
 
@@ -1361,4 +1366,15 @@ void Graphics::ResetView()
 	m_Eye = m_EyeInit;
 	m_Focus = m_FocusInit;
 	m_Up = m_UpInit;
+}
+
+void Graphics::SeedRandomVector(XMFLOAT3 randomVector)
+{
+	float x = rand() % 100;
+	srand(time(NULL));
+	float y = rand() % 100;
+	srand(time(NULL));
+	float z = rand() % 100;
+	
+	randomVector = XMFLOAT3{ x, y, z };
 }

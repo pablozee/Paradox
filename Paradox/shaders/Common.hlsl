@@ -12,11 +12,15 @@ struct Attributes
 
 // Constant Buffers
 
-cbuffer ViewCB : register(b0)
+cbuffer SceneCB : register(b0)
 {
 	matrix view;
 	float4 viewOriginAndTanHalfFovY;
 	float2 resolution;
+	float3 eyePosition;
+	float3 randomSeedVector0;
+	float3 randomSeedVector1;
+	int samples;
 }
 
 cbuffer MaterialCB : register(b1)
@@ -67,4 +71,10 @@ VertexAttributes GetVertexAttributes(uint triangleIndex, float3 barycentrics)
 	}
 
 	return v;
+}
+
+
+float RandomFloat()
+{
+	return frac(sin(dot(normalize(randomSeedVector0), normalize(randomSeedVector1)))) * 46146.1461f;
 }
