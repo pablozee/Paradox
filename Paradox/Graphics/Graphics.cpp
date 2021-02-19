@@ -128,6 +128,17 @@ void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
 	}
 
 	material.name = materials[0].name;
+	material.ambient = XMFLOAT3(materials[0].ambient);
+	material.diffuse = XMFLOAT3(materials[0].diffuse);
+	material.specular = XMFLOAT3(materials[0].specular);
+	material.transmittance = XMFLOAT3(materials[0].transmittance);
+	material.emission = XMFLOAT3(materials[0].emission);
+	material.shininess = materials[0].shininess;
+	material.ior = materials[0].ior;
+	material.dissolve = materials[0].dissolve;
+	material.roughness = materials[0].roughness;
+	material.metallic = materials[0].metallic;
+	material.sheen = materials[0].sheen;
 	material.texturePath = materials[0].diffuse_texname;
 
 

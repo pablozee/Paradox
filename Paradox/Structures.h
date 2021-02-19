@@ -66,6 +66,18 @@ struct Model
 struct Material
 {
 	std::string name = "defaultMaterial";
+	bool useTex = true;
+	XMFLOAT3 ambient;
+	XMFLOAT3 diffuse;
+	XMFLOAT3 specular;
+	XMFLOAT3 transmittance;
+	XMFLOAT3 emission;
+	float shininess;
+	float ior;
+	float dissolve;
+	float roughness;
+	float metallic;
+	float sheen;
 	std::string texturePath = "";
 	float textureResolution = 512;
 };
