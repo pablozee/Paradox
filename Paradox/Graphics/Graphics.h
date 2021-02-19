@@ -80,4 +80,5 @@ private:
 	D3D12Resources m_D3DResources;
 	Model model;
 	Material material;
+	int m_FrameCount = 2;
 };

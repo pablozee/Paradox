@@ -106,7 +106,7 @@ struct D3D12Resources
 	ID3D12Resource*				textureUploadResource = nullptr;
 
 	ID3D12Resource*				sceneCB = nullptr;
-	SceneCB						sceneCBData;
+	SceneCB						sceneCBData[2];
 	UINT8*						sceneCBStart = nullptr;
 
 	ID3D12Resource*				materialCB = nullptr;

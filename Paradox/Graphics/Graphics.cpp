@@ -503,7 +503,8 @@ void Graphics::UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcRe
 
 void Graphics::CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size)
 {
-	D3D12BufferCreateInfo bufferInfo((size + 255) & ~255, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	size_t cBufferSize = ((size + 255) & ~255) * m_FrameCount;
+	D3D12BufferCreateInfo bufferInfo(cBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
 	CreateBuffer(bufferInfo, buffer);
 }
 
@@ -518,7 +519,7 @@ void Graphics::CreateSceneCB()
 	HRESULT hr = m_D3DResources.sceneCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.sceneCBStart));
 	Helpers::Validate(hr, L"Failed to map view constant buffer");
 
-	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
+	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData[m_D3DValues.frameIndex], sizeof(m_D3DResources.sceneCBData[m_D3DValues.frameIndex]));
 }
 
 void Graphics::CreateMaterialConstantBuffer(const Material& material)
@@ -704,9 +705,9 @@ void Graphics::CreateDescriptorHeaps(const Model& model)
 	m_D3DResources.descriptorHeap->SetName(L"DXR Descriptor Heap");
 #endif
 
-	// Create View Constant Buffer CBV
+	// Create Scene Constant Buffer CBV
 	D3D12_CONSTANT_BUFFER_VIEW_DESC sceneCBDesc = {};
-	sceneCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.sceneCBData));
+	sceneCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.sceneCBData) * 2);
 	sceneCBDesc.BufferLocation = m_D3DResources.sceneCB->GetGPUVirtualAddress();
 
 	m_D3DObjects.device->CreateConstantBufferView(&sceneCBDesc, handle);
@@ -1182,9 +1183,9 @@ void Graphics::UpdateSceneCB()
 	view = DirectX::XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&focus), XMLoadFloat3(&up));
 	invView = DirectX::XMMatrixInverse(NULL, view);
 
-	m_D3DResources.sceneCBData.view = DirectX::XMMatrixTranspose(invView);
-	m_D3DResources.sceneCBData.viewOriginAndTanHalfFovY = XMFLOAT4(eye.x, eye.y, eye.z, tanf(fov * 0.5f));
-	m_D3DResources.sceneCBData.resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].view = DirectX::XMMatrixTranspose(invView);
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].viewOriginAndTanHalfFovY = XMFLOAT4(eye.x, eye.y, eye.z, tanf(fov * 0.5f));
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
 	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
 }
 
