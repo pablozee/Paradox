@@ -67,11 +67,11 @@ struct Material
 {
 	std::string name = "defaultMaterial";
 	bool useTex = true;
-	XMFLOAT3 ambient;
-	XMFLOAT3 diffuse;
-	XMFLOAT3 specular;
-	XMFLOAT3 transmittance;
-	XMFLOAT3 emission;
+	XMFLOAT4 ambient;
+	XMFLOAT4 diffuse;
+	XMFLOAT4 specular;
+	XMFLOAT4 transmittance;
+	XMFLOAT4 emission;
 	float shininess;
 	float ior;
 	float dissolve;

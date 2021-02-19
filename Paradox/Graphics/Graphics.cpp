@@ -128,11 +128,11 @@ void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
 	}
 
 	material.name = materials[0].name;
-	material.ambient = XMFLOAT3(materials[0].ambient);
-	material.diffuse = XMFLOAT3(materials[0].diffuse);
-	material.specular = XMFLOAT3(materials[0].specular);
-	material.transmittance = XMFLOAT3(materials[0].transmittance);
-	material.emission = XMFLOAT3(materials[0].emission);
+	material.ambient = XMFLOAT4(materials[0].ambient[0], materials[0].ambient[1], materials[0].ambient[2], 1.f);
+	material.diffuse = XMFLOAT4(materials[0].diffuse[0], materials[0].diffuse[1], materials[0].diffuse[2], 1.f);
+	material.specular = XMFLOAT4(materials[0].specular[0], materials[0].specular[1], materials[0].specular[2], 1.f);
+	material.transmittance = XMFLOAT4(materials[0].transmittance[0], materials[0].transmittance[1], materials[0].transmittance[2], 1.f);
+	material.emission = XMFLOAT4(materials[0].emission[0], materials[0].emission[1], materials[0].emission[2], 1.f);
 	material.shininess = materials[0].shininess;
 	material.ior = materials[0].ior;
 	material.dissolve = materials[0].dissolve;
@@ -543,6 +543,17 @@ void Graphics::CreateMaterialConstantBuffer(const Material& material)
 	m_D3DResources.materialCB->SetName(L"Material Constant Buffer");
 #endif
 
+	m_D3DResources.materialCBData.ambient = material.ambient;
+	m_D3DResources.materialCBData.diffuse = material.diffuse;
+	m_D3DResources.materialCBData.specular = material.specular;
+	m_D3DResources.materialCBData.transmittance = material.transmittance;
+	m_D3DResources.materialCBData.emission = material.emission;
+	m_D3DResources.materialCBData.shininess = material.shininess;
+	m_D3DResources.materialCBData.ior = material.ior;
+	m_D3DResources.materialCBData.dissolve = material.dissolve;
+	m_D3DResources.materialCBData.roughness = material.roughness;
+	m_D3DResources.materialCBData.metallic = material.metallic;
+	m_D3DResources.materialCBData.sheen = material.sheen;
 	m_D3DResources.materialCBData.resolution = XMFLOAT4(material.textureResolution, 0.0f, 0.0f, 0.0f);
 
 	HRESULT hr = m_D3DResources.materialCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.materialCBStart));

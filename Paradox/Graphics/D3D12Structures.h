@@ -39,7 +39,19 @@ struct SceneCB
 
 struct MaterialCB
 {
+	XMFLOAT4 ambient;
+	XMFLOAT4 diffuse;
+	XMFLOAT4 specular;
+	XMFLOAT4 transmittance;
+	XMFLOAT4 emission;
 	XMFLOAT4 resolution;
+	float shininess;
+	float ior;
+	float dissolve;
+	float roughness;
+	float metallic;
+	float sheen;
+	bool useTex;
 };
 
 struct D3D12Values
