@@ -20,7 +20,7 @@ Graphics::~Graphics()
 
 void Graphics::Init(HWND hwnd)
 {
-	LoadModel("models/cinema.obj", model, material);
+	LoadModel("models/cinema.obj", m_Model, m_Material);
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -33,19 +33,19 @@ void Graphics::Init(HWND hwnd)
 
 	CreateDescriptorHeaps();
 	CreateBackBufferRtv();
-	CreateVertexBuffer(model);
-	CreateIndexBuffer(model);
+	CreateVertexBuffer(m_Model);
+	CreateIndexBuffer(m_Model);
 
-	CreateTexture(material);
+	CreateTexture(m_Material);
 
 	CreateSceneCB();
-	CreateMaterialConstantBuffer(material);
+	CreateMaterialConstantBuffer(m_Material);
 
 	CreateBottomLevelAS();
 	CreateTopLevelAS();
 	CreateDXROutput();
 
-	CreateDescriptorHeaps(model);
+	CreateDescriptorHeaps(m_Model);
 	CreateRayGenProgram();
 	CreateMissProgram();
 	CreateClosestHitProgram();
@@ -544,10 +544,10 @@ void Graphics::CreateBottomLevelAS()
 	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 	geometryDesc.Triangles.VertexBuffer.StartAddress = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
 	geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_D3DResources.vertexBufferView.StrideInBytes;
-	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(model.vertices.size());
+	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_Model.vertices.size());
 	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 	geometryDesc.Triangles.IndexBuffer = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
-	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(model.indices.size());
+	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_Model.indices.size());
 	geometryDesc.Triangles.IndexFormat = m_D3DResources.indexBufferView.Format;
 	geometryDesc.Triangles.Transform3x4 = 0;
 	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
@@ -1151,41 +1151,23 @@ void Graphics::WaitForGPU()
 
 void Graphics::UpdateSceneCB()
 {
-	const float rotationSpeed = 0.005f;
 	XMMATRIX view, invView;
-	XMFLOAT3 eye, focus, up;
+	
 	float aspect, fov;
-
-	m_D3DResources.eyeAngle.x += rotationSpeed;
-
-/*
-	float x = 2.f * cosf(m_D3DResources.eyeAngle.x);
-	float y = 0.f;
-	float z = 2.25f + 2.f * sinf(m_D3DResources.eyeAngle.x);
-
-	focus = XMFLOAT3(0.f, 0.f, 0.f);
-*/
-
-	float x = 8.f * cosf(m_D3DResources.eyeAngle.x);
-	float y = 1.5f + 1.5f * cosf(m_D3DResources.eyeAngle.x);
-	float z = 8.f + 2.25f * sinf(m_D3DResources.eyeAngle.x);
-
-	focus = XMFLOAT3(0.f, 1.75f, 0.f);
-
-	eye = XMFLOAT3(x, y, z);
-	up = XMFLOAT3(0.f, 1.f, 0.f);
 
 	aspect = (float)m_D3DParams.width / (float)m_D3DParams.height;
 	fov = 65.f * (XM_PI / 180.f);
 
-	m_D3DResources.rotationOffset += rotationSpeed;
-
-	view = DirectX::XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&focus), XMLoadFloat3(&up));
+	view = DirectX::XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
 	invView = DirectX::XMMatrixInverse(NULL, view);
 
+	XMFLOAT3 floatEye;
+	XMStoreFloat3(&floatEye, m_Eye);
+
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].view = DirectX::XMMatrixTranspose(invView);
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].viewOriginAndTanHalfFovY = XMFLOAT4(eye.x, eye.y, eye.z, tanf(fov * 0.5f));
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(fov * 0.5f));
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].eyePosition = floatEye;
 	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
 }
 
@@ -1357,4 +1339,26 @@ void Graphics::DestroyD3D12Objects()
 	SAFE_RELEASE(m_D3DObjects.device);
 	SAFE_RELEASE(m_D3DObjects.adapter);
 	SAFE_RELEASE(m_D3DObjects.factory);
+}
+
+void Graphics::RotateLeft(float amount)
+{
+	XMMATRIX rotationMatrix = XMMatrixRotationAxis(m_Up, XMConvertToRadians(amount));
+	m_Eye = XMVector3TransformCoord(m_Eye, rotationMatrix);
+}
+
+void Graphics::RotateUp(float amount)
+{
+	XMMATRIX rotationMatrix = XMMatrixRotationAxis(XMVector3Normalize(XMVector3Cross(m_Eye, m_Up)), XMConvertToRadians(amount));
+	m_Up = XMVector3TransformCoord(m_Up, rotationMatrix);
+	m_Eye = XMVector3TransformCoord(m_Eye, rotationMatrix); 
+	XMVector3Normalize(m_Up);
+	XMVector3Normalize(m_Eye);
+}
+
+void Graphics::ResetView()
+{
+	m_Eye = m_EyeInit;
+	m_Focus = m_FocusInit;
+	m_Up = m_UpInit;
 }

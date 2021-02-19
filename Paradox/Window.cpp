@@ -194,6 +194,36 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			input.OnKeyPressed(static_cast<unsigned char>(wParam));
 		}
 
+		if (wParam == VK_LEFT)
+		{
+			m_Graphics->RotateLeft(-m_RotationAmount);
+		}
+
+		if (wParam == VK_RIGHT)
+		{
+			m_Graphics->RotateLeft(m_RotationAmount);
+		}
+
+		if (wParam == VK_UP)
+		{
+			m_Graphics->RotateUp(-m_RotationAmount);
+		}
+
+		if (wParam == VK_DOWN)
+		{
+			m_Graphics->RotateUp(m_RotationAmount);
+		}
+
+		if (wParam == VK_OEM_PLUS)
+		{
+			m_RotationAmount++;
+		}
+
+		if (wParam == 0x52)
+		{
+			m_Graphics->ResetView();
+		}
+
 		Window* const p_Wnd = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 		WindowData& data = p_Wnd->m_Data;
 

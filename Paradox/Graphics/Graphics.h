@@ -14,6 +14,11 @@ public:
 	void Render();
 	void Shutdown();
 
+	void RotateLeft(float amount);
+	void RotateUp(float amount);
+
+	void ResetView();
+
 private:
 	void LoadModel(std::string filepath, Model &model, Material &material);
 
@@ -78,7 +83,13 @@ private:
 	D3D12Values m_D3DValues;
 	D3D12ShaderCompilerInfo m_ShaderCompilerInfo;
 	D3D12Resources m_D3DResources;
-	Model model;
-	Material material;
 	int m_FrameCount = 2;
+	Model m_Model;
+	Material m_Material;
+	XMVECTOR m_EyeInit = { 0.f, 0.f, 17.f };
+	XMVECTOR m_FocusInit = { 0.f, 0.f, 0.f };
+	XMVECTOR m_UpInit = { 0.f, 1.f, 0.f };
+	XMVECTOR m_Eye = m_EyeInit;
+	XMVECTOR m_Focus = m_FocusInit;
+	XMVECTOR m_Up = m_UpInit;
 };

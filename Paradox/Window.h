@@ -89,4 +89,6 @@ private:
 	HWND m_Hwnd;
 
 	Graphics* m_Graphics;
+
+	float m_RotationAmount = 5.f;
 };

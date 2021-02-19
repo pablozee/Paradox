@@ -31,6 +31,7 @@ struct SceneCB
 	XMMATRIX view = XMMatrixIdentity();
 	XMFLOAT4 viewOriginAndTanHalfFovY = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	XMFLOAT2 resolution = XMFLOAT2(1280, 960);
+	XMFLOAT3 eyePosition;
 };
 
 struct MaterialCB
@@ -120,7 +121,6 @@ struct D3D12Resources
 	float						translationOffset = 0;
 	float						rotationOffset = 0;
 	XMFLOAT3					eyeAngle{ 0.f, 0.f, 0.f };
-	XMFLOAT3					eyePosition;
 };
 
 struct AccelerationStructureBuffer
