@@ -26,7 +26,7 @@ struct D3D12Params
 	bool vsync = true;
 };
 
-struct ViewCB
+struct SceneCB
 {
 	XMMATRIX view = XMMatrixIdentity();
 	XMFLOAT4 viewOriginAndTanHalfFovY = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -105,9 +105,9 @@ struct D3D12Resources
 	ID3D12Resource*				texture = nullptr;
 	ID3D12Resource*				textureUploadResource = nullptr;
 
-	ID3D12Resource*				viewCB = nullptr;
-	ViewCB						viewCBData;
-	UINT8*						viewCBStart = nullptr;
+	ID3D12Resource*				sceneCB = nullptr;
+	SceneCB						sceneCBData;
+	UINT8*						sceneCBStart = nullptr;
 
 	ID3D12Resource*				materialCB = nullptr;
 	MaterialCB					materialCBData;

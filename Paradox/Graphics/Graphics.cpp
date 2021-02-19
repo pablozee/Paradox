@@ -38,7 +38,7 @@ void Graphics::Init(HWND hwnd)
 
 	CreateTexture(material);
 
-	CreateViewCB();
+	CreateSceneCB();
 	CreateMaterialConstantBuffer(material);
 
 	CreateBottomLevelAS();
@@ -62,7 +62,7 @@ void Graphics::Init(HWND hwnd)
 
 void Graphics::Update()
 {
-	UpdateViewCB();
+	UpdateSceneCB();
 }
 
 void Graphics::Render()
@@ -507,18 +507,18 @@ void Graphics::CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size)
 	CreateBuffer(bufferInfo, buffer);
 }
 
-void Graphics::CreateViewCB()
+void Graphics::CreateSceneCB()
 {
-	CreateConstantBuffer(&m_D3DResources.viewCB, sizeof(ViewCB));
+	CreateConstantBuffer(&m_D3DResources.sceneCB, sizeof(SceneCB));
 
 #if NAME_D3D_RESOURCES
-	m_D3DResources.viewCB->SetName(L"View Constant Buffer");
+	m_D3DResources.sceneCB->SetName(L"View Constant Buffer");
 #endif
 
-	HRESULT hr = m_D3DResources.viewCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.viewCBStart));
+	HRESULT hr = m_D3DResources.sceneCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.sceneCBStart));
 	Helpers::Validate(hr, L"Failed to map view constant buffer");
 
-	memcpy(m_D3DResources.viewCBStart, &m_D3DResources.viewCBData, sizeof(m_D3DResources.viewCBData));
+	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
 }
 
 void Graphics::CreateMaterialConstantBuffer(const Material& material)
@@ -705,18 +705,18 @@ void Graphics::CreateDescriptorHeaps(const Model& model)
 #endif
 
 	// Create View Constant Buffer CBV
-	D3D12_CONSTANT_BUFFER_VIEW_DESC viewCBDesc = {};
-	viewCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.viewCBData));
-	viewCBDesc.BufferLocation = m_D3DResources.viewCB->GetGPUVirtualAddress();
+	D3D12_CONSTANT_BUFFER_VIEW_DESC sceneCBDesc = {};
+	sceneCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.sceneCBData));
+	sceneCBDesc.BufferLocation = m_D3DResources.sceneCB->GetGPUVirtualAddress();
 
-	m_D3DObjects.device->CreateConstantBufferView(&viewCBDesc, handle);
+	m_D3DObjects.device->CreateConstantBufferView(&sceneCBDesc, handle);
 
 	// Create MaterialCB CBV
-	viewCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.materialCBData));
-	viewCBDesc.BufferLocation = m_D3DResources.materialCB->GetGPUVirtualAddress();
+	sceneCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.materialCBData));
+	sceneCBDesc.BufferLocation = m_D3DResources.materialCB->GetGPUVirtualAddress();
 
 	handle.ptr += handleIncrement;
-	m_D3DObjects.device->CreateConstantBufferView(&viewCBDesc, handle);
+	m_D3DObjects.device->CreateConstantBufferView(&sceneCBDesc, handle);
 
 	// Create DXR Output Buffer UAV 
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
@@ -1148,7 +1148,7 @@ void Graphics::WaitForGPU()
 	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
 }
 
-void Graphics::UpdateViewCB()
+void Graphics::UpdateSceneCB()
 {
 	const float rotationSpeed = 0.005f;
 	XMMATRIX view, invView;
@@ -1182,10 +1182,10 @@ void Graphics::UpdateViewCB()
 	view = DirectX::XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&focus), XMLoadFloat3(&up));
 	invView = DirectX::XMMatrixInverse(NULL, view);
 
-	m_D3DResources.viewCBData.view = DirectX::XMMatrixTranspose(invView);
-	m_D3DResources.viewCBData.viewOriginAndTanHalfFovY = XMFLOAT4(eye.x, eye.y, eye.z, tanf(fov * 0.5f));
-	m_D3DResources.viewCBData.resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
-	memcpy(m_D3DResources.viewCBStart, &m_D3DResources.viewCBData, sizeof(m_D3DResources.viewCBData));
+	m_D3DResources.sceneCBData.view = DirectX::XMMatrixTranspose(invView);
+	m_D3DResources.sceneCBData.viewOriginAndTanHalfFovY = XMFLOAT4(eye.x, eye.y, eye.z, tanf(fov * 0.5f));
+	m_D3DResources.sceneCBData.resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
+	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
 }
 
 void Graphics::BuildCommandList()
@@ -1320,15 +1320,15 @@ void Graphics::DestroyDXRObjects()
 
 void Graphics::DestroyD3D12Resources()
 {
-	if (m_D3DResources.viewCB) m_D3DResources.viewCB->Unmap(0, nullptr);
-	if (m_D3DResources.viewCBStart) m_D3DResources.viewCBStart = nullptr;
+	if (m_D3DResources.sceneCB) m_D3DResources.sceneCB->Unmap(0, nullptr);
+	if (m_D3DResources.sceneCBStart) m_D3DResources.sceneCBStart = nullptr;
 	if (m_D3DResources.materialCB) m_D3DResources.materialCB->Unmap(0, nullptr);
 	if (m_D3DResources.materialCBStart) m_D3DResources.materialCBStart = nullptr;
 
 	SAFE_RELEASE(m_D3DResources.DXROutputBuffer);
 	SAFE_RELEASE(m_D3DResources.vertexBuffer);
 	SAFE_RELEASE(m_D3DResources.indexBuffer);
-	SAFE_RELEASE(m_D3DResources.viewCB);
+	SAFE_RELEASE(m_D3DResources.sceneCB);
 	SAFE_RELEASE(m_D3DResources.materialCB);
 	SAFE_RELEASE(m_D3DResources.rtvHeap);
 	SAFE_RELEASE(m_D3DResources.descriptorHeap);
