@@ -31,10 +31,10 @@ struct SceneCB
 	XMMATRIX view = XMMatrixIdentity();
 	XMFLOAT4 viewOriginAndTanHalfFovY = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	XMFLOAT2 resolution = XMFLOAT2(1280, 960);
-	float	 samples;
+	float padding;
 	XMFLOAT3 randomSeedVector0;
+	float padding1;
 	XMFLOAT3 randomSeedVector1;
-	XMFLOAT2 padding;
 };
 
 struct MaterialCB

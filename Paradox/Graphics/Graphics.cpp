@@ -1171,8 +1171,6 @@ void Graphics::UpdateSceneCB()
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector0 = m_RandomVectorSeed0;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector1 = m_RandomVectorSeed1;
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].samples = m_Samples;
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].padding = XMFLOAT2(0.f, 0.f);
 	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
 }
 

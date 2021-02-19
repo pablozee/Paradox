@@ -39,20 +39,10 @@ void RayGen()
 			ray,
 			payload);
 		
-		/*
-		float scale = 1.f / samples;
-
-		float3 payloadCol;
-
-		payloadCol.r = payload.shadedColourAndHitT.r * 0.125f;
-		payloadCol.g = payload.shadedColourAndHitT.g * 0.125f;
-		payloadCol.b = payload.shadedColourAndHitT.b * 0.125f;
-		*/
-
 		sampledColour += payload.shadedColourAndHitT.rgb;
 	}
 	
-	float scale = 1.f / samples;
+	float scale = 1.f / 8.f;
 
 	sampledColour.r = sampledColour.r * scale;
 	sampledColour.g = sampledColour.g * scale;

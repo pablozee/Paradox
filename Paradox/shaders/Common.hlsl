@@ -17,10 +17,10 @@ cbuffer SceneCB : register(b0)
 	matrix view;
 	float4 viewOriginAndTanHalfFovY;
 	float2 resolution;
-	float  samples;
-	float3 randomSeedVector0;
-	float3 randomSeedVector1;
 	float2 padding;
+	float3 randomSeedVector0;
+	float  padding1;
+	float3 randomSeedVector1;
 }
 
 cbuffer MaterialCB : register(b1)
