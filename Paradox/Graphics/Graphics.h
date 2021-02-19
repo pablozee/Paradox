@@ -95,5 +95,5 @@ private:
 	XMVECTOR m_Up = m_UpInit;
 	XMFLOAT3 m_RandomVectorSeed0;
 	XMFLOAT3 m_RandomVectorSeed1;
-	int m_Samples = 8;
+	float m_Samples = 6.f;
 };
