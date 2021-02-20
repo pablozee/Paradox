@@ -51,7 +51,7 @@ struct MaterialCB
 	float roughness;
 	float metallic;
 	float sheen;
-	bool useTex;
+	int useTex;
 };
 
 struct D3D12Values

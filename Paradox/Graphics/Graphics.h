@@ -41,7 +41,7 @@ private:
 	void CreateTexture(Material &material);
 	void UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture);
 
-	void CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size);
+	void CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size, bool perFrame);
 	void CreateSceneCB();
 	void SeedRandomVector(XMFLOAT3 seed);
 	void CreateMaterialConstantBuffer(const Material& material);

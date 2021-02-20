@@ -66,7 +66,7 @@ struct Model
 struct Material
 {
 	std::string name = "defaultMaterial";
-	bool useTex = true;
+	int useTex = 0;
 	XMFLOAT4 ambient;
 	XMFLOAT4 diffuse;
 	XMFLOAT4 specular;

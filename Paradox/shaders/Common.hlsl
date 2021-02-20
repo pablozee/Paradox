@@ -25,7 +25,19 @@ cbuffer SceneCB : register(b0)
 
 cbuffer MaterialCB : register(b1)
 {
+	float4 ambient;
+	float4 diffuse;
+	float4 specular;
+	float4 transmittance;
+	float4 emission;
 	float4 textureResolution;
+	float shininess;
+	float ior;
+	float dissolve;
+	float roughness;
+	float metallic;
+	float sheen;
+	int useTex;
 }
 
 // Resources

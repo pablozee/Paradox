@@ -514,16 +514,17 @@ void Graphics::UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcRe
 	m_D3DObjects.commandList->ResourceBarrier(1, &barrier);
 }
 
-void Graphics::CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size)
+void Graphics::CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size, bool perFrame)
 {
-	size_t cBufferSize = ((size + 255) & ~255) * m_FrameCount;
+	size_t cBufferSize = ((size + 255) & ~255);
+	if (perFrame) cBufferSize *= 2;
 	D3D12BufferCreateInfo bufferInfo(cBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
 	CreateBuffer(bufferInfo, buffer);
 }
 
 void Graphics::CreateSceneCB()
 {
-	CreateConstantBuffer(&m_D3DResources.sceneCB, sizeof(SceneCB));
+	CreateConstantBuffer(&m_D3DResources.sceneCB, sizeof(SceneCB), true);
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.sceneCB->SetName(L"View Constant Buffer");
@@ -537,7 +538,7 @@ void Graphics::CreateSceneCB()
 
 void Graphics::CreateMaterialConstantBuffer(const Material& material)
 {
-	CreateConstantBuffer(&m_D3DResources.materialCB, sizeof(MaterialCB));
+	CreateConstantBuffer(&m_D3DResources.materialCB, sizeof(MaterialCB), false);
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.materialCB->SetName(L"Material Constant Buffer");
@@ -555,11 +556,12 @@ void Graphics::CreateMaterialConstantBuffer(const Material& material)
 	m_D3DResources.materialCBData.metallic = material.metallic;
 	m_D3DResources.materialCBData.sheen = material.sheen;
 	m_D3DResources.materialCBData.resolution = XMFLOAT4(material.textureResolution, 0.0f, 0.0f, 0.0f);
+	m_D3DResources.materialCBData.useTex = 0;
 
 	HRESULT hr = m_D3DResources.materialCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.materialCBStart));
 	Helpers::Validate(hr, L"Failed to map material constant buffer");
 
-	memcpy(m_D3DResources.materialCBStart, &m_D3DResources.materialCBData, sizeof(m_D3DResources.materialCB));
+	memcpy(m_D3DResources.materialCBStart, &m_D3DResources.materialCBData, sizeof(MaterialCB));
 };
 
 void Graphics::CreateBottomLevelAS()
