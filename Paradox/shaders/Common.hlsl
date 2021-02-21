@@ -33,14 +33,14 @@ cbuffer SceneCB : register(b0)
 	matrix			 view;
 	float4			 viewOriginAndTanHalfFovY;
 	float2			 resolution;
-	int				 numDirLights;
+	float			 numDirLights;
+	float			 numPointLights;
 	float3			 randomSeedVector0;
 	float			 padding;
 	float3			 randomSeedVector1;
 	float			 padding1;
 	DirectionalLight directionalLights[10];
 	PointLight		 pointLights[10];
-	int				 numPointLights;
 }
 
 cbuffer MaterialCB : register(b1)

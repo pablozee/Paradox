@@ -1185,7 +1185,7 @@ void Graphics::WaitForGPU()
 void Graphics::UpdateSceneCB()
 {
 	XMMATRIX view, invView;
-	
+
 	float aspect, fov;
 
 	aspect = (float)m_D3DParams.width / (float)m_D3DParams.height;

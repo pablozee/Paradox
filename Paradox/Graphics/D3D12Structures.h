@@ -33,14 +33,14 @@ struct SceneCB
 	XMMATRIX view = XMMatrixIdentity();
 	XMFLOAT4 viewOriginAndTanHalfFovY = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	XMFLOAT2 resolution = XMFLOAT2(1280, 960);
-	int numDirLights;
+	float numDirLights;
+	float numPointLights;
 	XMFLOAT3 randomSeedVector0;
 	float padding;
 	XMFLOAT3 randomSeedVector1;
 	float padding1;
 	DirectionalLight directionalLights[10];
 	PointLight pointLights[10];
-	int numPointLights;
 };
 
 struct MaterialCB
