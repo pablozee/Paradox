@@ -8,6 +8,8 @@
 #include <wrl.h>
 #include <string>
 
+#include "../Structures.h"
+
 using namespace DirectX;
 
 struct D3D12Params
@@ -31,25 +33,29 @@ struct SceneCB
 	XMMATRIX view = XMMatrixIdentity();
 	XMFLOAT4 viewOriginAndTanHalfFovY = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	XMFLOAT2 resolution = XMFLOAT2(1280, 960);
-	float padding;
+	int numDirLights;
 	XMFLOAT3 randomSeedVector0;
-	float padding1;
+	float padding;
 	XMFLOAT3 randomSeedVector1;
+	float padding1;
+	DirectionalLight directionalLights[10];
+	PointLight pointLights[10];
+	int numPointLights;
 };
 
 struct MaterialCB
 {
-	XMFLOAT4 ambient;
-	XMFLOAT4 diffuse;
-	XMFLOAT4 specular;
-	XMFLOAT4 transmittance;
-	XMFLOAT4 emission;
-	XMFLOAT4 resolution;
+	XMFLOAT3 ambient;
 	float shininess;
+	XMFLOAT3 diffuse;
 	float ior;
+	XMFLOAT3 specular;
 	float dissolve;
+	XMFLOAT3 transmittance;
 	float roughness;
+	XMFLOAT3 emission;
 	float metallic;
+	XMFLOAT4 resolution;
 	float sheen;
 	int useTex;
 };

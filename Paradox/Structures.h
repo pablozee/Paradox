@@ -38,13 +38,16 @@ struct Vertex
 {
 	XMFLOAT3 position;
 	XMFLOAT2 uv;
+	XMFLOAT3 normal;
 
 	bool operator==(const Vertex& v) const
 	{
 		if (CompareVector3WithEpsilon(position, v.position))
 		{
-			if (CompareVector2WithEpsilon(uv, v.uv)) return true;
-			return true;
+			if (CompareVector2WithEpsilon(uv, v.uv))
+			{
+				if (CompareVector3WithEpsilon(normal, v.normal)) return true;
+			}
 		}
 		return false;
 	}
@@ -53,6 +56,7 @@ struct Vertex
 	{
 		position = v.position;
 		uv = v.uv;
+		normal = v.normal;
 		return *this;
 	}
 };
@@ -67,11 +71,11 @@ struct Material
 {
 	std::string name = "defaultMaterial";
 	int useTex = 0;
-	XMFLOAT4 ambient;
-	XMFLOAT4 diffuse;
-	XMFLOAT4 specular;
-	XMFLOAT4 transmittance;
-	XMFLOAT4 emission;
+	XMFLOAT3 ambient;
+	XMFLOAT3 diffuse;
+	XMFLOAT3 specular;
+	XMFLOAT3 transmittance;
+	XMFLOAT3 emission;
 	float shininess;
 	float ior;
 	float dissolve;
@@ -89,4 +93,20 @@ struct TextureInfo
 	int height = 0;
 	int stride = 0;
 	int offset = 0;
+};
+
+struct DirectionalLight
+{
+	XMFLOAT3 direction;
+	float dirLightPadding;
+	XMFLOAT3 colour;
+	float dirLightPadding1;
+};
+
+struct PointLight
+{
+	XMFLOAT3 position;
+	float pointLightPadding;
+	XMFLOAT3 colour;
+	float pointLightPadding1;
 };

@@ -128,11 +128,11 @@ void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
 	}
 
 	material.name = materials[0].name;
-	material.ambient = XMFLOAT4(materials[0].ambient[0], materials[0].ambient[1], materials[0].ambient[2], 1.f);
-	material.diffuse = XMFLOAT4(materials[0].diffuse[0], materials[0].diffuse[1], materials[0].diffuse[2], 1.f);
-	material.specular = XMFLOAT4(materials[0].specular[0], materials[0].specular[1], materials[0].specular[2], 1.f);
-	material.transmittance = XMFLOAT4(materials[0].transmittance[0], materials[0].transmittance[1], materials[0].transmittance[2], 1.f);
-	material.emission = XMFLOAT4(materials[0].emission[0], materials[0].emission[1], materials[0].emission[2], 1.f);
+	material.ambient = XMFLOAT3(materials[0].ambient[0], materials[0].ambient[1], materials[0].ambient[2]);
+	material.diffuse = XMFLOAT3(materials[0].diffuse[0], materials[0].diffuse[1], materials[0].diffuse[2]);
+	material.specular = XMFLOAT3(materials[0].specular[0], materials[0].specular[1], materials[0].specular[2]);
+	material.transmittance = XMFLOAT3(materials[0].transmittance[0], materials[0].transmittance[1], materials[0].transmittance[2]);
+	material.emission = XMFLOAT3(materials[0].emission[0], materials[0].emission[1], materials[0].emission[2]);
 	material.shininess = materials[0].shininess;
 	material.ior = materials[0].ior;
 	material.dissolve = materials[0].dissolve;
@@ -159,6 +159,13 @@ void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
 			{
 				attrib.texcoords[2 * index.texcoord_index + 0],
 				1 - attrib.texcoords[2 * index.texcoord_index + 1]
+			};
+
+			vertex.normal =
+			{
+				attrib.normals[3 * index.normal_index + 2],
+				attrib.normals[3 * index.normal_index + 1],
+				attrib.normals[3 * index.normal_index + 0]
 			};
 
 			if (uniqueVertices.count(vertex) == 0)
@@ -545,17 +552,17 @@ void Graphics::CreateMaterialConstantBuffer(const Material& material)
 #endif
 
 	m_D3DResources.materialCBData.ambient = material.ambient;
-	m_D3DResources.materialCBData.diffuse = material.diffuse;
-	m_D3DResources.materialCBData.specular = material.specular;
-	m_D3DResources.materialCBData.transmittance = material.transmittance;
-	m_D3DResources.materialCBData.emission = material.emission;
 	m_D3DResources.materialCBData.shininess = material.shininess;
+	m_D3DResources.materialCBData.diffuse = material.diffuse;
 	m_D3DResources.materialCBData.ior = material.ior;
+	m_D3DResources.materialCBData.specular = material.specular;
 	m_D3DResources.materialCBData.dissolve = material.dissolve;
+	m_D3DResources.materialCBData.transmittance = material.transmittance;
 	m_D3DResources.materialCBData.roughness = material.roughness;
+	m_D3DResources.materialCBData.emission = material.emission;
 	m_D3DResources.materialCBData.metallic = material.metallic;
-	m_D3DResources.materialCBData.sheen = material.sheen;
 	m_D3DResources.materialCBData.resolution = XMFLOAT4(material.textureResolution, 0.0f, 0.0f, 0.0f);
+	m_D3DResources.materialCBData.sheen = material.sheen;
 	m_D3DResources.materialCBData.useTex = 0;
 
 	HRESULT hr = m_D3DResources.materialCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.materialCBStart));
@@ -1192,9 +1199,17 @@ void Graphics::UpdateSceneCB()
 
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].view = DirectX::XMMatrixTranspose(invView);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(fov * 0.5f));
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numDirLights = 1;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector0 = m_RandomVectorSeed0;
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].padding = 0.f;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector1 = m_RandomVectorSeed1;
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].padding1 = 0.f;
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].direction = XMFLOAT3(10.f, 0.f, 10.f);
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].dirLightPadding = 1.f;
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].colour = XMFLOAT3(1.f, 1.f, 0.f);
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].dirLightPadding1 = 1.f;
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numPointLights = 0;
 	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
 }
 
