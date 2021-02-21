@@ -115,16 +115,24 @@ float RandomFloat()
 	return frac(sin(dot(normalize(randomSeedVector0), normalize(randomSeedVector1)))) * 46146.1461f;
 }
 
-float3 CalculateDirectionalLightColour(DirectionalLight directionalLight, float3 barycentrics, float3 vertexNormal)
+float3 CalculateDirectionalLightColour(DirectionalLight directionalLight, float3 barycentrics, float3 normalizedNormal, float3 eyePos, float3 viewDir)
 {
 	float3 normalizedLightDirection = normalize(directionalLight.directionalLightDirection);
-	float3 eyePos = float3(viewOriginAndTanHalfFovY.x, viewOriginAndTanHalfFovY.y, viewOriginAndTanHalfFovY.z);
-	float3 normalizedNormal = normalize(vertexNormal);
-	float3 viewDir = normalize(eyePos - barycentrics);
 	float3 halfVec = normalize(normalizedLightDirection + viewDir);
 	float  nDotL = dot(normalizedNormal, normalizedLightDirection);
 	float  nDotH = dot(normalizedNormal, halfVec);
 	float3 lambert = diffuse * max(nDotL, 0) * directionalLight.directionalLightColour;
 	float3 phong = specular * pow(max(nDotH, 0), shininess) * directionalLight.directionalLightColour;
+	return lambert + phong;
+}
+
+float3 CalculatePointLightColour(PointLight pointLight, float3 barycentrics, float3 normalizedNormal, float3 eyePos, float3 viewDir)
+{
+	float3 normalizedLightDirection = normalize(pointLight.pointLightPosition - barycentrics);
+	float3 halfVec = normalize(normalizedLightDirection + viewDir);
+	float  nDotL = dot(normalizedNormal, normalizedLightDirection);
+	float  nDotH = dot(normalizedNormal, halfVec);
+	float3 lambert = diffuse * max(nDotL, 0) * pointLight.pointLightColour;
+	float3 phong = specular * pow(max(nDotH, 0), shininess) * pointLight.pointLightColour;
 	return lambert + phong;
 }

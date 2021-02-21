@@ -1200,16 +1200,23 @@ void Graphics::UpdateSceneCB()
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].view = DirectX::XMMatrixTranspose(invView);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(fov * 0.5f));
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numDirLights = 1;
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numPointLights = 0;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector0 = m_RandomVectorSeed0;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].padding = 0.f;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector1 = m_RandomVectorSeed1;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].padding1 = 0.f;
+
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].direction = XMFLOAT3(10.f, 0.f, 10.f);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].dirLightPadding = 1.f;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].colour = XMFLOAT3(1.f, 1.f, 0.f);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].dirLightPadding1 = 1.f;
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numPointLights = 0;
+
+//	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].pointLights[0].position = XMFLOAT3(6.f, 1.f, 6.f);
+//	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].pointLights[0].pointLightPadding = 1.f;
+//	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].pointLights[0].colour = XMFLOAT3(1.f, 1.f, 0.f);
+//	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].pointLights[0].pointLightPadding1 = 1.f;
+
 	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
 }
 
