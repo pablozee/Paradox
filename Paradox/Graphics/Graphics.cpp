@@ -20,7 +20,7 @@ Graphics::~Graphics()
 
 void Graphics::Init(HWND hwnd)
 {
-	LoadModel("models/cinema.obj", m_Model, m_Material);
+	LoadModel("models/skull.obj", m_Model, m_Material);
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -36,7 +36,7 @@ void Graphics::Init(HWND hwnd)
 	CreateVertexBuffer(m_Model);
 	CreateIndexBuffer(m_Model);
 
-	CreateTexture(m_Material);
+//	CreateTexture(m_Material);
 
 	CreateSceneCB();
 	SeedRandomVector(m_RandomVectorSeed0);
@@ -1207,7 +1207,10 @@ void Graphics::UpdateSceneCB()
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector1 = m_RandomVectorSeed1;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].padding1 = 0.f;
 
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].direction = XMFLOAT3(10.f, 0.f, 10.f);
+	XMFLOAT3 floatFocus;
+	XMStoreFloat3(&floatFocus, m_Focus);
+
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].direction = XMFLOAT3(0.f, 0.f, floatFocus.z + 3.f);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].dirLightPadding = 1.f;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].colour = XMFLOAT3(1.f, 1.f, 0.f);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].dirLightPadding1 = 1.f;
