@@ -77,6 +77,8 @@ struct D3D12Objects
 	ID3D12CommandQueue* commandQueue = nullptr;
 	ID3D12CommandAllocator* commandAllocators[2] = { nullptr, nullptr };
 	ID3D12GraphicsCommandList4* commandList = nullptr;
+	ID3D12CommandAllocator* rasterCommandAllocators[2] = { nullptr, nullptr };
+	ID3D12GraphicsCommandList* rasterCommandList;
 
 	ID3D12Fence* fence = nullptr;
 	HANDLE fenceEvent;
@@ -86,6 +88,8 @@ struct D3D12Objects
 
 	ID3D12DescriptorHeap* dsvDescriptorHeap = nullptr;
 	ID3D12Resource* depthStencilView = nullptr;
+
+	ID3D12PipelineState* pipelineState;
 
 };
 
@@ -149,7 +153,7 @@ struct D3D12Resources
 
 struct AccelerationStructureBuffer
 {
-	ID3D12Resource* pSratch = nullptr;
+	ID3D12Resource* pScratch = nullptr;
 	ID3D12Resource* pResult = nullptr;
 	ID3D12Resource* pInstanceDesc = nullptr;
 };

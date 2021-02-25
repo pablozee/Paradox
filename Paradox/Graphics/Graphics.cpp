@@ -28,9 +28,13 @@ void Graphics::Init(HWND hwnd)
 	CreateCommandAllocator();
 	CreateFence();
 	CreateSwapChain(hwnd);
-	CreateDSVDescriptorHeap();
 	CreateCommandList();
 	ResetCommandList();
+
+	CreateRasterCommandAllocator();
+	CreateDSVDescriptorHeap();
+	CreateRasterCommandList();
+	ResetRasterCommandList();
 
 	CreateDescriptorHeaps();
 	CreateBackBufferRtv();
@@ -269,6 +273,20 @@ void Graphics::CreateCommandAllocator()
 #endif
 }
 
+void Graphics::CreateRasterCommandAllocator()
+{
+	for (int n = 0; n < 2; ++n)
+	{
+		HRESULT hr = m_D3DObjects.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_D3DObjects.rasterCommandAllocators[n]));
+		Helpers::Validate(hr, L"Failed to create raster command allocator!");
+	}
+
+#if NAME_D3D_RESOURCES
+	if (n = 0) m_D3DObjects.commandAllocators[n]->SetName(L"D3D12 Raster Command Allocator 0");
+	else m_D3DObjects.commandAllocators[n]->SetName(L"D3D12 Raster Command Allocator 1");
+#endif
+}
+
 void Graphics::CreateFence()
 {
 	HRESULT hr = m_D3DObjects.device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_D3DObjects.fence));
@@ -322,8 +340,28 @@ void Graphics::CreateDSVDescriptorHeap()
 	dsvDescHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	dsvDescHeapDesc.NodeMask = 0;
 
-	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&dsvDescHeapDesc, IID_PPV_ARGS(&m_D3DObjects.depthStencilView));
-	Helpers::Validate(hr, L"Failed to create Depth Stencil View!");
+	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&dsvDescHeapDesc, IID_PPV_ARGS(&m_D3DObjects.dsvDescriptorHeap));
+	Helpers::Validate(hr, L"Failed to create Depth Stencil View Heap!");
+}
+
+void Graphics::CreateRasterCommandList()
+{
+	HRESULT hr = m_D3DObjects.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_D3DObjects.rasterCommandAllocators[m_D3DValues.frameIndex], nullptr, IID_PPV_ARGS(&m_D3DObjects.rasterCommandList));
+	Helpers::Validate(hr, L"Failed to create raster command list!");
+	hr = m_D3DObjects.rasterCommandList->Close();
+
+#if NAME_D3D_RESOURCES
+	m_D3DObjects.commandList->SetName(L"D3D12 Raster Command List");
+#endif
+}
+
+void Graphics::ResetRasterCommandList()
+{
+	HRESULT hr = m_D3DObjects.rasterCommandAllocators[m_D3DValues.frameIndex]->Reset();
+	Helpers::Validate(hr, L"Failed to reset raster command allocator!");
+
+	hr = m_D3DObjects.rasterCommandList->Reset(m_D3DObjects.rasterCommandAllocators[m_D3DValues.frameIndex], nullptr);
+	Helpers::Validate(hr, L"Failed to reset raster command list!");
 }
 
 void Graphics::CreateCommandList()
@@ -615,7 +653,7 @@ void Graphics::CreateBottomLevelAS()
 
 	D3D12BufferCreateInfo bufferInfo(ASPreBuildInfo.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
-	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pSratch);
+	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pScratch);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.BLAS.pScratch->SetName(L"DXR BLAS Scratch");
 #endif
@@ -629,7 +667,7 @@ void Graphics::CreateBottomLevelAS()
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
 	buildDesc.Inputs = ASInputs;
-	buildDesc.ScratchAccelerationStructureData = m_DXRObjects.BLAS.pSratch->GetGPUVirtualAddress();
+	buildDesc.ScratchAccelerationStructureData = m_DXRObjects.BLAS.pScratch->GetGPUVirtualAddress();
 	buildDesc.DestAccelerationStructureData = m_DXRObjects.BLAS.pResult->GetGPUVirtualAddress();
 
 	m_D3DObjects.commandList->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
@@ -686,7 +724,7 @@ void Graphics::CreateTopLevelAS()
 
 	D3D12BufferCreateInfo bufferInfo(ASPreBuildInfo.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
-	CreateBuffer(bufferInfo, &m_DXRObjects.TLAS.pSratch);
+	CreateBuffer(bufferInfo, &m_DXRObjects.TLAS.pScratch);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.TLAS.pScratch->SetName(L"DXR TLAS Scratch");
 #endif
@@ -700,7 +738,7 @@ void Graphics::CreateTopLevelAS()
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
 	buildDesc.Inputs = ASInputs;
-	buildDesc.ScratchAccelerationStructureData = m_DXRObjects.TLAS.pSratch->GetGPUVirtualAddress();
+	buildDesc.ScratchAccelerationStructureData = m_DXRObjects.TLAS.pScratch->GetGPUVirtualAddress();
 	buildDesc.DestAccelerationStructureData = m_DXRObjects.TLAS.pResult->GetGPUVirtualAddress();
 
 	m_D3DObjects.commandList->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
@@ -1351,10 +1389,10 @@ void Graphics::MoveToNextFrame()
 
 void Graphics::DestroyDXRObjects()
 {
-	SAFE_RELEASE(m_DXRObjects.TLAS.pSratch);
+	SAFE_RELEASE(m_DXRObjects.TLAS.pScratch);
 	SAFE_RELEASE(m_DXRObjects.TLAS.pResult);
 	SAFE_RELEASE(m_DXRObjects.TLAS.pInstanceDesc);
-	SAFE_RELEASE(m_DXRObjects.BLAS.pSratch);
+	SAFE_RELEASE(m_DXRObjects.BLAS.pScratch);
 	SAFE_RELEASE(m_DXRObjects.BLAS.pResult);
 	SAFE_RELEASE(m_DXRObjects.BLAS.pInstanceDesc);
 	SAFE_RELEASE(m_DXRObjects.shaderTable);

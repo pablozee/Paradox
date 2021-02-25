@@ -29,9 +29,14 @@ private:
 	void CreateCommandAllocator();
 	void CreateFence();
 	void CreateSwapChain(HWND hwnd);
-	void CreateDSVDescriptorHeap();
 	void CreateCommandList();
 	void ResetCommandList();
+
+	void CreateRasterCommandAllocator();
+	void CreateRasterCommandList();
+	void ResetRasterCommandList();
+	void CreateDSVDescriptorHeap();
+
 
 	void CreateDescriptorHeaps();
 	void CreateBackBufferRtv();
