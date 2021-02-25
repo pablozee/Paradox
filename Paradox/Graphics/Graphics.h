@@ -37,6 +37,7 @@ private:
 	void ResetRasterCommandList();
 	void CreateDSVDescriptorHeap();
 
+	void CreateRootSignature();
 
 	void CreateDescriptorHeaps();
 	void CreateBackBufferRtv();

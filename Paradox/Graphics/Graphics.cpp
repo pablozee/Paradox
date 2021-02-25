@@ -32,9 +32,12 @@ void Graphics::Init(HWND hwnd)
 	ResetCommandList();
 
 	CreateRasterCommandAllocator();
-	CreateDSVDescriptorHeap();
 	CreateRasterCommandList();
 	ResetRasterCommandList();
+	
+	CreateDSVDescriptorHeap();
+
+	CreateRootSignature();
 
 	CreateDescriptorHeaps();
 	CreateBackBufferRtv();
@@ -332,18 +335,6 @@ void Graphics::CreateSwapChain(HWND hwnd)
 	m_D3DValues.frameIndex = m_D3DObjects.swapChain->GetCurrentBackBufferIndex();
 }
 
-void Graphics::CreateDSVDescriptorHeap()
-{
-	D3D12_DESCRIPTOR_HEAP_DESC dsvDescHeapDesc = {};
-	dsvDescHeapDesc.NumDescriptors = 1;
-	dsvDescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	dsvDescHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	dsvDescHeapDesc.NodeMask = 0;
-
-	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&dsvDescHeapDesc, IID_PPV_ARGS(&m_D3DObjects.dsvDescriptorHeap));
-	Helpers::Validate(hr, L"Failed to create Depth Stencil View Heap!");
-}
-
 void Graphics::CreateRasterCommandList()
 {
 	HRESULT hr = m_D3DObjects.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_D3DObjects.rasterCommandAllocators[m_D3DValues.frameIndex], nullptr, IID_PPV_ARGS(&m_D3DObjects.rasterCommandList));
@@ -362,6 +353,71 @@ void Graphics::ResetRasterCommandList()
 
 	hr = m_D3DObjects.rasterCommandList->Reset(m_D3DObjects.rasterCommandAllocators[m_D3DValues.frameIndex], nullptr);
 	Helpers::Validate(hr, L"Failed to reset raster command list!");
+}
+
+
+void Graphics::CreateDSVDescriptorHeap()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC dsvDescHeapDesc = {};
+	dsvDescHeapDesc.NumDescriptors = 1;
+	dsvDescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvDescHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	dsvDescHeapDesc.NodeMask = 0;
+
+	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&dsvDescHeapDesc, IID_PPV_ARGS(&m_D3DObjects.dsvDescriptorHeap));
+	Helpers::Validate(hr, L"Failed to create Depth Stencil View Heap!");
+}
+
+void Graphics::CreateRootSignature()
+{
+	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[5];
+	descriptorTableRanges[0].NumDescriptors = 1;
+	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+	descriptorTableRanges[0].BaseShaderRegister = 0;
+	descriptorTableRanges[0].RegisterSpace = 0;
+	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	descriptorTableRanges[1].NumDescriptors = 1;
+	descriptorTableRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+	descriptorTableRanges[1].BaseShaderRegister = 1;
+	descriptorTableRanges[1].RegisterSpace = 0;
+	descriptorTableRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	descriptorTableRanges[2].NumDescriptors = 1;
+	descriptorTableRanges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+	descriptorTableRanges[2].BaseShaderRegister = 2;
+	descriptorTableRanges[2].RegisterSpace = 0;
+	descriptorTableRanges[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	descriptorTableRanges[3].NumDescriptors = 1;
+	descriptorTableRanges[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+	descriptorTableRanges[3].BaseShaderRegister = 3;
+	descriptorTableRanges[3].RegisterSpace = 0;
+	descriptorTableRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	descriptorTableRanges[4].NumDescriptors = 1;
+	descriptorTableRanges[4].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	descriptorTableRanges[4].BaseShaderRegister = 4;
+	descriptorTableRanges[4].RegisterSpace = 0;
+	descriptorTableRanges[4].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	D3D12_ROOT_DESCRIPTOR_TABLE rootDescTable;
+	rootDescTable.NumDescriptorRanges = 5;
+	rootDescTable.pDescriptorRanges = &descriptorTableRanges[0];
+
+	D3D12_ROOT_PARAMETER slotRootParameter[1];
+	slotRootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	slotRootParameter[0].DescriptorTable = rootDescTable;
+	slotRootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
+	rootSigDesc.NumParameters = _countof(slotRootParameter);
+	rootSigDesc.pParameters = slotRootParameter;
+	rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	ID3DBlob* signature;
+	ID3DBlob* error;
+
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
+	Helpers::Validate(hr, L"Failed to serialize root signature!");
+
+	hr = m_D3DObjects.device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_D3DObjects.rootSignature));
 }
 
 void Graphics::CreateCommandList()

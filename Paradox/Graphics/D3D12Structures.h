@@ -89,8 +89,9 @@ struct D3D12Objects
 	ID3D12DescriptorHeap* dsvDescriptorHeap = nullptr;
 	ID3D12Resource* depthStencilView = nullptr;
 
-	ID3D12PipelineState* pipelineState;
+	ID3D12PipelineState* pipelineState = nullptr;
 
+	ID3D12RootSignature* rootSignature = nullptr;
 };
 
 struct D3D12ShaderCompilerInfo
