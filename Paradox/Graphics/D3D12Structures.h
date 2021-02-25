@@ -126,6 +126,7 @@ struct D3D12Resources
 	ID3D12DescriptorHeap*		rtvHeap;
 	ID3D12DescriptorHeap*		dsvDescriptorHeap = nullptr;
 
+	ID3D12Resource*				depthStencilView = nullptr;
 
 	ID3D12Resource*				vertexBuffer = nullptr;
 	D3D12_VERTEX_BUFFER_VIEW	vertexBufferView;

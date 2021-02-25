@@ -40,7 +40,9 @@ void Graphics::Init(HWND hwnd)
 	CreateRootSignature();
 
 	CreateDescriptorHeaps();
-	CreateUAVResourceViews();
+	CreateUAVResources();
+
+	CreateDepthStencilView();
 
 	CreateBackBufferRtv();
 	CreateVertexBuffer(m_Model);
@@ -428,7 +430,7 @@ void Graphics::CreateRootSignature()
 	hr = m_D3DObjects.device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_D3DObjects.rootSignature));
 }
 
-void Graphics::CreateUAVResourceViews()
+void Graphics::CreateUAVResources()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC gBufWorldPosHeapDesc = {};
 	gBufWorldPosHeapDesc.NumDescriptors = 5;
@@ -467,6 +469,55 @@ void Graphics::CreateUAVResourceViews()
 	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferSpecular));
 
 	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferSpecular));
+}
+
+void Graphics::CreateDepthStencilView()
+{
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+	dsvDesc.Texture2D.MipSlice = 0;
+
+	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+	depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
+	depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
+	D3D12_HEAP_PROPERTIES heapProps = {};
+	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+	heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	heapProps.CreationNodeMask = 0u;
+	heapProps.VisibleNodeMask = 0u;
+
+	D3D12_RESOURCE_DESC dsvResDesc = {};
+	dsvResDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	dsvResDesc.DepthOrArraySize = 1;
+	dsvResDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsvResDesc.Width = m_D3DParams.width;
+	dsvResDesc.Height = m_D3DParams.height;
+	dsvResDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	dsvResDesc.MipLevels = 0;
+	dsvResDesc.SampleDesc.Count = 1;
+	dsvResDesc.SampleDesc.Quality = 0;
+
+	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(
+		&heapProps,
+		D3D12_HEAP_FLAG_NONE,
+		&dsvResDesc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&depthOptimizedClearValue,
+		IID_PPV_ARGS(&m_D3DResources.depthStencilView)
+	);
+
+	Helpers::Validate(hr, L"Failed to create Depth Stencil View!");
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.depthStencilView->SetName(L"D3D12 Depth Stencil View");
+#endif
+
+	m_D3DObjects.device->CreateDepthStencilView(m_D3DResources.depthStencilView, &dsvDesc, m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 void Graphics::CreateCommandList()
