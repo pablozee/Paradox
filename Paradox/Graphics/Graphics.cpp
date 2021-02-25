@@ -28,6 +28,7 @@ void Graphics::Init(HWND hwnd)
 	CreateCommandAllocator();
 	CreateFence();
 	CreateSwapChain(hwnd);
+	CreateDSVDescriptorHeap();
 	CreateCommandList();
 	ResetCommandList();
 
@@ -311,6 +312,18 @@ void Graphics::CreateSwapChain(HWND hwnd)
 
 	swapChain->Release();
 	m_D3DValues.frameIndex = m_D3DObjects.swapChain->GetCurrentBackBufferIndex();
+}
+
+void Graphics::CreateDSVDescriptorHeap()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC dsvDescHeapDesc = {};
+	dsvDescHeapDesc.NumDescriptors = 1;
+	dsvDescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvDescHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	dsvDescHeapDesc.NodeMask = 0;
+
+	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&dsvDescHeapDesc, IID_PPV_ARGS(&m_D3DObjects.depthStencilView));
+	Helpers::Validate(hr, L"Failed to create Depth Stencil View!");
 }
 
 void Graphics::CreateCommandList()

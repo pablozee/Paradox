@@ -84,6 +84,9 @@ struct D3D12Objects
 	IDXGISwapChain3* swapChain = nullptr;
 	ID3D12Resource* backBuffer[2] = { nullptr, nullptr };
 
+	ID3D12DescriptorHeap* dsvDescriptorHeap = nullptr;
+	ID3D12Resource* depthStencilView = nullptr;
+
 };
 
 struct D3D12ShaderCompilerInfo

@@ -29,6 +29,7 @@ private:
 	void CreateCommandAllocator();
 	void CreateFence();
 	void CreateSwapChain(HWND hwnd);
+	void CreateDSVDescriptorHeap();
 	void CreateCommandList();
 	void ResetCommandList();
 
