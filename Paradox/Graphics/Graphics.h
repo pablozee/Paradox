@@ -32,12 +32,12 @@ private:
 	void CreateCommandList();
 	void ResetCommandList();
 
-	void CreateRasterCommandAllocator();
-	void CreateRasterCommandList();
-	void ResetRasterCommandList();
+	void CreateGBufferPassCommandAllocator();
+	void CreateGBufferPassCommandList();
+	void ResetGBufferPassCommandList();
 	void CreateDSVDescriptorHeap();
 
-	void CreateRootSignature();
+	void CreateGBufferPassRootSignature();
 
 	void CreateRTVDescriptorHeaps();
 	void CreateBackBufferRtv();
@@ -61,7 +61,9 @@ private:
 	void CreateUAVResources();
 
 	void CreateDepthStencilView();
-	void CompileRasterShaders();
+	void CompileGBufferPassShaders();
+
+	void CreateGBufferPassPSO();
 
 	void CompileShader(RtProgram &program);
 	void CompileShader(D3D12ShaderInfo &info, IDxcBlob** blob);

@@ -5,6 +5,7 @@
 #include "dxc/dxcapi.h"
 #include "dxc/dxcapi.use.h"
 #include <d3dcompiler.h>
+#include "d3dx12.h"
 
 #define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 #define SAFE_RELEASE(x) { if (x) { x->Release(); x = NULL; } }
@@ -32,20 +33,25 @@ void Graphics::Init(HWND hwnd)
 	CreateCommandList();
 	ResetCommandList();
 
-	CreateRasterCommandAllocator();
-	CreateRasterCommandList();
-	ResetRasterCommandList();
+
 	
 	CreateDSVDescriptorHeap();
 
-	CreateRootSignature();
 
 	CreateRTVDescriptorHeaps();
 	CreateUAVResources();
 
-	CreateDepthStencilView();
+	CompileGBufferPassShaders();
 
-	CompileRasterShaders();
+	CreateGBufferPassCommandAllocator();
+	CreateGBufferPassCommandList();
+	ResetGBufferPassCommandList();
+
+	CreateGBufferPassRootSignature();
+
+	CreateGBufferPassPSO();
+
+	CreateDepthStencilView();
 
 	CreateBackBufferRtv();
 	CreateVertexBuffer(m_Model);
@@ -70,9 +76,14 @@ void Graphics::Init(HWND hwnd)
 	CreatePipelineStateObject();
 	CreateShaderTable();
 
+	m_D3DObjects.gBufferPassCommandList->Close();
+
 	m_D3DObjects.commandList->Close();
-	ID3D12CommandList* pGraphicsList = { m_D3DObjects.commandList };
-	m_D3DObjects.commandQueue->ExecuteCommandLists(1, &pGraphicsList);
+	ID3D12CommandList* pGraphicsList[2] = { m_D3DObjects.commandList };
+	m_D3DObjects.commandQueue->ExecuteCommandLists(1, pGraphicsList);
+
+
+
 
 	WaitForGPU();
 	ResetCommandList();
@@ -284,11 +295,11 @@ void Graphics::CreateCommandAllocator()
 #endif
 }
 
-void Graphics::CreateRasterCommandAllocator()
+void Graphics::CreateGBufferPassCommandAllocator()
 {
 	for (int n = 0; n < 2; ++n)
 	{
-		HRESULT hr = m_D3DObjects.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_D3DObjects.rasterCommandAllocators[n]));
+		HRESULT hr = m_D3DObjects.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_D3DObjects.gBufferPassCommandAllocators[n]));
 		Helpers::Validate(hr, L"Failed to create raster command allocator!");
 	}
 
@@ -343,23 +354,23 @@ void Graphics::CreateSwapChain(HWND hwnd)
 	m_D3DValues.frameIndex = m_D3DObjects.swapChain->GetCurrentBackBufferIndex();
 }
 
-void Graphics::CreateRasterCommandList()
+void Graphics::CreateGBufferPassCommandList()
 {
-	HRESULT hr = m_D3DObjects.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_D3DObjects.rasterCommandAllocators[m_D3DValues.frameIndex], nullptr, IID_PPV_ARGS(&m_D3DObjects.rasterCommandList));
+	HRESULT hr = m_D3DObjects.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex], nullptr, IID_PPV_ARGS(&m_D3DObjects.gBufferPassCommandList));
 	Helpers::Validate(hr, L"Failed to create raster command list!");
-	hr = m_D3DObjects.rasterCommandList->Close();
+	hr = m_D3DObjects.gBufferPassCommandList->Close();
 
 #if NAME_D3D_RESOURCES
 	m_D3DObjects.commandList->SetName(L"D3D12 Raster Command List");
 #endif
 }
 
-void Graphics::ResetRasterCommandList()
+void Graphics::ResetGBufferPassCommandList()
 {
-	HRESULT hr = m_D3DObjects.rasterCommandAllocators[m_D3DValues.frameIndex]->Reset();
+	HRESULT hr = m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex]->Reset();
 	Helpers::Validate(hr, L"Failed to reset raster command allocator!");
 
-	hr = m_D3DObjects.rasterCommandList->Reset(m_D3DObjects.rasterCommandAllocators[m_D3DValues.frameIndex], nullptr);
+	hr = m_D3DObjects.gBufferPassCommandList->Reset(m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex], nullptr);
 	Helpers::Validate(hr, L"Failed to reset raster command list!");
 }
 
@@ -376,7 +387,7 @@ void Graphics::CreateDSVDescriptorHeap()
 	Helpers::Validate(hr, L"Failed to create Depth Stencil View Heap!");
 }
 
-void Graphics::CreateRootSignature()
+void Graphics::CreateGBufferPassRootSignature()
 {
 	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[5];
 	descriptorTableRanges[0].NumDescriptors = 1;
@@ -422,7 +433,11 @@ void Graphics::CreateRootSignature()
 	D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
 	rootSigDesc.NumParameters = _countof(slotRootParameter);
 	rootSigDesc.pParameters = slotRootParameter;
-	rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+	rootSigDesc.Flags = 
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
 	ID3DBlob* signature;
 	ID3DBlob* error;
@@ -430,7 +445,8 @@ void Graphics::CreateRootSignature()
 	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
 	Helpers::Validate(hr, L"Failed to serialize root signature!");
 
-	hr = m_D3DObjects.device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_D3DObjects.rootSignature));
+	hr = m_D3DObjects.device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_D3DObjects.gBufferPassRootSignature));
+	Helpers::Validate(hr, L"Failed to create root signature!");
 }
 
 void Graphics::CreateUAVResources()
@@ -523,7 +539,7 @@ void Graphics::CreateDepthStencilView()
 	m_D3DObjects.device->CreateDepthStencilView(m_D3DResources.depthStencilView, &dsvDesc, m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-void Graphics::CompileRasterShaders()
+void Graphics::CompileGBufferPassShaders()
 {
 #if defined (DEBUG)
 	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -546,6 +562,38 @@ void Graphics::CreateCommandList()
 #if NAME_D3D_RESOURCES
 	m_D3DObjects.commandList->SetName(L"D3D12 Command List");
 #endif
+}
+
+void Graphics::CreateGBufferPassPSO()
+{
+	D3D12_INPUT_ELEMENT_DESC ieDesc[] =
+	{
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 20, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+	};
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+	psoDesc.InputLayout = { ieDesc, _countof(ieDesc) };
+	psoDesc.pRootSignature = m_D3DObjects.gBufferPassRootSignature;
+
+	psoDesc.PS = { reinterpret_cast<UINT8*>(m_D3DObjects.psBlob->GetBufferPointer()), m_D3DObjects.psBlob->GetBufferSize() };
+	psoDesc.VS = { reinterpret_cast<UINT8*>(m_D3DObjects.vsBlob->GetBufferPointer()), m_D3DObjects.vsBlob->GetBufferSize() };
+//	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_D3DObjects.vsBlob);
+//	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_D3DObjects.psBlob);
+
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC1(D3D12_DEFAULT);
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	psoDesc.SampleDesc.Count = 1;
+	
+	HRESULT hr = m_D3DObjects.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_D3DObjects.gBufferPassPipelineState));
+	Helpers::Validate(hr, L"Failed to create G Buffer Pipeline State!");
 }
 
 void Graphics::ResetCommandList()
@@ -964,7 +1012,7 @@ void Graphics::CreateDescriptorHeaps(const Model& model)
 
 	// Create Scene Constant Buffer CBV
 	D3D12_CONSTANT_BUFFER_VIEW_DESC sceneCBDesc = {};
-	sceneCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.sceneCBData) * 2);
+	sceneCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.sceneCBData));
 	sceneCBDesc.BufferLocation = m_D3DResources.sceneCB->GetGPUVirtualAddress();
 
 	m_D3DObjects.device->CreateConstantBufferView(&sceneCBDesc, handle);

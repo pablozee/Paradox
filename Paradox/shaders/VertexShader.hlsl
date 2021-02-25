@@ -1,4 +1,23 @@
-float4 main( float4 pos : POSITION ) : SV_POSITION
+struct VSInput
 {
-	return pos;
+	float3 PosL : POSITION;
+	float2 TexC : TEXCOORD;
+	float3 NormalL : NORMAL;
+};
+
+struct VSOutput
+{
+	float4 PosL : SV_POSITION;
+	float2 TexC : TEXCOORD;
+	float3 NormalL : NORMAL;
+};
+
+VSOutput main(VSInput vsInput)
+{
+	VSOutput vso;
+	vso.PosL = float4(vsInput.PosL, 1.0f);
+	vso.TexC = vsInput.TexC;
+	vso.NormalL = vsInput.NormalL;
+
+	return vso;
 }

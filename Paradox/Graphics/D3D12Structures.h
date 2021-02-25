@@ -77,8 +77,8 @@ struct D3D12Objects
 	ID3D12CommandQueue* commandQueue = nullptr;
 	ID3D12CommandAllocator* commandAllocators[2] = { nullptr, nullptr };
 	ID3D12GraphicsCommandList4* commandList = nullptr;
-	ID3D12CommandAllocator* rasterCommandAllocators[2] = { nullptr, nullptr };
-	ID3D12GraphicsCommandList* rasterCommandList;
+	ID3D12CommandAllocator* gBufferPassCommandAllocators[2] = { nullptr, nullptr };
+	ID3D12GraphicsCommandList* gBufferPassCommandList;
 
 	ID3D12Fence* fence = nullptr;
 	HANDLE fenceEvent;
@@ -86,9 +86,10 @@ struct D3D12Objects
 	IDXGISwapChain3* swapChain = nullptr;
 	ID3D12Resource* backBuffer[2] = { nullptr, nullptr };
 
-	ID3D12PipelineState* pipelineState = nullptr;
-
 	ID3D12RootSignature* rootSignature = nullptr;
+	ID3D12RootSignature* gBufferPassRootSignature = nullptr;
+
+	ID3D12PipelineState* gBufferPassPipelineState;
 
 	ID3D12Resource* depthStencilView = nullptr;
 
