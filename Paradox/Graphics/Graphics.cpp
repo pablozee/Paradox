@@ -40,11 +40,14 @@ void Graphics::Init(HWND hwnd)
 	CreateRootSignature();
 
 	CreateDescriptorHeaps();
+	CreateUAVResourceViews();
+
 	CreateBackBufferRtv();
 	CreateVertexBuffer(m_Model);
 	CreateIndexBuffer(m_Model);
 
 //	CreateTexture(m_Material);
+
 
 	CreateSceneCB();
 	SeedRandomVector(m_RandomVectorSeed0);
@@ -364,7 +367,7 @@ void Graphics::CreateDSVDescriptorHeap()
 	dsvDescHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	dsvDescHeapDesc.NodeMask = 0;
 
-	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&dsvDescHeapDesc, IID_PPV_ARGS(&m_D3DObjects.dsvDescriptorHeap));
+	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&dsvDescHeapDesc, IID_PPV_ARGS(&m_D3DResources.dsvDescriptorHeap));
 	Helpers::Validate(hr, L"Failed to create Depth Stencil View Heap!");
 }
 
@@ -391,9 +394,14 @@ void Graphics::CreateRootSignature()
 	descriptorTableRanges[3].BaseShaderRegister = 3;
 	descriptorTableRanges[3].RegisterSpace = 0;
 	descriptorTableRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	descriptorTableRanges[3].NumDescriptors = 1;
+	descriptorTableRanges[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+	descriptorTableRanges[3].BaseShaderRegister = 4;
+	descriptorTableRanges[3].RegisterSpace = 0;
+	descriptorTableRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 	descriptorTableRanges[4].NumDescriptors = 1;
 	descriptorTableRanges[4].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	descriptorTableRanges[4].BaseShaderRegister = 4;
+	descriptorTableRanges[4].BaseShaderRegister = 5;
 	descriptorTableRanges[4].RegisterSpace = 0;
 	descriptorTableRanges[4].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
@@ -418,6 +426,47 @@ void Graphics::CreateRootSignature()
 	Helpers::Validate(hr, L"Failed to serialize root signature!");
 
 	hr = m_D3DObjects.device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_D3DObjects.rootSignature));
+}
+
+void Graphics::CreateUAVResourceViews()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC gBufWorldPosHeapDesc = {};
+	gBufWorldPosHeapDesc.NumDescriptors = 5;
+	gBufWorldPosHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	gBufWorldPosHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&gBufWorldPosHeapDesc, IID_PPV_ARGS(&m_D3DResources.gBufferDescHeap));
+	Helpers::Validate(hr, L"Failed to create GBuffer UAV Descriptor Heap");
+
+	D3D12_CPU_DESCRIPTOR_HANDLE gBufferDescHandle = m_D3DResources.gBufferDescHeap->GetCPUDescriptorHandleForHeapStart();
+	UINT handleIncrement = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	D3D12_RESOURCE_DESC resourceDesc = {};
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.Width = m_D3DParams.width;
+	resourceDesc.Height = m_D3DParams.height;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+	D3D12_HEAP_PROPERTIES heapProps = {}; 
+	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+	heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	heapProps.CreationNodeMask = 0u;
+	heapProps.VisibleNodeMask = 0u;
+
+	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferWorldPos));
+
+	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferNormal));
+
+	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferDiffuse));
+
+	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferSpecular));
+
+	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferSpecular));
 }
 
 void Graphics::CreateCommandList()

@@ -86,12 +86,11 @@ struct D3D12Objects
 	IDXGISwapChain3* swapChain = nullptr;
 	ID3D12Resource* backBuffer[2] = { nullptr, nullptr };
 
-	ID3D12DescriptorHeap* dsvDescriptorHeap = nullptr;
-	ID3D12Resource* depthStencilView = nullptr;
-
 	ID3D12PipelineState* pipelineState = nullptr;
 
 	ID3D12RootSignature* rootSignature = nullptr;
+
+	ID3D12Resource* depthStencilView = nullptr;
 };
 
 struct D3D12ShaderCompilerInfo
@@ -125,6 +124,8 @@ struct D3D12ShaderInfo
 struct D3D12Resources
 {
 	ID3D12DescriptorHeap*		rtvHeap;
+	ID3D12DescriptorHeap*		dsvDescriptorHeap = nullptr;
+
 
 	ID3D12Resource*				vertexBuffer = nullptr;
 	D3D12_VERTEX_BUFFER_VIEW	vertexBufferView;
@@ -135,7 +136,7 @@ struct D3D12Resources
 	ID3D12Resource*				texture = nullptr;
 	ID3D12Resource*				textureUploadResource = nullptr;
 
-	ID3D12Resource*				sceneCB = nullptr;
+	ID3D12Resource*				sceneCB;
 	SceneCB						sceneCBData[2];
 	UINT8*						sceneCBStart = nullptr;
 
@@ -150,6 +151,14 @@ struct D3D12Resources
 	float						translationOffset = 0;
 	float						rotationOffset = 0;
 	XMFLOAT3					eyeAngle{ 0.f, 0.f, 0.f };
+
+	ID3D12DescriptorHeap*		gBufferDescHeap = nullptr;
+
+	ID3D12Resource*				gBufferWorldPos = nullptr;
+	ID3D12Resource*				gBufferNormal = nullptr;
+	ID3D12Resource*				gBufferDiffuse = nullptr;
+	ID3D12Resource*				gBufferSpecular = nullptr;
+	ID3D12Resource*				gBufferReflectivity = nullptr;
 };
 
 struct AccelerationStructureBuffer

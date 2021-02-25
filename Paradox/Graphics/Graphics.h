@@ -58,6 +58,7 @@ private:
 	void CreateDXROutput();
 
 	void CreateDescriptorHeaps(const Model &model);
+	void CreateUAVResourceViews();
 
 	void CompileShader(RtProgram &program);
 	void CompileShader(D3D12ShaderInfo &info, IDxcBlob** blob);
