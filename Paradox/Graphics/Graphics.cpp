@@ -4,6 +4,7 @@
 #include <d3d12.h>
 #include "dxc/dxcapi.h"
 #include "dxc/dxcapi.use.h"
+#include <d3dcompiler.h>
 
 #define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 #define SAFE_RELEASE(x) { if (x) { x->Release(); x = NULL; } }
@@ -39,10 +40,12 @@ void Graphics::Init(HWND hwnd)
 
 	CreateRootSignature();
 
-	CreateDescriptorHeaps();
+	CreateRTVDescriptorHeaps();
 	CreateUAVResources();
 
 	CreateDepthStencilView();
+
+	CompileRasterShaders();
 
 	CreateBackBufferRtv();
 	CreateVertexBuffer(m_Model);
@@ -520,6 +523,20 @@ void Graphics::CreateDepthStencilView()
 	m_D3DObjects.device->CreateDepthStencilView(m_D3DResources.depthStencilView, &dsvDesc, m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
+void Graphics::CompileRasterShaders()
+{
+#if defined (DEBUG)
+	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+	UINT compileFlags = 0;
+#endif
+
+	HRESULT hr = D3DCompileFromFile(L"shaders/VertexShader.hlsl", nullptr, nullptr, "main", "vs_5_0", compileFlags, 0, &m_D3DObjects.vsBlob, nullptr);
+	Helpers::Validate(hr, L"Failed to compile Vertex Shader!");
+	hr = D3DCompileFromFile(L"shaders/PixelShader.hlsl", nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, &m_D3DObjects.psBlob, nullptr);
+	Helpers::Validate(hr, L"Failed to compile Pixel Shader!");
+}
+
 void Graphics::CreateCommandList()
 {
 	HRESULT hr = m_D3DObjects.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_D3DObjects.commandAllocators[m_D3DValues.frameIndex], nullptr, IID_PPV_ARGS(&m_D3DObjects.commandList));
@@ -540,7 +557,7 @@ void Graphics::ResetCommandList()
 	Helpers::Validate(hr, L"Failed to reset command list!");
 }
 
-void Graphics::CreateDescriptorHeaps()
+void Graphics::CreateRTVDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 	desc.NumDescriptors = m_D3DValues.swapChainBufferCount;

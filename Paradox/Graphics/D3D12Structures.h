@@ -91,6 +91,9 @@ struct D3D12Objects
 	ID3D12RootSignature* rootSignature = nullptr;
 
 	ID3D12Resource* depthStencilView = nullptr;
+
+	ID3DBlob* vsBlob = nullptr;
+	ID3DBlob* psBlob = nullptr;
 };
 
 struct D3D12ShaderCompilerInfo

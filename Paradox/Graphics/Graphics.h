@@ -39,7 +39,7 @@ private:
 
 	void CreateRootSignature();
 
-	void CreateDescriptorHeaps();
+	void CreateRTVDescriptorHeaps();
 	void CreateBackBufferRtv();
 	void CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource);
 	void CreateVertexBuffer(Model &model);
@@ -61,6 +61,7 @@ private:
 	void CreateUAVResources();
 
 	void CreateDepthStencilView();
+	void CompileRasterShaders();
 
 	void CompileShader(RtProgram &program);
 	void CompileShader(D3D12ShaderInfo &info, IDxcBlob** blob);
