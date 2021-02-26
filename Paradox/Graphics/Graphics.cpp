@@ -50,6 +50,8 @@ void Graphics::Init(HWND hwnd)
 	CreateGBufferPassRootSignature();
 
 	CreateGBufferPassPSO();
+	CreateGBufferPassRTVDescriptorHeaps();
+
 
 	CreateDepthStencilView();
 
@@ -594,6 +596,17 @@ void Graphics::CreateGBufferPassPSO()
 	
 	HRESULT hr = m_D3DObjects.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_D3DObjects.gBufferPassPipelineState));
 	Helpers::Validate(hr, L"Failed to create G Buffer Pipeline State!");
+}
+
+void Graphics::CreateGBufferPassRTVDescriptorHeaps()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC gBufRTVHeapDesc = {};
+	gBufRTVHeapDesc.NumDescriptors = 5;
+	gBufRTVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	gBufRTVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&gBufRTVHeapDesc, IID_PPV_ARGS(&m_D3DResources.gBufferPassRTVHeap));
+	Helpers::Validate(hr, L"Failed to create G Buffer RTV Descriptor Heap");
 }
 
 void Graphics::ResetCommandList()

@@ -64,6 +64,7 @@ private:
 	void CompileGBufferPassShaders();
 
 	void CreateGBufferPassPSO();
+	void CreateGBufferPassRTVDescriptorHeaps();
 
 	void CompileShader(RtProgram &program);
 	void CompileShader(D3D12ShaderInfo &info, IDxcBlob** blob);

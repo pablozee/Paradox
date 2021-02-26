@@ -128,6 +128,7 @@ struct D3D12ShaderInfo
 struct D3D12Resources
 {
 	ID3D12DescriptorHeap*		rtvHeap;
+	ID3D12DescriptorHeap*		gBufferPassRTVHeap;
 	ID3D12DescriptorHeap*		dsvDescriptorHeap = nullptr;
 
 	ID3D12Resource*				depthStencilView = nullptr;
