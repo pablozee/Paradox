@@ -146,8 +146,6 @@ void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
 	using namespace tinyobj;
 	attrib_t attrib;
 	std::vector<shape_t> shapes;
-	model.vertices.resize(10000);
-	model.indices.resize(10000);
 	std::vector<material_t> materials;
 	std::string err;
 
@@ -1639,9 +1637,6 @@ void Graphics::BuildGBufferCommandList()
 
 	D3D12_GPU_VIRTUAL_ADDRESS sceneCBAddress = m_D3DResources.sceneCB->GetGPUVirtualAddress();
 
-//	ID3D12DescriptorHeap* descriptorHeaps[] = { m_D3DResources.gBufferPassRTVHeap };
-//	m_D3DObjects.gBufferPassCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
 	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart(), rtvDescSize);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
@@ -1665,6 +1660,7 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.scissorRect.bottom = m_D3DParams.height;
 
 	m_D3DObjects.gBufferPassCommandList->RSSetScissorRects(1, &m_D3DObjects.scissorRect);
+
 	/*
 	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
