@@ -101,7 +101,7 @@ private:
 	int m_FrameCount = 2;
 	Model m_Model;
 	Material m_Material;
-	XMVECTOR m_EyeInit = { 0.f, 0.f, 17.f };
+	XMVECTOR m_EyeInit = { 17.f, 0.f, 0.f };
 	XMVECTOR m_FocusInit = { 0.f, 0.f, 0.f };
 	XMVECTOR m_UpInit = { 0.f, 1.f, 0.f };
 	XMVECTOR m_Eye = m_EyeInit;

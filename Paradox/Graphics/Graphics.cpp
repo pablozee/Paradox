@@ -81,8 +81,8 @@ void Graphics::Init(HWND hwnd)
 	m_D3DObjects.gBufferPassCommandList->Close();
 
 	m_D3DObjects.commandList->Close();
-	ID3D12CommandList* pGraphicsList[2] = { m_D3DObjects.commandList };
-	m_D3DObjects.commandQueue->ExecuteCommandLists(1, pGraphicsList);
+	ID3D12CommandList* pGraphicsList[2] = { m_D3DObjects.commandList, m_D3DObjects.gBufferPassCommandList };
+	m_D3DObjects.commandQueue->ExecuteCommandLists(2, pGraphicsList);
 
 
 
@@ -1702,11 +1702,10 @@ void Graphics::ResetView()
 
 void Graphics::SeedRandomVector(XMFLOAT3 randomVector)
 {
-	float x = rand() % 100;
-	srand(time(NULL));
-	float y = rand() % 100;
-	srand(time(NULL));
-	float z = rand() % 100;
+	srand((UINT)time(NULL));
+	float x = rand() % 100 + static_cast<float>(rand() / static_cast<float>(RAND_MAX));
+	float y = rand() % 100 + static_cast<float>(rand() / static_cast<float>(RAND_MAX));
+	float z = rand() % 100 + static_cast<float>(rand() / static_cast<float>(RAND_MAX));
 	
 	randomVector = XMFLOAT3{ x, y, z };
 }
