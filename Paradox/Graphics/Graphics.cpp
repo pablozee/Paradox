@@ -83,6 +83,7 @@ void Graphics::Init(HWND hwnd)
 
 	WaitForGPU();
 	ResetCommandList();
+	ResetGBufferCommandList();
 }
 
 void Graphics::Update()
@@ -92,6 +93,7 @@ void Graphics::Update()
 
 void Graphics::Render()
 {
+	BuildGBufferCommandList();
 	BuildCommandList();
 	Present();
 	MoveToNextFrame();
@@ -200,6 +202,7 @@ void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
 			model.indices.push_back(uniqueVertices[vertex]);
 		};
 	}
+	m_D3DValues.indicesCount += sizeof(model.indices) / sizeof(uint32_t);
 }
 
 void Graphics::InitializeShaderCompiler()
@@ -364,10 +367,10 @@ void Graphics::CreateGBufferPassCommandList()
 void Graphics::ResetGBufferPassCommandList()
 {
 	HRESULT hr = m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex]->Reset();
-	Helpers::Validate(hr, L"Failed to reset raster command allocator!");
+	Helpers::Validate(hr, L"Failed to reset G Buffer Command Allocator!");
 
 	hr = m_D3DObjects.gBufferPassCommandList->Reset(m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex], nullptr);
-	Helpers::Validate(hr, L"Failed to reset raster command list!");
+	Helpers::Validate(hr, L"Failed to reset G Buffer Command List!");
 }
 
 
@@ -385,7 +388,7 @@ void Graphics::CreateDSVDescriptorHeap()
 
 void Graphics::CreateGBufferPassRootSignature()
 {
-	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[5];
+	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[6];
 	descriptorTableRanges[0].NumDescriptors = 1;
 	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
 	descriptorTableRanges[0].BaseShaderRegister = 0;
@@ -416,9 +419,14 @@ void Graphics::CreateGBufferPassRootSignature()
 	descriptorTableRanges[4].BaseShaderRegister = 5;
 	descriptorTableRanges[4].RegisterSpace = 0;
 	descriptorTableRanges[4].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	descriptorTableRanges[5].NumDescriptors = 1;
+	descriptorTableRanges[5].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	descriptorTableRanges[5].BaseShaderRegister = 6;
+	descriptorTableRanges[5].RegisterSpace = 0;
+	descriptorTableRanges[5].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 	D3D12_ROOT_DESCRIPTOR_TABLE rootDescTable;
-	rootDescTable.NumDescriptorRanges = 5;
+	rootDescTable.NumDescriptorRanges = 6;
 	rootDescTable.pDescriptorRanges = &descriptorTableRanges[0];
 
 	D3D12_ROOT_PARAMETER slotRootParameter[1];
@@ -583,7 +591,7 @@ void Graphics::CreateGBufferPassPSO()
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 1;
+	psoDesc.NumRenderTargets = 5;
 	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	psoDesc.SampleDesc.Count = 1;
@@ -644,6 +652,16 @@ void Graphics::ResetCommandList()
 
 	hr = m_D3DObjects.commandList->Reset(m_D3DObjects.commandAllocators[m_D3DValues.frameIndex], nullptr);
 	Helpers::Validate(hr, L"Failed to reset command list!");
+}
+
+void Graphics::ResetGBufferCommandList()
+{
+	HRESULT hr = m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex]->Reset();
+	Helpers::Validate(hr, L"Failed to reset G Buffer Command Allocator!");
+
+
+	hr = m_D3DObjects.gBufferPassCommandList->Reset(m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex], m_D3DObjects.gBufferPassPipelineState);
+	Helpers::Validate(hr, L"Failed to reset G Buffer Command List!");
 }
 
 void Graphics::CreateRTVDescriptorHeaps()
@@ -1534,6 +1552,76 @@ void Graphics::UpdateSceneCB()
 //	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].pointLights[0].pointLightPadding1 = 1.f;
 
 	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
+}
+
+void Graphics::BuildGBufferCommandList()
+{
+	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootSignature(m_D3DObjects.gBufferPassRootSignature);
+
+	UINT sceneConstantBufferByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.sceneCBData));
+	UINT materialConstantBufferByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.materialCBData));
+
+	D3D12_GPU_VIRTUAL_ADDRESS sceneCBAddress = m_D3DResources.sceneCB->GetGPUVirtualAddress();
+
+	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart(), m_D3DValues.frameIndex, rtvDescSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(5, &rtvHandle, TRUE, &dsvHandle);
+
+	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.sceneCB->GetGPUVirtualAddress());
+	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.materialCB->GetGPUVirtualAddress());
+
+	m_D3DObjects.viewport.Height = m_D3DParams.height;
+	m_D3DObjects.viewport.Width = m_D3DParams.width;
+	m_D3DObjects.viewport.TopLeftX = 0.f;
+	m_D3DObjects.viewport.TopLeftX = 0.f;
+	m_D3DObjects.viewport.TopLeftY = 0.f;
+	m_D3DObjects.viewport.MaxDepth = 0.f;
+	m_D3DObjects.viewport.MinDepth = 0.f;
+
+	m_D3DObjects.scissorRect.top = 0;
+	m_D3DObjects.scissorRect.left = 0;
+	m_D3DObjects.scissorRect.right = m_D3DParams.width;
+	m_D3DObjects.scissorRect.bottom = m_D3DParams.height;
+
+	m_D3DObjects.gBufferPassCommandList->RSSetScissorRects(1, &m_D3DObjects.scissorRect);
+
+	D3D12_RESOURCE_BARRIER pBarriers[5] = {};
+	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	pBarriers[4] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferReflectivity, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+
+	m_D3DObjects.gBufferPassCommandList->ResourceBarrier(5, pBarriers);
+
+	const float clearColour[] = { 0.f, 0.2f, 0.4f, 0.1f };
+	m_D3DObjects.gBufferPassCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_D3DObjects.gBufferPassCommandList->IASetVertexBuffers(0, 1, &m_D3DResources.vertexBufferView);
+	m_D3DObjects.gBufferPassCommandList->IASetIndexBuffer(&m_D3DResources.indexBufferView);
+	m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(m_D3DValues.indicesCount, 1, 0, 0, 0);
+
+	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	pBarriers[4] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferReflectivity, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+	m_D3DObjects.gBufferPassCommandList->Close();
+	SubmitGBufferCommandList();
+	WaitForGPU();
+}
+
+void Graphics::SubmitGBufferCommandList()
+{
+	m_D3DObjects.gBufferPassCommandList->Close();
+
+	ID3D12CommandList* pGraphicsList = { m_D3DObjects.gBufferPassCommandList };
+	m_D3DObjects.commandQueue->ExecuteCommandLists(1, &pGraphicsList);
+	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
+	m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, m_D3DValues.fenceValues[m_D3DValues.frameIndex]);
 }
 
 void Graphics::BuildCommandList()

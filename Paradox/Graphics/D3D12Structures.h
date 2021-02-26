@@ -66,6 +66,7 @@ struct D3D12Values
 	UINT64 fenceValues[2] = { 0, 0 };
 	UINT frameIndex = 0;
 	UINT rtvDescSize = 0;
+	UINT indicesCount = 0;
 };
 
 struct D3D12Objects
@@ -95,6 +96,9 @@ struct D3D12Objects
 
 	ID3DBlob* vsBlob = nullptr;
 	ID3DBlob* psBlob = nullptr;
+
+	D3D12_VIEWPORT viewport;
+	D3D12_RECT scissorRect;
 };
 
 struct D3D12ShaderCompilerInfo

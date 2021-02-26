@@ -81,6 +81,10 @@ private:
 
 	void UpdateSceneCB();
 
+	void BuildGBufferCommandList();
+	void SubmitGBufferCommandList();
+	void ResetGBufferCommandList();
+
 	void BuildCommandList();
 	void SubmitCommandList();
 
