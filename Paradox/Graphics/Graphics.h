@@ -40,7 +40,7 @@ private:
 	void CreateGBufferPassRootSignature();
 
 	void CreateRTVDescriptorHeaps();
-	void CreateBackBufferRtv();
+	void CreateBackBufferRTV();
 	void CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource);
 	void CreateVertexBuffer(Model &model);
 	void CreateIndexBuffer(Model &model);
@@ -65,6 +65,7 @@ private:
 
 	void CreateGBufferPassPSO();
 	void CreateGBufferPassRTVDescriptorHeaps();
+	void CreateGBufferPassRTV();
 
 	void CompileShader(RtProgram &program);
 	void CompileShader(D3D12ShaderInfo &info, IDxcBlob** blob);

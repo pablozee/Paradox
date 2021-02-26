@@ -33,29 +33,23 @@ void Graphics::Init(HWND hwnd)
 	CreateCommandList();
 	ResetCommandList();
 
-
-	
 	CreateDSVDescriptorHeap();
-
 
 	CreateRTVDescriptorHeaps();
 	CreateUAVResources();
 
 	CompileGBufferPassShaders();
-
 	CreateGBufferPassCommandAllocator();
 	CreateGBufferPassCommandList();
 	ResetGBufferPassCommandList();
-
 	CreateGBufferPassRootSignature();
-
 	CreateGBufferPassPSO();
 	CreateGBufferPassRTVDescriptorHeaps();
 
 
 	CreateDepthStencilView();
 
-	CreateBackBufferRtv();
+	CreateBackBufferRTV();
 	CreateVertexBuffer(m_Model);
 	CreateIndexBuffer(m_Model);
 
@@ -609,6 +603,40 @@ void Graphics::CreateGBufferPassRTVDescriptorHeaps()
 	Helpers::Validate(hr, L"Failed to create G Buffer RTV Descriptor Heap");
 }
 
+void Graphics::CreateGBufferPassRTV()
+{
+	HRESULT hr;
+	D3D12_CPU_DESCRIPTOR_HANDLE gBufRTVHandle = m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart();
+
+	m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferWorldPos, nullptr, gBufRTVHandle);
+
+	gBufRTVHandle.ptr += m_D3DValues.rtvDescSize;
+
+	m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferNormal, nullptr, gBufRTVHandle);
+
+	gBufRTVHandle.ptr += m_D3DValues.rtvDescSize;
+
+	m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferDiffuse, nullptr, gBufRTVHandle);
+
+	gBufRTVHandle.ptr += m_D3DValues.rtvDescSize;
+
+	m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferSpecular, nullptr, gBufRTVHandle);
+
+	gBufRTVHandle.ptr += m_D3DValues.rtvDescSize;
+
+	m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferReflectivity, nullptr, gBufRTVHandle);
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.gBufferWorldPos->SetName(L"World Position G Buffer");
+	m_D3DResources.gBufferNormal->SetName(L"World Normals G Buffer");
+	m_D3DResources.gBufferDiffuse->SetName(L"Diffuse G Buffer");
+	m_D3DResources.gBufferSpecular->SetName(L"Specular G Buffer");
+	m_D3DResources.gBufferReflectivity->SetName(L"Reflectivity G Buffer");
+#endif
+
+}
+
+
 void Graphics::ResetCommandList()
 {
 	HRESULT hr = m_D3DObjects.commandAllocators[m_D3DValues.frameIndex]->Reset();
@@ -635,7 +663,7 @@ void Graphics::CreateRTVDescriptorHeaps()
 	m_D3DValues.rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 }
 
-void Graphics::CreateBackBufferRtv()
+void Graphics::CreateBackBufferRTV()
 {
 	HRESULT hr;
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_D3DResources.rtvHeap->GetCPUDescriptorHandleForHeapStart();
