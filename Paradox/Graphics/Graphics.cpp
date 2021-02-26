@@ -45,6 +45,7 @@ void Graphics::Init(HWND hwnd)
 	CreateGBufferPassRootSignature();
 	CreateGBufferPassPSO();
 	CreateGBufferPassRTVDescriptorHeaps();
+	CreateGBufferPassRTVResources();
 	CreateGBufferPassRTVs();
 
 	CreateDepthStencilView();
@@ -466,7 +467,7 @@ void Graphics::CreateUAVResources()
 
 	D3D12_CPU_DESCRIPTOR_HANDLE gBufferDescHandle = m_D3DResources.gBufferDescHeap->GetCPUDescriptorHandleForHeapStart();
 	UINT handleIncrement = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
+	/*
 	D3D12_RESOURCE_DESC resourceDesc = {};
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
@@ -494,6 +495,8 @@ void Graphics::CreateUAVResources()
 	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferSpecular));
 
 	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferSpecular));
+	*/
+
 }
 
 void Graphics::CreateDepthStencilView()
@@ -613,10 +616,73 @@ void Graphics::CreateGBufferPassRTVDescriptorHeaps()
 	D3D12_DESCRIPTOR_HEAP_DESC gBufRTVHeapDesc = {};
 	gBufRTVHeapDesc.NumDescriptors = 5;
 	gBufRTVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	gBufRTVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&gBufRTVHeapDesc, IID_PPV_ARGS(&m_D3DResources.gBufferPassRTVHeap));
 	Helpers::Validate(hr, L"Failed to create G Buffer RTV Descriptor Heap");
+}
+
+void Graphics::CreateGBufferPassRTVResources()
+{
+	D3D12_RESOURCE_DESC rtvDesc = {};
+	rtvDesc.Width = m_D3DParams.width;
+	rtvDesc.Height = m_D3DParams.height;
+	rtvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	rtvDesc.DepthOrArraySize = 1;
+	rtvDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	rtvDesc.MipLevels = 1;
+	rtvDesc.SampleDesc.Count = 1;
+	rtvDesc.SampleDesc.Quality = 0;
+	rtvDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+	FLOAT colour[4] = { 0.33f, 0.33f, 0.33f, 0.f };
+
+	D3D12_CLEAR_VALUE rtvClearCol = {};
+	rtvClearCol.Color[0] = colour[0];
+	rtvClearCol.Color[1] = colour[1];
+	rtvClearCol.Color[2] = colour[2];
+	rtvClearCol.Color[3] = colour[3];
+	rtvClearCol.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&rtvDesc,
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		&rtvClearCol,
+		IID_PPV_ARGS(&m_D3DResources.gBufferWorldPos));
+
+	hr = m_D3DObjects.device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&rtvDesc,
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		&rtvClearCol,
+		IID_PPV_ARGS(&m_D3DResources.gBufferNormal));
+
+	hr = m_D3DObjects.device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&rtvDesc,
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		&rtvClearCol,
+		IID_PPV_ARGS(&m_D3DResources.gBufferDiffuse));
+
+	hr = m_D3DObjects.device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&rtvDesc,
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		&rtvClearCol,
+		IID_PPV_ARGS(&m_D3DResources.gBufferSpecular));
+
+	hr = m_D3DObjects.device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&rtvDesc,
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		&rtvClearCol,
+		IID_PPV_ARGS(&m_D3DResources.gBufferReflectivity));
+
 }
 
 void Graphics::CreateGBufferPassRTVs()

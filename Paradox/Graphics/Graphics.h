@@ -65,6 +65,7 @@ private:
 
 	void CreateGBufferPassPSO();
 	void CreateGBufferPassRTVDescriptorHeaps();
+	void CreateGBufferPassRTVResources();
 	void CreateGBufferPassRTVs();
 
 	void CompileShader(RtProgram &program);
