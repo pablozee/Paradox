@@ -98,6 +98,7 @@ void Graphics::Render()
 	BuildCommandList();
 	Present();
 	MoveToNextFrame();
+	ResetGBufferCommandList();
 	ResetCommandList();
 }
 
@@ -1642,10 +1643,10 @@ void Graphics::BuildGBufferCommandList()
 //	m_D3DObjects.gBufferPassCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart(), m_D3DValues.frameIndex, rtvDescSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart(), rtvDescSize);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
-	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(5, &rtvHandle, TRUE, &dsvHandle);
+	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(5, &m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart(), TRUE, &dsvHandle);
 
 //	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.sceneCB->GetGPUVirtualAddress());
 //	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.materialCB->GetGPUVirtualAddress());
