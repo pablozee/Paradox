@@ -1,5 +1,3 @@
-/**/
-
 struct DirectionalLight
 {
 	float3			 directionalLightDirection;
@@ -57,7 +55,7 @@ struct VSInput
 
 struct VSOutput
 {
-	float4 Pos  : SV_POSITION;
+	float4 PosH  : SV_POSITION;
 	float3 PosW : POSITION;
 	float2 TexC : TEXCOORD;
 	float3 NormalW : NORMAL;
@@ -66,10 +64,16 @@ struct VSOutput
 VSOutput main(VSInput vsInput)
 {
 	VSOutput vso;
-	vso.Pos = mul(float4(vsInput.Pos, 1.0f), view);
+//	vso.PosH = mul(float4(1.0f, 1.0f, 1.0f, 1.0f), view);
+	float4 tempPos = float4(vsInput.Pos, 1.0f);
+//	vso.PosH = mul(tempPos, view);
+//	vso.PosH = float4(vso.PosW, 1.0f);
+	vso.PosH = tempPos;
+//	vso.Pos = float4(vsInput.Pos, 1.0f);
 	vso.PosW = mul(vsInput.Pos, (float3x3)view);
 	vso.TexC = vsInput.TexC;
-	vso.NormalW = mul(vsInput.Normal, (float3x3)view);
+//	vso.NormalW = mul(vsInput.Normal, (float3x3)view);
+	vso.NormalW = vsInput.Normal;
 
 	return vso;
 }

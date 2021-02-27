@@ -50,7 +50,7 @@ cbuffer MaterialCB : register(b1)
 
 struct PSInput
 {
-	float4 Pos : SV_POSITION;
+	float4 PosH : SV_POSITION;
 	float3 PosW : POSITION;
 	float2 TexC : TEXCOORD;
 	float3 NormalW : NORMAL;
