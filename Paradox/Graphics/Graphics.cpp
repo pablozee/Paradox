@@ -38,10 +38,15 @@ void Graphics::Init(HWND hwnd)
 	CreateRTVDescriptorHeaps();
 	CreateUAVResources();
 
-	CompileGBufferPassShaders();
+	CreateSceneCB();
+	SeedRandomVector(m_RandomVectorSeed0);
+	SeedRandomVector(m_RandomVectorSeed1);
+	CreateMaterialConstantBuffer(m_Material);
+
 	CreateGBufferPassCommandAllocator();
 	CreateGBufferPassCommandList();
 	ResetGBufferPassCommandList();
+	CompileGBufferPassShaders();
 	CreateGBufferPassRootSignature();
 	CreateGBufferPassPSO();
 	CreateGBufferPassRTVDescriptorHeaps();
@@ -57,10 +62,6 @@ void Graphics::Init(HWND hwnd)
 //	CreateTexture(m_Material);
 
 
-	CreateSceneCB();
-	SeedRandomVector(m_RandomVectorSeed0);
-	SeedRandomVector(m_RandomVectorSeed1);
-	CreateMaterialConstantBuffer(m_Material);
 
 	CreateBottomLevelAS();
 	CreateTopLevelAS();
@@ -390,7 +391,7 @@ void Graphics::CreateDSVDescriptorHeap()
 
 void Graphics::CreateGBufferPassRootSignature()
 {
-	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[6];
+	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[7];
 	descriptorTableRanges[0].NumDescriptors = 1;
 	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
 	descriptorTableRanges[0].BaseShaderRegister = 0;
@@ -411,30 +412,37 @@ void Graphics::CreateGBufferPassRootSignature()
 	descriptorTableRanges[3].BaseShaderRegister = 3;
 	descriptorTableRanges[3].RegisterSpace = 0;
 	descriptorTableRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	descriptorTableRanges[3].NumDescriptors = 1;
-	descriptorTableRanges[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	descriptorTableRanges[3].BaseShaderRegister = 4;
-	descriptorTableRanges[3].RegisterSpace = 0;
-	descriptorTableRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 	descriptorTableRanges[4].NumDescriptors = 1;
-	descriptorTableRanges[4].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	descriptorTableRanges[4].BaseShaderRegister = 5;
+	descriptorTableRanges[4].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+	descriptorTableRanges[4].BaseShaderRegister = 4;
 	descriptorTableRanges[4].RegisterSpace = 0;
 	descriptorTableRanges[4].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
 	descriptorTableRanges[5].NumDescriptors = 1;
 	descriptorTableRanges[5].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	descriptorTableRanges[5].BaseShaderRegister = 6;
+	descriptorTableRanges[5].BaseShaderRegister = 0;
 	descriptorTableRanges[5].RegisterSpace = 0;
 	descriptorTableRanges[5].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	descriptorTableRanges[6].NumDescriptors = 1;
+	descriptorTableRanges[6].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	descriptorTableRanges[6].BaseShaderRegister = 0;
+	descriptorTableRanges[6].RegisterSpace = 1;
+	descriptorTableRanges[6].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	/*
+	*/
+
+
 
 	D3D12_ROOT_DESCRIPTOR_TABLE rootDescTable;
-	rootDescTable.NumDescriptorRanges = 6;
+	rootDescTable.NumDescriptorRanges = 7;
 	rootDescTable.pDescriptorRanges = &descriptorTableRanges[0];
 
-	D3D12_ROOT_PARAMETER slotRootParameter[1];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[1];
 	slotRootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	slotRootParameter[0].DescriptorTable = rootDescTable;
 	slotRootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+//	slotRootParameter[1].InitAsConstantBufferView(1);
+//	slotRootParameter[2].InitAsConstantBufferView(2);
 
 	D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
 	rootSigDesc.NumParameters = _countof(slotRootParameter);
@@ -587,8 +595,8 @@ void Graphics::CreateGBufferPassPSO()
 	psoDesc.InputLayout = { ieDesc, _countof(ieDesc) };
 	psoDesc.pRootSignature = m_D3DObjects.gBufferPassRootSignature;
 
-	psoDesc.PS = { reinterpret_cast<UINT8*>(m_D3DObjects.psBlob->GetBufferPointer()), m_D3DObjects.psBlob->GetBufferSize() };
 	psoDesc.VS = { reinterpret_cast<UINT8*>(m_D3DObjects.vsBlob->GetBufferPointer()), m_D3DObjects.vsBlob->GetBufferSize() };
+	psoDesc.PS = { reinterpret_cast<UINT8*>(m_D3DObjects.psBlob->GetBufferPointer()), m_D3DObjects.psBlob->GetBufferSize() };
 //	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_D3DObjects.vsBlob);
 //	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_D3DObjects.psBlob);
 
@@ -1643,8 +1651,8 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(5, &m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart(), TRUE, &dsvHandle);
 
-//	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.sceneCB->GetGPUVirtualAddress());
-//	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.materialCB->GetGPUVirtualAddress());
+	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.sceneCB->GetGPUVirtualAddress());
+	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.materialCB->GetGPUVirtualAddress());
 
 	m_D3DObjects.viewport.Height = m_D3DParams.height;
 	m_D3DObjects.viewport.Width = m_D3DParams.width;

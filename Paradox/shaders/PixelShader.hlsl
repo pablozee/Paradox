@@ -1,3 +1,21 @@
+/**/
+
+struct DirectionalLight
+{
+	float3			 directionalLightDirection;
+	float			 directionalLightPadding;
+	float3			 directionalLightColour;
+	float			 directionalLightPadding1;
+};
+
+struct PointLight
+{
+	float3			 pointLightPosition;
+	float			 pointLightPadding;
+	float3			 pointLightColour;
+	float			 pointLightPadding1;
+};
+
 cbuffer SceneCB : register(b0)
 {
 	matrix			 view;
@@ -32,7 +50,7 @@ cbuffer MaterialCB : register(b1)
 
 struct PSInput
 {
-	float3 PosW : SV_POSITION;
+	float3 PosW : POSITION;
 	float2 TexC : TEXCOORD;
 	float3 NormalW : NORMAL;
 };
@@ -43,15 +61,16 @@ struct PSOutput
 	float4 gBufferWorldNormal	 : SV_Target1; 
 	float4 gBufferDiffuse		 : SV_Target2;
 	float4 gBufferSpecular		 : SV_Target3;
-	float4 gBufferReflectivity	 : SV_Target4; 
+//	float4 gBufferReflectivity	 : SV_Target4; 
 };
 
-PSOutput main(PSInput psInput) : SV_TARGET
+PSOutput main(PSInput psInput)
 {
-	psOutput.gBgBufferWorldPos = float4(PosW, shininess);
-	psOutput.gBgBufferNormal   = float4(NormalW, ior);
+	PSOutput psOutput;
+	psOutput.gBufferWorldPos = float4(psInput.PosW, shininess);
+	psOutput.gBufferWorldNormal   = float4(psInput.NormalW, ior);
 	psOutput.gBufferDiffuse	   = float4(diffuse, 1.0f);
 	psOutput.gBufferSpecular   = float4(specular, 1.0f);
-	psOutput.gBufferReflectivity = float4(1.0f, 1.0f, 1.0f, 1.0f);
+//	psOutput.gBufferReflectivity = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	return psOutput;
 }

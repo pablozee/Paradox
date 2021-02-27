@@ -1,3 +1,21 @@
+/**/
+
+struct DirectionalLight
+{
+	float3			 directionalLightDirection;
+	float			 directionalLightPadding;
+	float3			 directionalLightColour;
+	float			 directionalLightPadding1;
+};
+
+struct PointLight
+{
+	float3			 pointLightPosition;
+	float			 pointLightPadding;
+	float3			 pointLightColour;
+	float			 pointLightPadding1;
+};
+
 cbuffer SceneCB : register(b0)
 {
 	matrix			 view;
@@ -39,7 +57,8 @@ struct VSInput
 
 struct VSOutput
 {
-	float3 PosW : SV_POSITION;
+	float4 Pos  : SV_POSITION;
+	float3 PosW : POSITION;
 	float2 TexC : TEXCOORD;
 	float3 NormalW : NORMAL;
 };
@@ -47,6 +66,7 @@ struct VSOutput
 VSOutput main(VSInput vsInput)
 {
 	VSOutput vso;
+	vso.Pos = mul(float4(vsInput.Pos, 1.0f), view);
 	vso.PosW = mul(vsInput.Pos, (float3x3)view);
 	vso.TexC = vsInput.TexC;
 	vso.NormalW = mul(vsInput.Normal, (float3x3)view);
