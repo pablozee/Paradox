@@ -425,8 +425,8 @@ void Graphics::CreateGBufferPassRootSignature()
 	descriptorTableRanges[5].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 	descriptorTableRanges[6].NumDescriptors = 1;
 	descriptorTableRanges[6].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	descriptorTableRanges[6].BaseShaderRegister = 0;
-	descriptorTableRanges[6].RegisterSpace = 1;
+	descriptorTableRanges[6].BaseShaderRegister = 1;
+	descriptorTableRanges[6].RegisterSpace = 0;
 	descriptorTableRanges[6].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 	/*
 	*/

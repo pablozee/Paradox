@@ -50,6 +50,7 @@ cbuffer MaterialCB : register(b1)
 
 struct PSInput
 {
+	float4 Pos : SV_POSITION;
 	float3 PosW : POSITION;
 	float2 TexC : TEXCOORD;
 	float3 NormalW : NORMAL;
@@ -61,7 +62,7 @@ struct PSOutput
 	float4 gBufferWorldNormal	 : SV_Target1; 
 	float4 gBufferDiffuse		 : SV_Target2;
 	float4 gBufferSpecular		 : SV_Target3;
-//	float4 gBufferReflectivity	 : SV_Target4; 
+	float4 gBufferReflectivity	 : SV_Target4; 
 };
 
 PSOutput main(PSInput psInput)
@@ -71,6 +72,6 @@ PSOutput main(PSInput psInput)
 	psOutput.gBufferWorldNormal   = float4(psInput.NormalW, ior);
 	psOutput.gBufferDiffuse	   = float4(diffuse, 1.0f);
 	psOutput.gBufferSpecular   = float4(specular, 1.0f);
-//	psOutput.gBufferReflectivity = float4(1.0f, 1.0f, 1.0f, 1.0f);
+	psOutput.gBufferReflectivity = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	return psOutput;
 }
