@@ -56,7 +56,7 @@ struct PSInput
 	float3 NormalW : NORMAL;
 };
 
-struct PSOutput
+struct GBuffer
 {
 	float4 gBufferWorldPos		 : SV_Target0;
 	float4 gBufferWorldNormal	 : SV_Target1; 
@@ -65,13 +65,13 @@ struct PSOutput
 	float4 gBufferReflectivity	 : SV_Target4; 
 };
 
-PSOutput main(PSInput psInput)
+GBuffer main(PSInput psInput)
 {
-	PSOutput psOutput;
-	psOutput.gBufferWorldPos = float4(psInput.PosW, shininess);
-	psOutput.gBufferWorldNormal   = float4(psInput.NormalW, ior);
-	psOutput.gBufferDiffuse	   = float4(diffuse, 1.0f);
-	psOutput.gBufferSpecular   = float4(specular, 1.0f);
-	psOutput.gBufferReflectivity = float4(1.0f, 1.0f, 1.0f, 1.0f);
-	return psOutput;
+	GBuffer gBuffer;
+	gBuffer.gBufferWorldPos = float4(psInput.PosW, shininess);
+	gBuffer.gBufferWorldNormal   = float4(psInput.NormalW, ior);
+	gBuffer.gBufferDiffuse	   = float4(diffuse, 1.0f);
+	gBuffer.gBufferSpecular   = float4(specular, 1.0f);
+	gBuffer.gBufferReflectivity = float4(1.0f, 1.0f, 1.0f, 1.0f);
+	return gBuffer;
 }

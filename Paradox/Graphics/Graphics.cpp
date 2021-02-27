@@ -1646,10 +1646,10 @@ void Graphics::BuildGBufferCommandList()
 	D3D12_GPU_VIRTUAL_ADDRESS sceneCBAddress = m_D3DResources.sceneCB->GetGPUVirtualAddress();
 
 	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart(), rtvDescSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
-	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(5, &m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart(), TRUE, &dsvHandle);
+	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(5, &rtvHandle, TRUE, &dsvHandle);
 
 	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.sceneCB->GetGPUVirtualAddress());
 	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.materialCB->GetGPUVirtualAddress());
@@ -1680,6 +1680,13 @@ void Graphics::BuildGBufferCommandList()
 	*/
 
 	const float clearColour[] = { 0.f, 0.2f, 0.4f, 0.1f };
+	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.f, 0.f, 1, &m_D3DObjects.scissorRect);
+	for (int i = 0; i < 5; i++)
+	{
+		m_D3DObjects.gBufferPassCommandList->ClearRenderTargetView(rtvHandle, clearColour, 1, &m_D3DObjects.scissorRect);
+		
+		if (i < 4) rtvHandle.ptr += rtvDescSize;
+	}
 	m_D3DObjects.gBufferPassCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_D3DObjects.gBufferPassCommandList->IASetVertexBuffers(0, 1, &m_D3DResources.vertexBufferView);
 	m_D3DObjects.gBufferPassCommandList->IASetIndexBuffer(&m_D3DResources.indexBufferView);
