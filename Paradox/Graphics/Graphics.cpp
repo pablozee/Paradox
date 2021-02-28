@@ -205,7 +205,7 @@ void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
 			model.indices.push_back(uniqueVertices[vertex]);
 		};
 	}
-	m_D3DValues.indicesCount += sizeof(model.indices) / sizeof(uint32_t);
+	m_D3DValues.indicesCount = model.indices.size();
 }
 
 void Graphics::InitializeShaderCompiler()
@@ -447,12 +447,7 @@ void Graphics::CreateGBufferPassRootSignature()
 	D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
 	rootSigDesc.NumParameters = _countof(slotRootParameter);
 	rootSigDesc.pParameters = slotRootParameter;
-	rootSigDesc.Flags = 
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-
+	rootSigDesc.Flags =	D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	ID3DBlob* signature;
 	ID3DBlob* error;
 
@@ -540,7 +535,7 @@ void Graphics::CreateDepthStencilView()
 	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(
 		&heapProps,
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, 1280, 960, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_D3DParams.width, m_D3DParams.height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,
 		&depthOptimizedClearValue,
 		IID_PPV_ARGS(&m_D3DResources.depthStencilView)
@@ -1596,7 +1591,7 @@ void Graphics::WaitForGPU()
 
 void Graphics::UpdateSceneCB()
 {
-	XMMATRIX view, invView;
+	XMMATRIX view, invView, proj;
 
 	float aspect, fov;
 
@@ -1606,10 +1601,13 @@ void Graphics::UpdateSceneCB()
 	view = DirectX::XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
 	invView = DirectX::XMMatrixInverse(NULL, view);
 
+	proj = XMMatrixPerspectiveFovLH(fov, (float)m_D3DParams.width / (float)m_D3DParams.height, 0.1f, 100.0f);
+
 	XMFLOAT3 floatEye;
 	XMStoreFloat3(&floatEye, m_Eye);
 
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].view = DirectX::XMMatrixTranspose(invView);
+//	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].proj = XMMatrixTranspose(proj);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(fov * 0.5f));
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numDirLights = 1;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numPointLights = 0;
@@ -1617,6 +1615,7 @@ void Graphics::UpdateSceneCB()
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector0 = m_RandomVectorSeed0;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].padding = 0.f;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector1 = m_RandomVectorSeed1;
+// TODO Remove this padding if unnecessary
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].padding1 = 0.f;
 
 	XMFLOAT3 floatFocus;
@@ -1645,13 +1644,14 @@ void Graphics::BuildGBufferCommandList()
 
 	D3D12_GPU_VIRTUAL_ADDRESS sceneCBAddress = m_D3DResources.sceneCB->GetGPUVirtualAddress();
 
+
 	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(5, &rtvHandle, TRUE, &dsvHandle);
 
-	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.sceneCB->GetGPUVirtualAddress());
+	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.sceneCB->GetGPUVirtualAddress() + (m_D3DValues.frameIndex * sceneConstantBufferByteSize));
 	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.materialCB->GetGPUVirtualAddress());
 
 	m_D3DObjects.viewport.Height = m_D3DParams.height;
@@ -1668,8 +1668,9 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.scissorRect.bottom = m_D3DParams.height;
 
 	m_D3DObjects.gBufferPassCommandList->RSSetScissorRects(1, &m_D3DObjects.scissorRect);
+/*
+	D3D12_RESOURCE_BARRIER pBarriers[5] = {};
 
-	/*
 	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
@@ -1677,10 +1678,10 @@ void Graphics::BuildGBufferCommandList()
 	pBarriers[4] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferReflectivity, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	m_D3DObjects.gBufferPassCommandList->ResourceBarrier(5, pBarriers);
-	*/
+*/
 
 	const float clearColour[] = { 0.f, 0.2f, 0.4f, 0.1f };
-	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.f, 0.f, 1, &m_D3DObjects.scissorRect);
+//	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.f, 0.f, 1, &m_D3DObjects.scissorRect);
 	for (int i = 0; i < 5; i++)
 	{
 		m_D3DObjects.gBufferPassCommandList->ClearRenderTargetView(rtvHandle, clearColour, 1, &m_D3DObjects.scissorRect);
@@ -1690,7 +1691,7 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.gBufferPassCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_D3DObjects.gBufferPassCommandList->IASetVertexBuffers(0, 1, &m_D3DResources.vertexBufferView);
 	m_D3DObjects.gBufferPassCommandList->IASetIndexBuffer(&m_D3DResources.indexBufferView);
-	m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(m_D3DValues.indicesCount, 1, 0, 0, 0);
+	m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(81, 1, 0, 0, 0);
 
 	SubmitGBufferCommandList();
 	WaitForGPU();
@@ -1709,7 +1710,6 @@ void Graphics::SubmitGBufferCommandList()
 void Graphics::BuildCommandList()
 {
 	/*
-	*/
 	D3D12_RESOURCE_BARRIER pBarriers[5] = {};
 	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
 	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
@@ -1718,6 +1718,7 @@ void Graphics::BuildCommandList()
 	pBarriers[4] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferReflectivity, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
 
 	m_D3DObjects.commandList->ResourceBarrier(5, pBarriers);
+	*/
 	D3D12_RESOURCE_BARRIER OutputBarriers[2] = {};
 	D3D12_RESOURCE_BARRIER CounterBarriers[2] = {};
 	D3D12_RESOURCE_BARRIER UAVBarriers[3] = {};
