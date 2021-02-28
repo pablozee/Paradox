@@ -391,7 +391,7 @@ void Graphics::CreateDSVDescriptorHeap()
 
 void Graphics::CreateGBufferPassRootSignature()
 {
-	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[7];
+	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[5];
 	descriptorTableRanges[0].NumDescriptors = 1;
 	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
 	descriptorTableRanges[0].BaseShaderRegister = 0;
@@ -418,6 +418,7 @@ void Graphics::CreateGBufferPassRootSignature()
 	descriptorTableRanges[4].RegisterSpace = 0;
 	descriptorTableRanges[4].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
+	/*
 	descriptorTableRanges[5].NumDescriptors = 1;
 	descriptorTableRanges[5].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 	descriptorTableRanges[5].BaseShaderRegister = 0;
@@ -428,21 +429,20 @@ void Graphics::CreateGBufferPassRootSignature()
 	descriptorTableRanges[6].BaseShaderRegister = 1;
 	descriptorTableRanges[6].RegisterSpace = 0;
 	descriptorTableRanges[6].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	/*
 	*/
 
 
 
 	D3D12_ROOT_DESCRIPTOR_TABLE rootDescTable;
-	rootDescTable.NumDescriptorRanges = 7;
+	rootDescTable.NumDescriptorRanges = 5;
 	rootDescTable.pDescriptorRanges = &descriptorTableRanges[0];
 
-	CD3DX12_ROOT_PARAMETER slotRootParameter[1];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 	slotRootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	slotRootParameter[0].DescriptorTable = rootDescTable;
 	slotRootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-//	slotRootParameter[1].InitAsConstantBufferView(1);
-//	slotRootParameter[2].InitAsConstantBufferView(2);
+	slotRootParameter[1].InitAsConstantBufferView(0, 0);
+	slotRootParameter[2].InitAsConstantBufferView(1, 0);
 
 	D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
 	rootSigDesc.NumParameters = _countof(slotRootParameter);
@@ -1651,8 +1651,8 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(5, &rtvHandle, TRUE, &dsvHandle);
 
-	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.sceneCB->GetGPUVirtualAddress() + (m_D3DValues.frameIndex * sceneConstantBufferByteSize));
-	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.materialCB->GetGPUVirtualAddress());
+	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(1, m_D3DResources.sceneCB->GetGPUVirtualAddress());
+	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(2, m_D3DResources.materialCB->GetGPUVirtualAddress());
 
 	m_D3DObjects.viewport.Height = m_D3DParams.height;
 	m_D3DObjects.viewport.Width = m_D3DParams.width;
@@ -1680,7 +1680,7 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.gBufferPassCommandList->ResourceBarrier(5, pBarriers);
 */
 
-	const float clearColour[] = { 0.f, 0.2f, 0.4f, 0.1f };
+	const float clearColour[] = { 0.33f, 0.33f, 0.33f, 0.1f };
 //	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.f, 0.f, 1, &m_D3DObjects.scissorRect);
 	for (int i = 0; i < 5; i++)
 	{
@@ -1691,7 +1691,7 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.gBufferPassCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_D3DObjects.gBufferPassCommandList->IASetVertexBuffers(0, 1, &m_D3DResources.vertexBufferView);
 	m_D3DObjects.gBufferPassCommandList->IASetIndexBuffer(&m_D3DResources.indexBufferView);
-	m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(81, 1, 0, 0, 0);
+	m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(m_D3DValues.indicesCount, 1, 0, 0, 0);
 
 	SubmitGBufferCommandList();
 	WaitForGPU();
