@@ -1,5 +1,3 @@
-/**/
-
 struct DirectionalLight
 {
 	float3			 directionalLightDirection;
@@ -69,18 +67,18 @@ GBuffer main(PSInput psInput) : SV_Target
 {
 	GBuffer gBuffer;
 /*
+*/
 	gBuffer.gBufferWorldPos = float4(psInput.PosW, 1.0f);
 	gBuffer.gBufferWorldNormal   = float4(psInput.NormalW, 1.0f);
 	gBuffer.gBufferDiffuse	   = float4(diffuse, 1.0f);
 	gBuffer.gBufferSpecular   = float4(specular, 1.0f);
 	gBuffer.gBufferReflectivity = float4(ior, shininess, 1.0f, 1.0f);
-*/
-
+/*
 	gBuffer.gBufferWorldPos = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	gBuffer.gBufferWorldNormal = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	gBuffer.gBufferDiffuse = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	gBuffer.gBufferSpecular = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	gBuffer.gBufferReflectivity = float4(1.0f, 1.0f, 1.0f, 1.0f);
-
+*/
 	return gBuffer;
 }

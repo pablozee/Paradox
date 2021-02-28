@@ -38,11 +38,12 @@ void Graphics::Init(HWND hwnd)
 	CreateRTVDescriptorHeaps();
 	CreateUAVResources();
 
-	CreateSceneCB();
 	SeedRandomVector(m_RandomVectorSeed0);
 	SeedRandomVector(m_RandomVectorSeed1);
-	CreateMaterialConstantBuffer(m_Material);
 
+	CreateSceneCB();
+	CreateMaterialConstantBuffer(m_Material);
+	
 	CreateGBufferPassCommandAllocator();
 	CreateGBufferPassCommandList();
 	ResetGBufferPassCommandList();
@@ -441,8 +442,8 @@ void Graphics::CreateGBufferPassRootSignature()
 	slotRootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	slotRootParameter[0].DescriptorTable = rootDescTable;
 	slotRootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-	slotRootParameter[1].InitAsConstantBufferView(0, 0);
-	slotRootParameter[2].InitAsConstantBufferView(1, 0);
+	slotRootParameter[1].InitAsConstantBufferView(0);
+	slotRootParameter[2].InitAsConstantBufferView(1);
 
 	D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
 	rootSigDesc.NumParameters = _countof(slotRootParameter);
@@ -636,7 +637,7 @@ void Graphics::CreateGBufferPassRTVResources()
 	rtvDesc.SampleDesc.Quality = 0;
 	rtvDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
-	FLOAT colour[4] = { 0.33f, 0.33f, 0.33f, 0.f };
+	FLOAT colour[4] = { 0.22f, 0.33f, 0.44f, 0.f };
 
 	D3D12_CLEAR_VALUE rtvClearCol = {};
 	rtvClearCol.Color[0] = colour[0];
@@ -975,7 +976,7 @@ void Graphics::CreateMaterialConstantBuffer(const Material& material)
 	HRESULT hr = m_D3DResources.materialCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.materialCBStart));
 	Helpers::Validate(hr, L"Failed to map material constant buffer");
 
-	memcpy(m_D3DResources.materialCBStart, &m_D3DResources.materialCBData, sizeof(MaterialCB));
+	memcpy(m_D3DResources.materialCBStart, &m_D3DResources.materialCBData, sizeof(m_D3DResources.materialCBData));
 };
 
 void Graphics::CreateBottomLevelAS()
@@ -1680,7 +1681,7 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.gBufferPassCommandList->ResourceBarrier(5, pBarriers);
 */
 
-	const float clearColour[] = { 0.33f, 0.33f, 0.33f, 0.1f };
+	const float clearColour[] = { 0.22f, 0.33f, 0.44f, 0.f };
 //	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.f, 0.f, 1, &m_D3DObjects.scissorRect);
 	for (int i = 0; i < 5; i++)
 	{
@@ -1912,9 +1913,11 @@ void Graphics::ResetView()
 void Graphics::SeedRandomVector(XMFLOAT3 randomVector)
 {
 	srand((UINT)time(NULL));
-	float x = rand() % 100 + static_cast<float>(rand() / static_cast<float>(RAND_MAX));
-	float y = rand() % 100 + static_cast<float>(rand() / static_cast<float>(RAND_MAX));
-	float z = rand() % 100 + static_cast<float>(rand() / static_cast<float>(RAND_MAX));
+	float x = rand() % 100 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	srand((UINT)time(NULL));
+	float y = rand() % 100 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	srand((UINT)time(NULL));
+	float z = rand() % 100 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 	
 	randomVector = XMFLOAT3{ x, y, z };
 }
