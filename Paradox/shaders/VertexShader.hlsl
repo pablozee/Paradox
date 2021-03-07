@@ -17,6 +17,7 @@ struct PointLight
 cbuffer SceneCB : register(b0)
 {
 	matrix			 view;
+	matrix			 proj;
 	float4			 viewOriginAndTanHalfFovY;
 	float2			 resolution;
 	float			 numDirLights;
@@ -65,11 +66,11 @@ VSOutput main(VSInput vsInput)
 {
 	VSOutput vso;
 //	vso.PosH = mul(float4(1.0f, 1.0f, 1.0f, 1.0f), view);
-	vso.PosH = float4(vsInput.Pos, 1.0f);
-//	float4 tempPos = float4(vsInput.Pos, 1.0f);
-//	vso.PosH = mul(tempPos, view);
+//	vso.PosH = float4(vsInput.Pos, 1.0f);
+	float4 tempPos = float4(vsInput.Pos, 1.0f);
+	float4x4 viewProj = mul(view, proj);
+	vso.PosH = mul(tempPos, viewProj);
 //	vso.PosH = float4(vso.PosW, 1.0f);
-//	float4x4 viewProj = mul(view, proj);
 //	vso.PosH = mul(tempPos, viewProj);
 //	vso.Pos = float4(vsInput.Pos, 1.0f);
 	vso.PosW = mul(vsInput.Pos, (float3x3)view);
