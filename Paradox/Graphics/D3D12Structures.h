@@ -165,11 +165,11 @@ struct D3D12Resources
 
 	ID3D12DescriptorHeap*		gBufferDescHeap = nullptr;
 
-	ID3D12Resource*				gBufferWorldPos = nullptr;
-	ID3D12Resource*				gBufferNormal = nullptr;
-	ID3D12Resource*				gBufferDiffuse = nullptr;
-	ID3D12Resource*				gBufferSpecular = nullptr;
-	ID3D12Resource*				gBufferReflectivity = nullptr;
+	ID3D12Resource*				gBufferWorldPos[2];
+	ID3D12Resource*				gBufferNormal[2];
+	ID3D12Resource*				gBufferDiffuse[2];
+	ID3D12Resource*				gBufferSpecular[2];
+	ID3D12Resource*				gBufferReflectivity[2];
 };
 
 struct AccelerationStructureBuffer
