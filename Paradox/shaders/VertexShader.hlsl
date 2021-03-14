@@ -74,7 +74,7 @@ VSOutput main(VSInput vsInput)
 
 	float4x4 viewProj = mul(view, proj);
 
-	vso.PosH = mul(vsInput.Pos, viewProj);
+	vso.PosH = float4(vsInput.Pos, 1.0f);
 
 	return vso;
 }
