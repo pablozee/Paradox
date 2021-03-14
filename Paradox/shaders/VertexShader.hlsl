@@ -57,9 +57,9 @@ struct VSInput
 struct VSOutput
 {
 	float4 PosH  : SV_POSITION;
-	float3 PosW : WorldPos;
-	float2 TexCOut : TexCoordOut;
-	float3 NormalW : WorldNormal;
+	float3 PosW : POSITION;
+	float2 TexCOut : TEXCOORD;
+	float3 NormalW : NORMAL;
 };
 
 VSOutput main(VSInput vsInput)
@@ -74,7 +74,8 @@ VSOutput main(VSInput vsInput)
 
 	float4x4 viewProj = mul(view, proj);
 
-	vso.PosH = float4(vsInput.Pos, 1.0f);
+	vso.PosH = mul(float4(vsInput.Pos, 1.0f), viewProj);
+//	vso.PosH = float4(vsInput.Pos, 1.0f);
 
 	return vso;
 }

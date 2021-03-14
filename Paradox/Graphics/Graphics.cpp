@@ -1615,12 +1615,12 @@ void Graphics::UpdateSceneCB()
 	invView = DirectX::XMMatrixInverse(NULL, view);
 
 	proj = XMMatrixPerspectiveFovLH(fov, (float)m_D3DParams.width / (float)m_D3DParams.height, 0.1f, 100.0f);
-
+	proj = XMMatrixInverse(NULL, proj);
 	XMFLOAT3 floatEye;
 	XMStoreFloat3(&floatEye, m_Eye);
 
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].view = DirectX::XMMatrixTranspose(invView);
-//	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].proj = XMMatrixTranspose(proj);
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].proj = XMMatrixTranspose(proj);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(fov * 0.5f));
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numDirLights = 1;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numPointLights = 0;

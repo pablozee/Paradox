@@ -17,6 +17,7 @@ struct PointLight
 cbuffer SceneCB : register(b0)
 {
 	matrix			 view;
+	matrix			 proj;
 	float4			 viewOriginAndTanHalfFovY;
 	float2			 resolution;
 	float			 numDirLights;
@@ -49,9 +50,9 @@ cbuffer MaterialCB : register(b1)
 struct PSInput
 {
 	float4 PosH : SV_POSITION;
-	float3 PosW : WorldPos;
-	float2 TexC : TexCoordOut;
-	float3 NormalW : WorldNormal;
+	float3 PosW : POSITION;
+	float2 TexC : TEXCOORD;
+	float3 NormalW : NORMAL;
 };
 
 struct GBuffer
@@ -66,13 +67,18 @@ struct GBuffer
 GBuffer main(PSInput psInput)
 {
 	GBuffer gBuffer;
-
-	gBuffer.gBufferWorldPos = float4(psInput.PosW, 1.0f);
-	gBuffer.gBufferWorldNormal = float4(psInput.NormalW, 1.0f);
-	gBuffer.gBufferDiffuse = float4(diffuse, 1.0f);
-	gBuffer.gBufferSpecular = float4(specular, 1.0f);
-	gBuffer.gBufferReflectivity = float4(ior, shininess, 1.0f, 1.0f);
-
+	gBuffer.gBufferWorldPos.xyz = psInput.PosW;
+	gBuffer.gBufferWorldPos.w = 1.0f;
+	gBuffer.gBufferWorldNormal.xyz = psInput.NormalW;
+	gBuffer.gBufferWorldNormal.w = 1.0f;
+	gBuffer.gBufferDiffuse.xyz = diffuse;
+	gBuffer.gBufferDiffuse.w = 1.0f;
+	gBuffer.gBufferSpecular.xyz = specular;
+	gBuffer.gBufferSpecular.w = 1.0f;
+	gBuffer.gBufferReflectivity.x = ior;
+	gBuffer.gBufferReflectivity.y = shininess;
+	gBuffer.gBufferReflectivity.z = 1.0f;
+	gBuffer.gBufferReflectivity.w = 1.0f;
 
 	return gBuffer;
 }
