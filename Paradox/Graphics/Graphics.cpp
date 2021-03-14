@@ -603,11 +603,11 @@ void Graphics::CreateGBufferPassPSO()
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 5;
 	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	psoDesc.RTVFormats[1] = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	psoDesc.RTVFormats[2] = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	psoDesc.RTVFormats[3] = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	psoDesc.RTVFormats[4] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.RTVFormats[1] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.RTVFormats[3] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.RTVFormats[4] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.SampleDesc.Count = 1;
 	
 	HRESULT hr = m_D3DObjects.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_D3DObjects.gBufferPassPipelineState));
@@ -629,7 +629,7 @@ void Graphics::CreateGBufferPassRTVResources()
 	D3D12_RESOURCE_DESC rtvDesc = {};
 	rtvDesc.Width = m_D3DParams.width;
 	rtvDesc.Height = m_D3DParams.height;
-	rtvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	rtvDesc.DepthOrArraySize = 1;
 	rtvDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 	rtvDesc.MipLevels = 1;
@@ -644,7 +644,7 @@ void Graphics::CreateGBufferPassRTVResources()
 	rtvClearCol.Color[1] = colour[1];
 	rtvClearCol.Color[2] = colour[2];
 	rtvClearCol.Color[3] = colour[3];
-	rtvClearCol.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	rtvClearCol.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 	for (int i = 0; i < 2; i++)
 	{
