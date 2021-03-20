@@ -1525,14 +1525,14 @@ void Graphics::UpdateSceneCB()
 	fov = 65.f * (XM_PI / 180.f);
 
 	view = DirectX::XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
-	invView = DirectX::XMMatrixInverse(NULL, view);
+//	view = DirectX::XMMatrixInverse(NULL, view);
 
 	proj = XMMatrixPerspectiveFovLH(fov, (float)m_D3DParams.width / (float)m_D3DParams.height, 0.1f, 100.0f);
-	proj = XMMatrixInverse(NULL, proj);
+//	proj = XMMatrixInverse(NULL, proj);
 	XMFLOAT3 floatEye;
 	XMStoreFloat3(&floatEye, m_Eye);
 
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].view = DirectX::XMMatrixTranspose(invView);
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].view = DirectX::XMMatrixTranspose(view);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].proj = XMMatrixTranspose(proj);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(fov * 0.5f));
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numDirLights = 1;
@@ -1608,13 +1608,14 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(4, &rtvHandle, TRUE, &dsvHandle);
 
 	const float clearColour[] = { 0.22f, 0.33f, 0.44f, 0.f };
-//	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.f, 0.f, 1, &m_D3DObjects.scissorRect);
+	
 	for (int i = 0; i < 4; i++)
 	{
 		m_D3DObjects.gBufferPassCommandList->ClearRenderTargetView(rtvHandle, clearColour, 1, &m_D3DObjects.scissorRect);
 		
 		if (i < 4) rtvHandle.ptr += rtvDescSize;
 	}
+
 	m_D3DObjects.gBufferPassCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_D3DObjects.gBufferPassCommandList->IASetVertexBuffers(0, 1, &m_D3DResources.vertexBufferView);
 	m_D3DObjects.gBufferPassCommandList->IASetIndexBuffer(&m_D3DResources.indexBufferView);

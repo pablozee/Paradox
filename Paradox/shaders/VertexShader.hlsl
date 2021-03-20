@@ -72,9 +72,9 @@ VSOutput main(VSInput vsInput)
 
 	vso.TexCOut = vsInput.TexC;
 
-	float4x4 viewProj = mul(view, proj);
+	matrix viewProj = mul(view, proj);
 
-	vso.PosH = mul(float4(vsInput.Pos, 1.0f), viewProj);
+	vso.PosH = mul(vsInput.Pos, viewProj);
 //	vso.PosH = float4(vsInput.Pos, 1.0f);
 
 	return vso;
