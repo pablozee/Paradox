@@ -61,24 +61,19 @@ struct GBuffer
 	float4 gBufferWorldNormal	 : SV_Target1; 
 	float4 gBufferDiffuse		 : SV_Target2;
 	float4 gBufferSpecular		 : SV_Target3;
-	float4 gBufferReflectivity	 : SV_Target4; 
 };
 
 GBuffer main(PSInput psInput)
 {
 	GBuffer gBuffer;
 	gBuffer.gBufferWorldPos.xyz = psInput.PosW;
-	gBuffer.gBufferWorldPos.w = 1.0f;
+	gBuffer.gBufferWorldPos.w = ior;
 	gBuffer.gBufferWorldNormal.xyz = psInput.NormalW;
-	gBuffer.gBufferWorldNormal.w = 1.0f;
+	gBuffer.gBufferWorldNormal.w = shininess;
 	gBuffer.gBufferDiffuse.xyz = diffuse;
 	gBuffer.gBufferDiffuse.w = 1.0f;
 	gBuffer.gBufferSpecular.xyz = specular;
 	gBuffer.gBufferSpecular.w = 1.0f;
-	gBuffer.gBufferReflectivity.x = ior;
-	gBuffer.gBufferReflectivity.y = shininess;
-	gBuffer.gBufferReflectivity.z = 1.0f;
-	gBuffer.gBufferReflectivity.w = 1.0f;
 
 	return gBuffer;
 }
