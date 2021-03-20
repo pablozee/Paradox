@@ -36,7 +36,6 @@ void Graphics::Init(HWND hwnd)
 	CreateDSVDescriptorHeap();
 
 	CreateRTVDescriptorHeaps();
-	CreateUAVResources();
 
 	SeedRandomVector(m_RandomVectorSeed0);
 	SeedRandomVector(m_RandomVectorSeed1);
@@ -392,32 +391,7 @@ void Graphics::CreateDSVDescriptorHeap()
 
 void Graphics::CreateGBufferPassRootSignature()
 {
-	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[5];
-	descriptorTableRanges[0].NumDescriptors = 1;
-	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	descriptorTableRanges[0].BaseShaderRegister = 0;
-	descriptorTableRanges[0].RegisterSpace = 0;
-	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	descriptorTableRanges[1].NumDescriptors = 1;
-	descriptorTableRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	descriptorTableRanges[1].BaseShaderRegister = 1;
-	descriptorTableRanges[1].RegisterSpace = 0;
-	descriptorTableRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	descriptorTableRanges[2].NumDescriptors = 1;
-	descriptorTableRanges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	descriptorTableRanges[2].BaseShaderRegister = 2;
-	descriptorTableRanges[2].RegisterSpace = 0;
-	descriptorTableRanges[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	descriptorTableRanges[3].NumDescriptors = 1;
-	descriptorTableRanges[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	descriptorTableRanges[3].BaseShaderRegister = 3;
-	descriptorTableRanges[3].RegisterSpace = 0;
-	descriptorTableRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	descriptorTableRanges[4].NumDescriptors = 1;
-	descriptorTableRanges[4].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	descriptorTableRanges[4].BaseShaderRegister = 4;
-	descriptorTableRanges[4].RegisterSpace = 0;
-	descriptorTableRanges[4].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	
 
 	/*
 	descriptorTableRanges[5].NumDescriptors = 1;
@@ -433,17 +407,9 @@ void Graphics::CreateGBufferPassRootSignature()
 	*/
 
 
-
-	D3D12_ROOT_DESCRIPTOR_TABLE rootDescTable;
-	rootDescTable.NumDescriptorRanges = 5;
-	rootDescTable.pDescriptorRanges = &descriptorTableRanges[0];
-
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
-	slotRootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	slotRootParameter[0].DescriptorTable = rootDescTable;
-	slotRootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-	slotRootParameter[1].InitAsConstantBufferView(0);
-	slotRootParameter[2].InitAsConstantBufferView(1);
+	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	slotRootParameter[0].InitAsConstantBufferView(0);
+	slotRootParameter[1].InitAsConstantBufferView(1);
 
 	D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
 	rootSigDesc.NumParameters = _countof(slotRootParameter);
@@ -457,49 +423,6 @@ void Graphics::CreateGBufferPassRootSignature()
 
 	hr = m_D3DObjects.device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_D3DObjects.gBufferPassRootSignature));
 	Helpers::Validate(hr, L"Failed to create root signature!");
-}
-
-void Graphics::CreateUAVResources()
-{
-	/*
-	D3D12_DESCRIPTOR_HEAP_DESC gBufWorldPosHeapDesc = {};
-	gBufWorldPosHeapDesc.NumDescriptors = 5;
-	gBufWorldPosHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	gBufWorldPosHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&gBufWorldPosHeapDesc, IID_PPV_ARGS(&m_D3DResources.gBufferDescHeap));
-	Helpers::Validate(hr, L"Failed to create GBuffer UAV Descriptor Heap");
-
-	D3D12_CPU_DESCRIPTOR_HANDLE gBufferDescHandle = m_D3DResources.gBufferDescHeap->GetCPUDescriptorHandleForHeapStart();
-	UINT handleIncrement = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	D3D12_RESOURCE_DESC resourceDesc = {};
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.Width = m_D3DParams.width;
-	resourceDesc.Height = m_D3DParams.height;
-	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	resourceDesc.MipLevels = 1;
-	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-
-	D3D12_HEAP_PROPERTIES heapProps = {}; 
-	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
-	heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	heapProps.CreationNodeMask = 0u;
-	heapProps.VisibleNodeMask = 0u;
-
-	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferWorldPos));
-
-	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferNormal));
-
-	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferDiffuse));
-
-	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferSpecular));
-
-	m_D3DObjects.device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&m_D3DResources.gBufferSpecular));
-	*/
-
 }
 
 void Graphics::CreateDepthStencilView()
@@ -1653,8 +1576,8 @@ void Graphics::BuildGBufferCommandList()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 
-	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(1, m_D3DResources.sceneCB->GetGPUVirtualAddress());
-	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(2, m_D3DResources.materialCB->GetGPUVirtualAddress());
+	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.sceneCB->GetGPUVirtualAddress());
+	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(1, m_D3DResources.materialCB->GetGPUVirtualAddress());
 
 	m_D3DObjects.viewport.Height = m_D3DParams.height;
 	m_D3DObjects.viewport.Width = m_D3DParams.width;
@@ -1686,7 +1609,7 @@ void Graphics::BuildGBufferCommandList()
 
 	const float clearColour[] = { 0.22f, 0.33f, 0.44f, 0.f };
 //	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.f, 0.f, 1, &m_D3DObjects.scissorRect);
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		m_D3DObjects.gBufferPassCommandList->ClearRenderTargetView(rtvHandle, clearColour, 1, &m_D3DObjects.scissorRect);
 		

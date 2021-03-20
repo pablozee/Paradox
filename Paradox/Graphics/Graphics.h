@@ -58,7 +58,6 @@ private:
 	void CreateDXROutput();
 
 	void CreateDescriptorHeaps(const Model &model);
-	void CreateUAVResources();
 
 	void CreateDepthStencilView();
 	void CompileGBufferPassShaders();
