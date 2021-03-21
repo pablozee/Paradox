@@ -76,7 +76,6 @@ VSOutput main(VSInput vsInput)
 	matrix viewProj = mul(gBufferView, proj);
 
 	vso.PosH = mul(float4(vsInput.Pos, 1.0f), viewProj);
-//	vso.PosH = float4(vsInput.Pos, 1.0f);
 
 	return vso;
 }

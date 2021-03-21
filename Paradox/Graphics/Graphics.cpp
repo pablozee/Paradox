@@ -580,7 +580,7 @@ void Graphics::CreateGBufferPassRTVResources()
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
 			&rtvDesc,
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PRESENT,
 			&rtvClearCol,
 			IID_PPV_ARGS(&m_D3DResources.gBufferWorldPos[i]));
 
@@ -588,7 +588,7 @@ void Graphics::CreateGBufferPassRTVResources()
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
 			&rtvDesc,
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PRESENT,
 			&rtvClearCol,
 			IID_PPV_ARGS(&m_D3DResources.gBufferNormal[i]));
 
@@ -596,7 +596,7 @@ void Graphics::CreateGBufferPassRTVResources()
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
 			&rtvDesc,
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PRESENT,
 			&rtvClearCol,
 			IID_PPV_ARGS(&m_D3DResources.gBufferDiffuse[i]));
 
@@ -604,7 +604,7 @@ void Graphics::CreateGBufferPassRTVResources()
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
 			&rtvDesc,
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PRESENT,
 			&rtvClearCol,
 			IID_PPV_ARGS(&m_D3DResources.gBufferSpecular[i]));
 
@@ -1621,12 +1621,13 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.gBufferPassCommandList->IASetIndexBuffer(&m_D3DResources.indexBufferView);
 	m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(m_D3DValues.indicesCount, 1, 0, 0, 0);
 
+
 	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
-	m_D3DObjects.commandList->ResourceBarrier(4, pBarriers);
+	m_D3DObjects.gBufferPassCommandList->ResourceBarrier(4, pBarriers);
 
 	SubmitGBufferCommandList();
 	WaitForGPU();
