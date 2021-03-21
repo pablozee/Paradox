@@ -164,6 +164,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="Graphics\FrameResource.cpp" />
     <ClCompile Include="Graphics\Graphics.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -175,8 +176,11 @@
     <ClInclude Include="Events\Event.h" />
     <ClInclude Include="Events\KeyEvent.h" />
     <ClInclude Include="Events\MouseEvent.h" />
+    <ClInclude Include="Graphics\core.h" />
     <ClInclude Include="Graphics\D3D12Structures.h" />
+    <ClInclude Include="Graphics\FrameResource.h" />
     <ClInclude Include="Graphics\Graphics.h" />
+    <ClInclude Include="Graphics\UploadBuffer.h" />
     <ClInclude Include="include\d3dx12.h" />
     <ClInclude Include="include\dxc\dxcapi.h" />
     <ClInclude Include="include\dxc\dxcapi.use.h" />

@@ -21,11 +21,11 @@ public:
 			&CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementCount),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
-			IID_PPV_ARGS(uploadBuffer)));
+			IID_PPV_ARGS(uploadBuffer));
 
 		Helpers::Validate(hr, "Failed to create buffer!");
 
-		hr = uploadBuffer->Map(0, nullptr, reinterpret_cast<void**>&mappedData);
+		hr = uploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mappedData));
 
 		Helpers::Validate(hr, "Failed to map buffer!");
 
@@ -36,14 +36,14 @@ public:
 	UploadBuffer(const UploadBuffer& rhs) = delete;
 	UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
 
-	~UploadBuffer()
+	UploadBuffer::~UploadBuffer()
 	{
 		if (uploadBuffer != nullptr) uploadBuffer->Unmap(0, nullptr);
 
 		mappedData = nullptr;
 	}
 
-	ID3D12Resource* Resource() const
+	ID3D12Resource* UploadBuffer::Resource() const
 	{
 		return uploadBuffer;
 	}

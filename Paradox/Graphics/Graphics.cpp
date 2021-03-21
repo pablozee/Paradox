@@ -5,8 +5,6 @@
 #define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 #define SAFE_RELEASE(x) { if (x) { x->Release(); x = NULL; } }
 
-const UINT gNumFrameResources = 3;
-
 Graphics::Graphics(Config config)
 	:
 	m_D3DParams(config.width, config.height, true)
