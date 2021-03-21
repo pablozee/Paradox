@@ -31,6 +31,7 @@ struct PointLight
 cbuffer SceneCB : register(b0)
 {
 	matrix			 view;
+	matrix			 gBufferView;
 	matrix			 proj;
 	float4			 viewOriginAndTanHalfFovY;
 	float2			 resolution;

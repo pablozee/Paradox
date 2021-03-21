@@ -17,6 +17,7 @@ struct PointLight
 cbuffer SceneCB : register(b0)
 {
 	matrix			 view;
+	matrix			 gBufferView;
 	matrix			 proj;
 	float4			 viewOriginAndTanHalfFovY;
 	float2			 resolution;
@@ -72,10 +73,9 @@ VSOutput main(VSInput vsInput)
 
 	vso.TexCOut = vsInput.TexC;
 
-	matrix viewProj = mul(view, proj);
+	matrix viewProj = mul(gBufferView, proj);
 
-	vso.PosH = mul(vsInput.Pos, viewProj);
-//	vso.PosH = float4(vsInput.Pos, 1.0f);
+	vso.PosH = mul(float4(vsInput.Pos, 1.0f), viewProj);
 
 	return vso;
 }

@@ -31,6 +31,7 @@ struct D3D12Params
 struct SceneCB
 {
 	XMMATRIX view = XMMatrixIdentity();
+	XMMATRIX gBufferView = XMMatrixIdentity();
 	XMMATRIX proj = XMMatrixIdentity();
 	XMFLOAT4 viewOriginAndTanHalfFovY = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	XMFLOAT2 resolution = XMFLOAT2(1280, 960);

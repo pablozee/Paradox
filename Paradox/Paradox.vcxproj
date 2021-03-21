@@ -131,8 +131,11 @@
       <AdditionalDependencies>d3dcompiler.lib;dxcompiler.lib; d3d12.lib; dxgi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>Xcopy /E /I $(ProjectDir)shaders $(SolutionDir)x64\release /y &amp;&amp; COPY $(ProjectDir)VertexShader.cso $(SolutionDir)x64\release /y &amp;&amp; COPY $(ProjectDir)PixelShader.cso $(SolutionDir)x64\release /y;</Command>
+      <Command>Xcopy /E /I $(ProjectDir)shaders $(SolutionDir)x64\Release\shaders /y &amp;&amp; COPY $(ProjectDir)VertexShader.cso $(SolutionDir)x64\release /y &amp;&amp; COPY $(ProjectDir)PixelShader.cso $(SolutionDir)x64\release /y </Command>
     </PostBuildEvent>
+    <FxCompile>
+      <ShaderModel>5.0</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -153,8 +156,11 @@
       <AdditionalDependencies>d3dcompiler.lib;dxcompiler.lib; d3d12.lib; dxgi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>Xcopy /E /I $(ProjectDir)shaders $(SolutionDir)x64\release /y &amp;&amp; COPY $(ProjectDir)VertexShader.cso $(SolutionDir)x64\release /y &amp;&amp; COPY $(ProjectDir)PixelShader.cso $(SolutionDir)x64\release /y;</Command>
+      <Command>Xcopy /E /I $(ProjectDir)shaders $(SolutionDir)x64\Release\shaders /y &amp;&amp; COPY $(ProjectDir)VertexShader.cso $(SolutionDir)x64\release /y &amp;&amp; COPY $(ProjectDir)PixelShader.cso $(SolutionDir)x64\release /y </Command>
     </PostBuildEvent>
+    <FxCompile>
+      <ShaderModel>5.0</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -184,15 +190,15 @@
   <ItemGroup>
     <FxCompile Include="shaders\PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="shaders\VertexShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
     </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
