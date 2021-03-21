@@ -1,13 +1,6 @@
 #pragma once
-#include <Windows.h>
-#include <DirectXMath.h>
-#include "dxc/dxcapi.h"
-#include "dxc/dxcapi.use.h"
-#include <dxgi1_6.h>
-#include <d3d12.h>
-#include <wrl.h>
-#include <string>
 
+#include "core.h"
 #include "../Structures.h"
 
 using namespace DirectX;
@@ -26,40 +19,6 @@ struct D3D12Params
 	unsigned int width;
 	unsigned int height;
 	bool vsync = true;
-};
-
-struct SceneCB
-{
-	XMMATRIX view = XMMatrixIdentity();
-	XMMATRIX gBufferView = XMMatrixIdentity();
-	XMMATRIX proj = XMMatrixIdentity();
-	XMFLOAT4 viewOriginAndTanHalfFovY = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-	XMFLOAT2 resolution = XMFLOAT2(1280, 960);
-	float numDirLights;
-	float numPointLights;
-	XMFLOAT3 randomSeedVector0;
-	float padding;
-	XMFLOAT3 randomSeedVector1;
-	float padding1;
-	DirectionalLight directionalLights[10];
-	PointLight pointLights[10];
-};
-
-struct MaterialCB
-{
-	XMFLOAT3 ambient;
-	float shininess;
-	XMFLOAT3 diffuse;
-	float ior;
-	XMFLOAT3 specular;
-	float dissolve;
-	XMFLOAT3 transmittance;
-	float roughness;
-	XMFLOAT3 emission;
-	float metallic;
-	XMFLOAT4 resolution;
-	float sheen;
-	int useTex;
 };
 
 struct D3D12Values
@@ -149,7 +108,7 @@ struct D3D12Resources
 	ID3D12Resource*				textureUploadResource = nullptr;
 
 	ID3D12Resource*				sceneCB;
-	SceneCB						sceneCBData[2];
+	GBufferPassSceneCB			sceneCBData[2];
 	UINT8*						sceneCBStart = nullptr;
 
 	ID3D12Resource*				materialCB = nullptr;

@@ -1,11 +1,6 @@
 #include "Graphics.h"
 #include "../Helpers.h"
-#include <dxgi1_6.h>
-#include <d3d12.h>
-#include "dxc/dxcapi.h"
-#include "dxc/dxcapi.use.h"
-#include <d3dcompiler.h>
-#include "d3dx12.h"
+#include "core.h"
 
 #define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 #define SAFE_RELEASE(x) { if (x) { x->Release(); x = NULL; } }
