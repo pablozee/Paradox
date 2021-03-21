@@ -5,19 +5,6 @@
 struct ObjectCB
 {
 	XMMATRIX world = XMMatrixIdentity();
-	XMFLOAT3 ambient;
-	float shininess;
-	XMFLOAT3 diffuse;
-	float ior;
-	XMFLOAT3 specular;
-	float dissolve;
-	XMFLOAT3 transmittance;
-	float roughness;
-	XMFLOAT3 emission;
-	float metallic;
-	XMFLOAT4 resolution;
-	float sheen;
-	int useTex;
 };
 
 struct GBufferPassSceneCB
@@ -41,6 +28,23 @@ struct RayTracingPassSceneCB
 	PointLight pointLights[10];
 };
 
+struct MaterialCB
+{
+	XMFLOAT3 ambient;
+	float shininess;
+	XMFLOAT3 diffuse;
+	float ior;
+	XMFLOAT3 specular;
+	float dissolve;
+	XMFLOAT3 transmittance;
+	float roughness;
+	XMFLOAT3 emission;
+	float metallic;
+	XMFLOAT4 resolution;
+	float sheen;
+	int useTex;
+};
+
 class FrameResource
 {
 public:
@@ -53,6 +57,7 @@ public:
 
 	// Constant Buffer per frame as we cannot update the buffer until the GPU is done processing the commands that use it
 	std::unique_ptr <UploadBuffer<ObjectCB>> objectCB = nullptr;
+	std::unique_ptr <UploadBuffer<MaterialCB>> materialCB = nullptr;
 	std::unique_ptr <UploadBuffer<GBufferPassSceneCB>> gBufferPassSceneCB = nullptr;
 	std::unique_ptr <UploadBuffer<RayTracingPassSceneCB>> rayTracingPassSceneCB = nullptr;
 

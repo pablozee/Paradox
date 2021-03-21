@@ -5,6 +5,8 @@
 #define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 #define SAFE_RELEASE(x) { if (x) { x->Release(); x = NULL; } }
 
+const UINT gNumFrameResources = 3;
+
 Graphics::Graphics(Config config)
 	:
 	m_D3DParams(config.width, config.height, true)
@@ -35,8 +37,8 @@ void Graphics::Init(HWND hwnd)
 	SeedRandomVector(m_RandomVectorSeed0);
 	SeedRandomVector(m_RandomVectorSeed1);
 
-	CreateSceneCB();
-	CreateMaterialConstantBuffer(m_Material);
+//	CreateSceneCB();
+//	CreateMaterialConstantBuffer(m_Material);
 	
 	CreateGBufferPassCommandAllocator();
 	CreateGBufferPassCommandList();
@@ -85,7 +87,23 @@ void Graphics::Init(HWND hwnd)
 
 void Graphics::Update()
 {
-	UpdateSceneCB();
+	m_CurrFrameResourceIndex = (m_CurrFrameResourceIndex + 1) % gNumFrameResources;
+	m_CurrFrameResource = m_FrameResources[m_CurrFrameResourceIndex].get();
+
+	// Check if GPU has finished processing commands of the current frame resource
+	// If not, wait until the GPU has completed commands up to this fence point
+
+	if (m_CurrFrameResource->Fence != 0 && m_D3DObjects.fence->GetCompletedValue() < m_CurrFrameResource->Fence)
+	{
+		HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+		HRESULT hr = m_D3DObjects.fence->SetEventOnCompletion(m_CurrFrameResource->Fence, eventHandle);
+		WaitForSingleObject(eventHandle, INFINITE);
+		CloseHandle(eventHandle);
+	}
+
+	UpdateObjectCBs();
+	UpdateGBufferPassSceneCB();
+	UpdateRayTracingPassSceneCB();
 }
 
 void Graphics::Render()
@@ -849,6 +867,15 @@ void Graphics::UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcRe
 	m_D3DObjects.commandList->ResourceBarrier(1, &barrier);
 }
 
+void Graphics::BuildFrameResources()
+{
+	for (int i = 0; i < gNumFrameResources; i++)
+	{
+		m_FrameResources.push_back(std::make_unique<FrameResource>(m_D3DObjects.device, 1, (UINT)m_AllRenderItems.size()));
+	}
+}
+
+/*
 void Graphics::CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size, bool perFrame)
 {
 	size_t cBufferSize = ((size + 255) & ~255);
@@ -898,6 +925,7 @@ void Graphics::CreateMaterialConstantBuffer(const Material& material)
 
 	memcpy(m_D3DResources.materialCBStart, &m_D3DResources.materialCBData, sizeof(m_D3DResources.materialCBData));
 };
+*/
 
 void Graphics::CreateBottomLevelAS()
 {
@@ -1635,6 +1663,7 @@ void Graphics::SubmitGBufferCommandList()
 	ID3D12CommandList* pGraphicsList = { m_D3DObjects.gBufferPassCommandList };
 	m_D3DObjects.commandQueue->ExecuteCommandLists(1, &pGraphicsList);
 	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
+	m_CurrFrameResource->Fence = ++m_D3DValues.fenceValues[m_D3DValues.frameIndex];
 	m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, m_D3DValues.fenceValues[m_D3DValues.frameIndex]);
 }
 
@@ -1722,6 +1751,7 @@ void Graphics::SubmitCommandList()
 	ID3D12CommandList* pGraphicsList = { m_D3DObjects.commandList };
 	m_D3DObjects.commandQueue->ExecuteCommandLists(1, &pGraphicsList);
 	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
+	m_CurrFrameResource->Fence = ++m_D3DValues.fenceValues[m_D3DValues.frameIndex];
 	m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, m_D3DValues.fenceValues[m_D3DValues.frameIndex]);
 }
 

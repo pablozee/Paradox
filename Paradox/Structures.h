@@ -110,3 +110,16 @@ struct PointLight
 	XMFLOAT3 colour;
 	float pointLightPadding1;
 };
+
+struct RenderItem
+{
+	RenderItem() = default;
+
+	XMMATRIX world = XMMatrixIdentity();
+
+	int numFramesDirty = gNumFrameResources;
+
+	INT objCBIndex = -1;
+
+
+};

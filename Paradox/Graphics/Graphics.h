@@ -1,7 +1,8 @@
 #pragma once
 #include <Windows.h>
-#include "D3D12Structures.h"
 #include "../Structures.h"
+#include "D3D12Structures.h"
+#include "FrameResource.h"
 
 class Graphics
 {
@@ -48,10 +49,16 @@ private:
 	void CreateTexture(Material &material);
 	void UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture);
 
-	void CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size, bool perFrame);
-	void CreateSceneCB();
+	void BuildFrameResources();
+
+//	void CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size, bool perFrame);
+//	void CreateSceneCB();
+	void UpdateObjectCBs();
+	void UpdateGBufferPassSceneCB();
+	void UpdateRayTracingPassSceneCB();
+
 	void SeedRandomVector(XMFLOAT3 seed);
-	void CreateMaterialConstantBuffer(const Material& material);
+//	void CreateMaterialConstantBuffer(const Material& material);
 
 	void CreateBottomLevelAS();
 	void CreateTopLevelAS();
@@ -103,7 +110,7 @@ private:
 	D3D12Values m_D3DValues;
 	D3D12ShaderCompilerInfo m_ShaderCompilerInfo;
 	D3D12Resources m_D3DResources;
-	int m_FrameCount = 2;
+	UINT m_FrameCount = 2;
 	Model m_Model;
 	Material m_Material;
 	XMVECTOR m_EyeInit = { 17.f, 0.f, 0.f };
@@ -114,4 +121,10 @@ private:
 	XMVECTOR m_Up = m_UpInit;
 	XMFLOAT3 m_RandomVectorSeed0;
 	XMFLOAT3 m_RandomVectorSeed1;
+
+	std::vector<std::unique_ptr<FrameResource>> m_FrameResources;
+	FrameResource* m_CurrFrameResource = nullptr;
+	int m_CurrFrameResourceIndex = 0;
+
+	std::vector<std::unique_ptr<RenderItem>> m_AllRenderItems;
 };
