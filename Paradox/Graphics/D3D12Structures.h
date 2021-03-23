@@ -7,8 +7,6 @@ using namespace DirectX;
 
 using namespace std;
 
-const UINT gNumFrameResources = 3;
-
 struct RenderItem
 {
 	RenderItem() = default;
@@ -44,11 +42,11 @@ struct MeshGeometry
 
 	UINT						vertexByteStride = 0;
 	UINT						vertexBufferByteSize = 0;
-	DXGI_FORMAT					indexBufferFormat = DXGI_FORMAT_R16_UINT;
+	DXGI_FORMAT					indexBufferFormat = DXGI_FORMAT_R32_UINT;
 	UINT						indexBufferByteSize = 0;
 
 	// Container holding submesh for each geometry in index / vertex buffer
-	unordered_map<string, SubmeshGeometry> DrawArgs;
+	unordered_map<string, SubmeshGeometry> drawArgs;
 
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
 	{
@@ -126,8 +124,10 @@ struct MaterialCB
 	XMFLOAT3 emission;
 	float metallic;
 	XMFLOAT4 resolution;
+	XMMATRIX materialTransform;
 	float sheen;
 	int useTex;
+
 };
 
 struct D3D12Params

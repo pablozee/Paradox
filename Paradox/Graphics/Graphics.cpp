@@ -29,15 +29,11 @@ void Graphics::Init(HWND hwnd)
 	ResetCommandList();
 
 	CreateDSVDescriptorHeap();
-
 	CreateRTVDescriptorHeaps();
 
 	SeedRandomVector(m_RandomVectorSeed0);
 	SeedRandomVector(m_RandomVectorSeed1);
 
-//	CreateSceneCB();
-//	CreateMaterialConstantBuffer(m_Material);
-	
 	CreateGBufferPassCommandAllocator();
 	CreateGBufferPassCommandList();
 	ResetGBufferPassCommandList();
@@ -47,7 +43,6 @@ void Graphics::Init(HWND hwnd)
 	CreateGBufferPassRTVDescriptorHeaps();
 	CreateGBufferPassRTVResources();
 	CreateGBufferPassRTVs();
-
 	CreateDepthStencilView();
 
 	CreateBackBufferRTV();
@@ -55,8 +50,6 @@ void Graphics::Init(HWND hwnd)
 	CreateIndexBuffer(m_Model);
 
 //	CreateTexture(m_Material);
-
-
 
 	CreateBottomLevelAS();
 	CreateTopLevelAS();
@@ -74,9 +67,6 @@ void Graphics::Init(HWND hwnd)
 	m_D3DObjects.commandList->Close();
 	ID3D12CommandList* pGraphicsList[2] = { m_D3DObjects.commandList, m_D3DObjects.gBufferPassCommandList };
 	m_D3DObjects.commandQueue->ExecuteCommandLists(2, pGraphicsList);
-
-
-
 
 	WaitForGPU();
 	ResetCommandList();
@@ -100,6 +90,7 @@ void Graphics::Update()
 	}
 
 	UpdateObjectCBs();
+	UpdateMaterialCBs();
 	UpdateGBufferPassSceneCB();
 	UpdateRayTracingPassSceneCB();
 }
@@ -402,25 +393,11 @@ void Graphics::CreateDSVDescriptorHeap()
 
 void Graphics::CreateGBufferPassRootSignature()
 {
-	
-
-	/*
-	descriptorTableRanges[5].NumDescriptors = 1;
-	descriptorTableRanges[5].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	descriptorTableRanges[5].BaseShaderRegister = 0;
-	descriptorTableRanges[5].RegisterSpace = 0;
-	descriptorTableRanges[5].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	descriptorTableRanges[6].NumDescriptors = 1;
-	descriptorTableRanges[6].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	descriptorTableRanges[6].BaseShaderRegister = 1;
-	descriptorTableRanges[6].RegisterSpace = 0;
-	descriptorTableRanges[6].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	*/
-
-
 	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
 	slotRootParameter[0].InitAsConstantBufferView(0);
 	slotRootParameter[1].InitAsConstantBufferView(1);
+	slotRootParameter[2].InitAsConstantBufferView(2);
+	slotRootParameter[3].InitAsConstantBufferView(3);
 
 	D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
 	rootSigDesc.NumParameters = _countof(slotRootParameter);
@@ -873,57 +850,113 @@ void Graphics::BuildFrameResources()
 	}
 }
 
-/*
-void Graphics::CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size, bool perFrame)
+void Graphics::UpdateObjectCBs()
 {
-	size_t cBufferSize = ((size + 255) & ~255);
-	if (perFrame) cBufferSize *= 2;
-	D3D12BufferCreateInfo bufferInfo(cBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
-	CreateBuffer(bufferInfo, buffer);
+	auto currentObjectCB = m_CurrFrameResource->objectCB.get();
+
+	for (auto& renderItem : m_AllRenderItems)
+	{
+		if (renderItem->numFramesDirty > 0)
+		{
+			ObjectCB objectCB;
+			objectCB.world = XMMatrixTranspose(renderItem->world);
+
+			currentObjectCB->CopyData(renderItem->objCBIndex, objectCB);
+
+			renderItem->numFramesDirty--;
+		}
+	}
 }
 
-void Graphics::CreateSceneCB()
+void Graphics::UpdateMaterialCBs()
 {
-	CreateConstantBuffer(&m_D3DResources.sceneCB, sizeof(SceneCB), true);
+	auto currentMaterialCB = m_CurrFrameResource->materialCB.get();
 
-#if NAME_D3D_RESOURCES
-	m_D3DResources.sceneCB->SetName(L"View Constant Buffer");
-#endif
+	for (auto& material : m_Materials)
+	{
 
-	HRESULT hr = m_D3DResources.sceneCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.sceneCBStart));
-	Helpers::Validate(hr, L"Failed to map view constant buffer");
+		Material* mat = material.second.get();
 
-	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData[m_D3DValues.frameIndex], sizeof(m_D3DResources.sceneCBData[m_D3DValues.frameIndex]));
+		if (mat->numFramesDirty > 0)
+		{
+
+			MaterialCB materialCB;
+			materialCB.ambient = mat->ambient;
+			materialCB.shininess = mat->shininess;
+			materialCB.diffuse = mat->diffuse;
+			materialCB.ior = mat->ior;
+			materialCB.specular = mat->specular;
+			materialCB.dissolve = mat->dissolve;
+			materialCB.transmittance = mat->transmittance;
+			materialCB.roughness = mat->roughness;
+			materialCB.emission = mat->emission;
+			materialCB.metallic = mat->metallic;
+			materialCB.resolution = XMFLOAT4(mat->textureResolution, 0.0f, 0.0f, 0.0f);
+			materialCB.sheen = mat->sheen;
+			materialCB.useTex = 0;
+			materialCB.materialTransform = XMMatrixTranspose(mat->materialTransform);
+
+			currentMaterialCB->CopyData(mat->materialCBIndex, materialCB);
+
+			mat->numFramesDirty--;
+		}
+	}
 }
 
-void Graphics::CreateMaterialConstantBuffer(const Material& material)
+void Graphics::UpdateGBufferPassSceneCB()
 {
-	CreateConstantBuffer(&m_D3DResources.materialCB, sizeof(MaterialCB), false);
+	XMMATRIX gBufferView, proj;
+	float aspect, fov;
 
-#if NAME_D3D_RESOURCES
-	m_D3DResources.materialCB->SetName(L"Material Constant Buffer");
-#endif
+	aspect = (float)m_D3DParams.width / (float)m_D3DParams.height;
+	fov = 65.f * (XM_PI / 180.f);
 
-	m_D3DResources.materialCBData.ambient = material.ambient;
-	m_D3DResources.materialCBData.shininess = material.shininess;
-	m_D3DResources.materialCBData.diffuse = material.diffuse;
-	m_D3DResources.materialCBData.ior = material.ior;
-	m_D3DResources.materialCBData.specular = material.specular;
-	m_D3DResources.materialCBData.dissolve = material.dissolve;
-	m_D3DResources.materialCBData.transmittance = material.transmittance;
-	m_D3DResources.materialCBData.roughness = material.roughness;
-	m_D3DResources.materialCBData.emission = material.emission;
-	m_D3DResources.materialCBData.metallic = material.metallic;
-	m_D3DResources.materialCBData.resolution = XMFLOAT4(material.textureResolution, 0.0f, 0.0f, 0.0f);
-	m_D3DResources.materialCBData.sheen = material.sheen;
-	m_D3DResources.materialCBData.useTex = 0;
+	gBufferView = DirectX::XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
+	proj = XMMatrixPerspectiveFovLH(fov, (float)m_D3DParams.width / (float)m_D3DParams.height, 0.1f, 100.0f);
 
-	HRESULT hr = m_D3DResources.materialCB->Map(0, nullptr, reinterpret_cast<void**>(&m_D3DResources.materialCBStart));
-	Helpers::Validate(hr, L"Failed to map material constant buffer");
+	GBufferPassSceneCB gBufferCB;
+	gBufferCB.gBufferView = DirectX::XMMatrixTranspose(gBufferView);
+	gBufferCB.proj = XMMatrixTranspose(proj);
 
-	memcpy(m_D3DResources.materialCBStart, &m_D3DResources.materialCBData, sizeof(m_D3DResources.materialCBData));
-};
-*/
+	auto currentGBufferPassCB = m_CurrFrameResource->gBufferPassSceneCB.get();
+	currentGBufferPassCB->CopyData(0, gBufferCB);
+}
+
+void Graphics::UpdateRayTracingPassSceneCB()
+{
+	XMMATRIX view;
+
+	view = DirectX::XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
+	view = DirectX::XMMatrixInverse(NULL, view);
+
+	XMFLOAT3 floatEye;
+	XMStoreFloat3(&floatEye, m_Eye);
+
+	RayTracingPassSceneCB rtPassCB;
+
+	rtPassCB.view = DirectX::XMMatrixTranspose(view);
+	rtPassCB.viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(fov * 0.5f));
+	rtPassCB.numDirLights = 1;
+	rtPassCB.numPointLights = 0;
+	rtPassCB.resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
+	rtPassCB.randomSeedVector0 = m_RandomVectorSeed0;
+	rtPassCB.padding = 0.f;
+	rtPassCB.randomSeedVector1 = m_RandomVectorSeed1;
+	
+	// TODO Remove this padding if unnecessary
+	rtPassCB.padding1 = 0.f;
+
+	XMFLOAT3 floatFocus;
+	XMStoreFloat3(&floatFocus, m_Focus);
+
+	rtPassCB.directionalLights[0].direction = XMFLOAT3(0.f, 0.f, floatFocus.z + 3.f);
+	rtPassCB.directionalLights[0].dirLightPadding = 1.f;
+	rtPassCB.directionalLights[0].colour = XMFLOAT3(1.f, 1.f, 0.f);
+	rtPassCB.directionalLights[0].dirLightPadding1 = 1.f;
+
+	auto currentRTPassCB = m_CurrFrameResource->rayTracingPassSceneCB.get();
+	currentRTPassCB->CopyData(0, rtPassCB);
+}
 
 void Graphics::CreateBottomLevelAS()
 {
@@ -1249,7 +1282,7 @@ void Graphics::CreateRayGenProgram()
 	D3D12_DESCRIPTOR_RANGE ranges[3];
 
 	ranges[0].BaseShaderRegister = 0;
-	ranges[0].NumDescriptors = 2;
+	ranges[0].NumDescriptors = 3;
 	ranges[0].RegisterSpace = 0;
 	ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 	ranges[0].OffsetInDescriptorsFromTableStart = 0;
@@ -1258,13 +1291,13 @@ void Graphics::CreateRayGenProgram()
 	ranges[1].NumDescriptors = 1;
 	ranges[1].RegisterSpace = 0;
 	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	ranges[1].OffsetInDescriptorsFromTableStart = 2;
+	ranges[1].OffsetInDescriptorsFromTableStart = 3;
 
 	ranges[2].BaseShaderRegister = 0;
 	ranges[2].NumDescriptors = 4;
 	ranges[2].RegisterSpace = 0;
 	ranges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-	ranges[2].OffsetInDescriptorsFromTableStart = 3;
+	ranges[2].OffsetInDescriptorsFromTableStart = 4;
 
 	D3D12_ROOT_PARAMETER param0 = {};
 	param0.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
@@ -1534,51 +1567,6 @@ void Graphics::WaitForGPU()
 
 	// Increment the fence value for the current frame
 	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
-}
-
-void Graphics::UpdateSceneCB()
-{
-	XMMATRIX view, gBufferView, proj;
-
-	float aspect, fov;
-
-	aspect = (float)m_D3DParams.width / (float)m_D3DParams.height;
-	fov = 65.f * (XM_PI / 180.f);
-
-	gBufferView = DirectX::XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
-	view = DirectX::XMMatrixInverse(NULL, gBufferView);
-
-	proj = XMMatrixPerspectiveFovLH(fov, (float)m_D3DParams.width / (float)m_D3DParams.height, 0.1f, 100.0f);
-	XMFLOAT3 floatEye;
-	XMStoreFloat3(&floatEye, m_Eye);
-
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].view = DirectX::XMMatrixTranspose(view);
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].gBufferView = DirectX::XMMatrixTranspose(gBufferView);
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].proj = XMMatrixTranspose(proj);
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(fov * 0.5f));
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numDirLights = 1;
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].numPointLights = 0;
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector0 = m_RandomVectorSeed0;
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].padding = 0.f;
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].randomSeedVector1 = m_RandomVectorSeed1;
-// TODO Remove this padding if unnecessary
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].padding1 = 0.f;
-
-	XMFLOAT3 floatFocus;
-	XMStoreFloat3(&floatFocus, m_Focus);
-
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].direction = XMFLOAT3(0.f, 0.f, floatFocus.z + 3.f);
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].dirLightPadding = 1.f;
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].colour = XMFLOAT3(1.f, 1.f, 0.f);
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].dirLightPadding1 = 1.f;
-
-//	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].pointLights[0].position = XMFLOAT3(6.f, 1.f, 6.f);
-//	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].pointLights[0].pointLightPadding = 1.f;
-//	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].pointLights[0].colour = XMFLOAT3(1.f, 1.f, 0.f);
-//	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].pointLights[0].pointLightPadding1 = 1.f;
-
-	memcpy(m_D3DResources.sceneCBStart, &m_D3DResources.sceneCBData, sizeof(m_D3DResources.sceneCBData));
 }
 
 void Graphics::BuildGBufferCommandList()

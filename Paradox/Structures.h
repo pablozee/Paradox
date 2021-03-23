@@ -5,6 +5,8 @@
 
 using namespace DirectX;
 
+const UINT gNumFrameResources = 3;
+
 struct Config
 {
 	Config(const std::string windowTitle = "Paradox",
@@ -31,8 +33,6 @@ static bool CompareVector2WithEpsilon(const XMFLOAT2 lhs, const XMFLOAT2 rhs)
 	const XMFLOAT2 vector2Epsilon(0.000001f, 0.000001f);
 	return XMVector2NearEqual(XMLoadFloat2(&lhs), XMLoadFloat2(&rhs), XMLoadFloat2(&vector2Epsilon));
 }
-
-
 
 struct Vertex
 {
@@ -70,6 +70,8 @@ struct Model
 struct Material
 {
 	std::string name = "defaultMaterial";
+	int materialCBIndex = -1;
+	int numFramesDirty = gNumFrameResources;
 	int useTex = 0;
 	XMFLOAT3 ambient;
 	XMFLOAT3 diffuse;
@@ -84,6 +86,7 @@ struct Material
 	float sheen;
 	std::string texturePath = "";
 	float textureResolution = 512;
+	XMMATRIX materialTransform = XMMatrixIdentity();
 };
 
 struct TextureInfo

@@ -51,14 +51,12 @@ private:
 
 	void BuildFrameResources();
 
-//	void CreateConstantBuffer(ID3D12Resource** buffer, UINT64 size, bool perFrame);
-//	void CreateSceneCB();
 	void UpdateObjectCBs();
+	void UpdateMaterialCBs();
 	void UpdateGBufferPassSceneCB();
 	void UpdateRayTracingPassSceneCB();
 
 	void SeedRandomVector(XMFLOAT3 seed);
-//	void CreateMaterialConstantBuffer(const Material& material);
 
 	void CreateBottomLevelAS();
 	void CreateTopLevelAS();
@@ -86,8 +84,6 @@ private:
 
 	void WaitForGPU();
 
-	void UpdateSceneCB();
-
 	void BuildGBufferCommandList();
 	void SubmitGBufferCommandList();
 	void ResetGBufferCommandList();
@@ -112,7 +108,6 @@ private:
 	D3D12Resources m_D3DResources;
 	UINT m_FrameCount = 2;
 	Model m_Model;
-	Material m_Material;
 	XMVECTOR m_EyeInit = { 17.f, 0.f, 0.f };
 	XMVECTOR m_FocusInit = { 0.f, 0.f, 0.f };
 	XMVECTOR m_UpInit = { 0.f, 1.f, 0.f };
@@ -131,4 +126,6 @@ private:
 	// Render items per PSO
 	std::vector<std::unique_ptr<RenderItem*>> gBufferPassRenderItems;
 	std::vector<std::unique_ptr<RenderItem*>> rayTracingPassRenderItems;
+
+	std::unordered_map<std::string, std::unique_ptr<Material>> m_Materials;
 };
