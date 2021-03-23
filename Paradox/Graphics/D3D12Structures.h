@@ -5,6 +5,8 @@
 
 using namespace DirectX;
 
+using namespace std;
+
 const UINT gNumFrameResources = 3;
 
 struct RenderItem
@@ -17,6 +19,72 @@ struct RenderItem
 
 	INT objCBIndex = -1;
 
+	Material* material = nullptr;
+	MeshGeometry* geometry = nullptr;
+
+	D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	UINT indexCount = 0;
+	UINT startIndexLocation = 0;
+	int baseVertexLocation = 0;
+};
+
+struct MeshGeometry
+{
+	string						name;
+
+	ID3DBlob*					vertexBufferCPU;
+	ID3DBlob*					indexBufferCPU;
+	
+	ID3D12Resource*				vertexBufferGPU = nullptr;
+	ID3D12Resource*				vertexBufferUploader = nullptr;
+
+	ID3D12Resource*				indexBufferGPU = nullptr;
+	ID3D12Resource*				indexBufferUploader = nullptr;
+
+	UINT						vertexByteStride = 0;
+	UINT						vertexBufferByteSize = 0;
+	DXGI_FORMAT					indexBufferFormat = DXGI_FORMAT_R16_UINT;
+	UINT						indexBufferByteSize = 0;
+
+	// Container holding submesh for each geometry in index / vertex buffer
+	unordered_map<string, SubmeshGeometry> DrawArgs;
+
+	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
+	{
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+		vertexBufferView.BufferLocation = vertexBufferGPU->GetGPUVirtualAddress();
+		vertexBufferView.StrideInBytes = vertexByteStride;
+		vertexBufferView.SizeInBytes = vertexBufferByteSize;
+
+		return vertexBufferView;
+	}
+
+	D3D12_INDEX_BUFFER_VIEW IndexBufferView() const
+	{
+		D3D12_INDEX_BUFFER_VIEW indexBufferView;
+		indexBufferView.BufferLocation = indexBufferGPU->GetGPUVirtualAddress();
+		indexBufferView.Format = indexBufferFormat;
+		indexBufferView.SizeInBytes = indexBufferByteSize;
+
+		return indexBufferView;
+	}
+
+	void DisposeUploaders()
+	{
+		vertexBufferUploader = nullptr;
+		indexBufferUploader = nullptr;
+	}
+
+};
+
+struct SubmeshGeometry
+{
+	UINT indexCount = 0;
+	UINT startIndexLocation = 0;
+	UINT baseVertexLocation = 0;
+
+	BoundingBox bounds;
 };
 
 struct ObjectCB
@@ -154,12 +222,6 @@ struct D3D12Resources
 	ID3D12DescriptorHeap*		dsvDescriptorHeap = nullptr;
 
 	ID3D12Resource*				depthStencilView = nullptr;
-
-	ID3D12Resource*				vertexBuffer = nullptr;
-	D3D12_VERTEX_BUFFER_VIEW	vertexBufferView;
-
-	ID3D12Resource*				indexBuffer = nullptr;
-	D3D12_INDEX_BUFFER_VIEW		indexBufferView;
 
 	ID3D12Resource*				texture = nullptr;
 	ID3D12Resource*				textureUploadResource = nullptr;

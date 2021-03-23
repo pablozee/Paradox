@@ -127,4 +127,8 @@ private:
 	int m_CurrFrameResourceIndex = 0;
 
 	std::vector<std::unique_ptr<RenderItem>> m_AllRenderItems;
+
+	// Render items per PSO
+	std::vector<std::unique_ptr<RenderItem*>> gBufferPassRenderItems;
+	std::vector<std::unique_ptr<RenderItem*>> rayTracingPassRenderItems;
 };

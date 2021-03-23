@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 #include <DirectXMath.h>
+#include <DirectXCollision.h>
 #include "dxc/dxcapi.h"
 #include "dxc/dxcapi.use.h"
 #include <dxgi1_6.h>
