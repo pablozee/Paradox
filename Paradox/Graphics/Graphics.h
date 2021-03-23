@@ -42,9 +42,8 @@ private:
 
 	void CreateRTVDescriptorHeaps();
 	void CreateBackBufferRTV();
-	void CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource);
-	void CreateVertexBuffer(Model &model);
-	void CreateIndexBuffer(Model &model);
+	
+	void BuildMeshGeometry();
 	
 	void CreateTexture(Material &material);
 	void UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture);

@@ -693,6 +693,12 @@ void Graphics::CreateBackBufferRTV()
 	}
 }
 
+void BuildMeshGeometry()
+{
+
+}
+
+
 void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource)
 {
 	D3D12_HEAP_PROPERTIES heapDesc = {};
