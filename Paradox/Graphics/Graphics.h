@@ -46,6 +46,7 @@ private:
 	void BuildMeshGeometry(std::string geometryName);
 	ID3D12Resource* CreateDefaultBuffer(const void* initData, UINT64 byteSize, ID3D12Resource* uploadBuffer);
 	void BuildRenderItems();
+	void DrawRenderItems(const std::vector<RenderItem*>& renderItems);
 
 	void CreateTexture(Material &material);
 	void UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture);

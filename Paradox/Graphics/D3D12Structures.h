@@ -17,6 +17,7 @@ struct RenderItem
 	int numFramesDirty = gNumFrameResources;
 
 	INT objCBIndex = -1;
+	INT matCBIndex = -1;
 
 	Model model;
 	Material* material = nullptr;

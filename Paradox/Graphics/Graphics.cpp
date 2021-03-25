@@ -23,7 +23,7 @@ void Graphics::Init(HWND hwnd)
 	m_Geometry->name = "Geometry";
 
 	LoadModel("skull.obj");
-	LoadModel("alter.obj");
+	LoadModel("altar.obj");
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -52,12 +52,12 @@ void Graphics::Init(HWND hwnd)
 	CreateDepthStencilView();
 
 	CreateBackBufferRTV();
-	CreateVertexBuffer(m_Model);
-	CreateIndexBuffer(m_Model);
 
 	BuildMeshGeometry("Geometry");
 	BuildRenderItems();
 //	CreateTexture(m_Material);
+
+	DrawRenderItems(m_GBufferPassRenderItems);
 
 	CreateBottomLevelAS();
 	CreateTopLevelAS();
@@ -422,7 +422,6 @@ void Graphics::CreateGBufferPassRootSignature()
 	slotRootParameter[0].InitAsConstantBufferView(0);
 	slotRootParameter[1].InitAsConstantBufferView(1);
 	slotRootParameter[2].InitAsConstantBufferView(2);
-	slotRootParameter[3].InitAsConstantBufferView(3);
 
 	D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
 	rootSigDesc.NumParameters = _countof(slotRootParameter);
@@ -824,6 +823,7 @@ void Graphics::BuildRenderItems()
 
 	skull->world = XMMatrixTranspose(XMMatrixRotationY(270.0f) * XMMatrixTranslation(0.0f, 1.0f, 0.0f));
 	skull->objCBIndex = 0;
+	skull->matCBIndex = 0;
 	skull->geometry = m_Geometries["skull.obj"].get();
 	skull->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	skull->indexCount = skull->geometry->drawArgs["skull.obj"].indexCount;
@@ -836,6 +836,7 @@ void Graphics::BuildRenderItems()
 
 	altar->world = XMMatrixTranspose(XMMatrixRotationY(270.0f) * XMMatrixTranslation(0.0, -1.0f, 0.0f));
 	altar->objCBIndex = 1;
+	altar->matCBIndex = 1;
 	altar->geometry = m_Geometries["altar.obj"].get();
 	altar->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	altar->indexCount = altar->geometry->drawArgs["altar.obj"].indexCount;
@@ -848,6 +849,38 @@ void Graphics::BuildRenderItems()
 	m_AllRenderItems.push_back(std::move(altar));
 
 }
+
+void Graphics::DrawRenderItems(const std::vector<RenderItem*>& renderItems)
+{
+	UINT objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
+	UINT materialCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(MaterialCB));
+	UINT gBufferPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(GBufferPassSceneCB));
+
+	auto objectCB = m_CurrFrameResource->objectCB->Resource();
+	auto materialCB = m_CurrFrameResource->materialCB->Resource();
+	auto gBufferPassCB = m_CurrFrameResource->gBufferPassSceneCB->Resource();
+
+	for (size_t i = 0; i < renderItems.size(); i++)
+	{
+		auto renderItem = renderItems[i];
+
+		m_D3DObjects.gBufferPassCommandList->IASetVertexBuffers(0, 1, &renderItem->geometry->VertexBufferView());
+		m_D3DObjects.gBufferPassCommandList->IASetIndexBuffer(&renderItem->geometry->IndexBufferView());
+		m_D3DObjects.gBufferPassCommandList->IASetPrimitiveTopology(renderItem->primitiveType);
+
+		D3D12_GPU_VIRTUAL_ADDRESS objectCBAddress = objectCB->GetGPUVirtualAddress() + (objectCBByteSize * renderItem->objCBIndex);
+		D3D12_GPU_VIRTUAL_ADDRESS materialCBAddress = materialCB->GetGPUVirtualAddress() + (materialCBByteSize * renderItem->matCBIndex);
+
+		m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, objectCBAddress);
+		m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(1, materialCBAddress);
+
+		D3D12_GPU_VIRTUAL_ADDRESS gBufferPassCBAddress = gBufferPassCB->GetGPUVirtualAddress();
+	
+		m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(2, gBufferPassCBAddress);
+
+		m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(renderItem->indexCount, 1, renderItem->startIndexLocation, renderItem->baseVertexLocation, 0);
+	}
+};
 
 /*
 void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource)
@@ -1798,19 +1831,10 @@ void Graphics::BuildGBufferCommandList()
 	WaitForGPU();
 	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootSignature(m_D3DObjects.gBufferPassRootSignature);
 
-	UINT sceneConstantBufferByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.sceneCBData));
-	UINT materialConstantBufferByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.materialCBData));
-
-	D3D12_GPU_VIRTUAL_ADDRESS sceneCBAddress = m_D3DResources.sceneCB->GetGPUVirtualAddress();
-
-
 	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
-
-	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, m_D3DResources.sceneCB->GetGPUVirtualAddress());
-	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(1, m_D3DResources.materialCB->GetGPUVirtualAddress());
 
 	m_D3DObjects.viewport.Height = m_D3DParams.height;
 	m_D3DObjects.viewport.Width = m_D3DParams.width;
@@ -1849,11 +1873,7 @@ void Graphics::BuildGBufferCommandList()
 		if (i < 4) rtvHandle.ptr += rtvDescSize;
 	}
 
-	m_D3DObjects.gBufferPassCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_D3DObjects.gBufferPassCommandList->IASetVertexBuffers(0, 1, &m_D3DResources.vertexBufferView);
-	m_D3DObjects.gBufferPassCommandList->IASetIndexBuffer(&m_D3DResources.indexBufferView);
-	m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(m_D3DValues.indicesCount, 1, 0, 0, 0);
-
+	DrawRenderItems(m_GBufferPassRenderItems);
 
 	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
