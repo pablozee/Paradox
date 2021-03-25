@@ -17,7 +17,8 @@ Graphics::~Graphics()
 
 void Graphics::Init(HWND hwnd)
 {
-	LoadModel("models/skull.obj", m_Model, m_Material);
+	LoadModel("models/skull.obj");
+	LoadModel("models/skull.obj");
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -49,6 +50,7 @@ void Graphics::Init(HWND hwnd)
 	CreateVertexBuffer(m_Model);
 	CreateIndexBuffer(m_Model);
 
+	BuildMeshGeometry();
 //	CreateTexture(m_Material);
 
 	CreateBottomLevelAS();
@@ -144,8 +146,11 @@ namespace std
 
 using namespace std;
 
-void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
+void Graphics::LoadModel(std::string filepath)
 {
+	auto model = std::make_unique<Model>();
+	auto material = std::make_unique<Material>();
+
 	using namespace tinyobj;
 	attrib_t attrib;
 	std::vector<shape_t> shapes;
@@ -157,19 +162,19 @@ void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
 		throw std::runtime_error(err);
 	}
 
-	material.name = materials[0].name;
-	material.ambient = XMFLOAT3(materials[0].ambient[0], materials[0].ambient[1], materials[0].ambient[2]);
-	material.diffuse = XMFLOAT3(materials[0].diffuse[0], materials[0].diffuse[1], materials[0].diffuse[2]);
-	material.specular = XMFLOAT3(materials[0].specular[0], materials[0].specular[1], materials[0].specular[2]);
-	material.transmittance = XMFLOAT3(materials[0].transmittance[0], materials[0].transmittance[1], materials[0].transmittance[2]);
-	material.emission = XMFLOAT3(materials[0].emission[0], materials[0].emission[1], materials[0].emission[2]);
-	material.shininess = materials[0].shininess;
-	material.ior = materials[0].ior;
-	material.dissolve = materials[0].dissolve;
-	material.roughness = materials[0].roughness;
-	material.metallic = materials[0].metallic;
-	material.sheen = materials[0].sheen;
-	material.texturePath = materials[0].diffuse_texname;
+	material->name = materials[0].name;
+	material->ambient = XMFLOAT3(materials[0].ambient[0], materials[0].ambient[1], materials[0].ambient[2]);
+	material->diffuse = XMFLOAT3(materials[0].diffuse[0], materials[0].diffuse[1], materials[0].diffuse[2]);
+	material->specular = XMFLOAT3(materials[0].specular[0], materials[0].specular[1], materials[0].specular[2]);
+	material->transmittance = XMFLOAT3(materials[0].transmittance[0], materials[0].transmittance[1], materials[0].transmittance[2]);
+	material->emission = XMFLOAT3(materials[0].emission[0], materials[0].emission[1], materials[0].emission[2]);
+	material->shininess = materials[0].shininess;
+	material->ior = materials[0].ior;
+	material->dissolve = materials[0].dissolve;
+	material->roughness = materials[0].roughness;
+	material->metallic = materials[0].metallic;
+	material->sheen = materials[0].sheen;
+	material->texturePath = materials[0].diffuse_texname;
 
 
 	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
@@ -200,14 +205,29 @@ void Graphics::LoadModel(std::string filepath, Model& model, Material& material)
 
 			if (uniqueVertices.count(vertex) == 0)
 			{
-				uniqueVertices[vertex] = static_cast<uint32_t>(model.vertices.size());
-				model.vertices.push_back(vertex);
+				uniqueVertices[vertex] = static_cast<uint32_t>(model->vertices.size());
+				model->vertices.push_back(vertex);
 			}
 
-			model.indices.push_back(uniqueVertices[vertex]);
+			model->indices.push_back(uniqueVertices[vertex]);
 		};
 	}
-	m_D3DValues.indicesCount = model.indices.size();
+
+	SubmeshGeometry submeshGeometry;
+	submeshGeometry.baseVertexLocation = m_D3DValues.vertexCount;
+	submeshGeometry.startIndexLocation = m_D3DValues.indicesCount;
+	submeshGeometry.indexCount = model->indices.size();
+
+	m_D3DValues.indicesCount += (UINT)model->indices.size();
+	m_D3DValues.vertexCount += (UINT)model->vertices.size();
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->name = filepath;
+	geo->drawArgs[filepath] = submeshGeometry;
+
+	m_Models[filepath] = std::move(model);
+	m_Materials[filepath] = std::move(material);
+	m_Geometries[geo->name] = std::move(geo);
 }
 
 void Graphics::InitializeShaderCompiler()
@@ -695,7 +715,16 @@ void Graphics::CreateBackBufferRTV()
 
 void BuildMeshGeometry()
 {
-
+	/*
+		Build Mesh Data 
+			- Change Load Model to return MeshData object
+			- Save as mesh data variables
+		Build Submesh Geometry for each mesh data object
+		Build Geometry for each mesh data object
+		Delete old create buffers
+	*/
+	UINT skull0Offset = 0;
+	UINT skull1Offset ;
 }
 
 
@@ -1864,11 +1893,11 @@ void Graphics::ResetView()
 void Graphics::SeedRandomVector(XMFLOAT3 randomVector)
 {
 	srand((UINT)time(NULL));
-	float x = rand() % 100 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	float x = float(rand() % 100) + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 	srand((UINT)time(NULL));
-	float y = rand() % 100 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	float y = float(rand() % 100) + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 	srand((UINT)time(NULL));
-	float z = rand() % 100 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	float z = float(rand() % 100) + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 	
 	randomVector = XMFLOAT3{ x, y, z };
 }
