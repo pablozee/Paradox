@@ -10,6 +10,7 @@ using namespace std;
 struct RenderItem
 {
 	RenderItem() = default;
+	RenderItem(const RenderItem& rhs) = delete;
 
 	XMMATRIX world = XMMatrixIdentity();
 
@@ -17,6 +18,7 @@ struct RenderItem
 
 	INT objCBIndex = -1;
 
+	Model model;
 	Material* material = nullptr;
 	MeshGeometry* geometry = nullptr;
 
@@ -153,6 +155,7 @@ struct D3D12Values
 	UINT frameIndex = 0;
 	UINT rtvDescSize = 0;
 	UINT indicesCount = 0;
+	UINT vertexCount = 0;
 };
 
 struct D3D12Objects
