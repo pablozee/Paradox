@@ -1269,34 +1269,99 @@ void Graphics::CreateDXROutput()
 
 void Graphics::CreateDescriptorHeaps(const Model& model)
 {
+	UINT objectCount = m_AllRenderItems.size();
+	UINT materialCount = m_Materials.size();
+
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 7;
+	heapDesc.NumDescriptors = 5 + (objectCount * gNumFrameResources) + (2 * gNumFrameResources) + (materialCount * gNumFrameResources);
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
 	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_D3DResources.descriptorHeap));
 	Helpers::Validate(hr, L"Failed to create descriptor heap!");
 
-	D3D12_CPU_DESCRIPTOR_HANDLE handle = m_D3DResources.descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_D3DResources.descriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	UINT handleIncrement = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.descriptorHeap->SetName(L"DXR Descriptor Heap");
 #endif
 
-	// Create Scene Constant Buffer CBV
-	D3D12_CONSTANT_BUFFER_VIEW_DESC sceneCBDesc = {};
-	sceneCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.sceneCBData));
-	sceneCBDesc.BufferLocation = m_D3DResources.sceneCB->GetGPUVirtualAddress();
+	UINT objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
+	UINT materialCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(MaterialCB));
+	UINT gBufferPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(GBufferPassSceneCB));
+	UINT rayTracingPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(RayTracingPassSceneCB));
+	
+	int heapIndex = 0;
 
-	m_D3DObjects.device->CreateConstantBufferView(&sceneCBDesc, handle);
+	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
+	{
+		auto objectCB = m_FrameResources[frameIndex]->objectCB->Resource();
+		for (int i = 0; i < objectCount; i++)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
+			objCBAddress += i * objectCBByteSize;
 
-	// Create MaterialCB CBV
-	sceneCBDesc.SizeInBytes = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(m_D3DResources.materialCBData));
-	sceneCBDesc.BufferLocation = m_D3DResources.materialCB->GetGPUVirtualAddress();
+			heapIndex = (objectCount * frameIndex) + i;
+			handle.Offset(heapIndex, handleIncrement);
 
-	handle.ptr += handleIncrement;
-	m_D3DObjects.device->CreateConstantBufferView(&sceneCBDesc, handle);
+			D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
+			constantBufferViewDesc.BufferLocation = objCBAddress;
+			constantBufferViewDesc.SizeInBytes = objectCBByteSize;
+			
+			m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
+		}
+	}
+
+	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
+	{
+		auto materialCB = m_FrameResources[frameIndex]->materialCB->Resource();
+		int matHeapIndex = (objectCount * gNumFrameResources);
+		for (int i = 0; i < materialCount; i++)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress();
+			matCBAddress += i * materialCBByteSize;
+
+			heapIndex = matHeapIndex + (materialCount * frameIndex) + i;
+			handle.Offset(heapIndex, handleIncrement);
+
+			D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
+			constantBufferViewDesc.BufferLocation = matCBAddress;
+			constantBufferViewDesc.SizeInBytes = materialCBByteSize;
+
+			m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
+		}
+	}
+
+	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
+	{
+		auto gBufferPassCB = m_FrameResources[frameIndex]->gBufferPassSceneCB->Resource();
+		int gBufferHeapIndex = (objectCount + materialCount) * gNumFrameResources;
+		D3D12_GPU_VIRTUAL_ADDRESS gBufferPassCBAddress = gBufferPassCB->GetGPUVirtualAddress();
+
+		handle.Offset(gBufferHeapIndex, handleIncrement);
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
+		constantBufferViewDesc.BufferLocation = gBufferPassCBAddress;
+		constantBufferViewDesc.SizeInBytes = gBufferPassCBByteSize;
+
+		m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
+	}
+
+	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
+	{
+		auto rayTracingPassCB = m_FrameResources[frameIndex]->rayTracingPassSceneCB->Resource();
+		int rayTracingHeapIndex = (objectCount + materialCount + 1) * gNumFrameResources;
+		D3D12_GPU_VIRTUAL_ADDRESS rayTracingPassCBAddress = rayTracingPassCB->GetGPUVirtualAddress();
+
+		handle.Offset(rayTracingHeapIndex, handleIncrement);
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
+		constantBufferViewDesc.BufferLocation = rayTracingPassCBAddress;
+		constantBufferViewDesc.SizeInBytes = rayTracingPassCBByteSize;
+
+		m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
+	}
 
 	// Create DXR Output Buffer UAV 
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
@@ -1318,15 +1383,15 @@ void Graphics::CreateDescriptorHeaps(const Model& model)
 	// Create the Index Buffer SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC indexSrvDesc = {};
 	indexSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-	indexSrvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	indexSrvDesc.Format = DXGI_FORMAT_R16_TYPELESS;
 	indexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	indexSrvDesc.Buffer.StructureByteStride = 0;
 	indexSrvDesc.Buffer.FirstElement = 0;
-	indexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model.indices.size()) * sizeof(UINT)) / sizeof(float);
+	indexSrvDesc.Buffer.NumElements = m_D3DValues.indicesCount;
 	indexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	handle.ptr += handleIncrement;
-	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.indexBuffer, &indexSrvDesc, handle);
+	m_D3DObjects.device->CreateShaderResourceView(m_Geometries["Geometry"].get()->indexBufferGPU, &indexSrvDesc, handle);
 
 	// Create the Vertex Buffer SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC vertexSrvDesc = {};
@@ -1335,11 +1400,11 @@ void Graphics::CreateDescriptorHeaps(const Model& model)
 	vertexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	vertexSrvDesc.Buffer.StructureByteStride = 0;
 	vertexSrvDesc.Buffer.FirstElement = 0;
-	vertexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model.vertices.size()) * sizeof(Vertex)) / sizeof(float);
+	vertexSrvDesc.Buffer.NumElements = m_D3DValues.vertexCount;
 	vertexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	handle.ptr += handleIncrement;
-	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.vertexBuffer, &vertexSrvDesc, handle);
+	m_D3DObjects.device->CreateShaderResourceView(m_Geometries["Geometry"].get()->vertexBufferGPU, &vertexSrvDesc, handle);
 
 	// Create the material texture SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC textureSrvDesc = {};
