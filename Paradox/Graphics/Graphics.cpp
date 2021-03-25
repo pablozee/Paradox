@@ -1121,13 +1121,13 @@ void Graphics::CreateBottomLevelAS()
 {
 	D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
 	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-	geometryDesc.Triangles.VertexBuffer.StartAddress = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
-	geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_D3DResources.vertexBufferView.StrideInBytes;
-	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_Model.vertices.size());
+	geometryDesc.Triangles.VertexBuffer.StartAddress = m_Geometries["Geometry"].get()->vertexBufferGPU->GetGPUVirtualAddress();
+	geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_Geometries["Geometry"].get()->vertexByteStride;
+	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_D3DValues.vertexCount);
 	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-	geometryDesc.Triangles.IndexBuffer = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
-	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_Model.indices.size());
-	geometryDesc.Triangles.IndexFormat = m_D3DResources.indexBufferView.Format;
+	geometryDesc.Triangles.IndexBuffer = m_Geometries["Geometry"].get()->indexBufferGPU->GetGPUVirtualAddress();
+	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_D3DValues.indicesCount);
+	geometryDesc.Triangles.IndexFormat = m_Geometries["Geometry"].get()->indexBufferFormat;
 	geometryDesc.Triangles.Transform3x4 = 0;
 	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
 
