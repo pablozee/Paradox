@@ -45,13 +45,13 @@ private:
 	
 	void BuildMeshGeometry(std::string geometryName);
 	ID3D12Resource* CreateDefaultBuffer(const void* initData, UINT64 byteSize, ID3D12Resource* uploadBuffer);
-
+	void BuildRenderItems();
 
 	void CreateTexture(Material &material);
 	void UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture);
 
 	void BuildFrameResources();
-
+	
 	void UpdateObjectCBs();
 	void UpdateMaterialCBs();
 	void UpdateGBufferPassSceneCB();
@@ -108,7 +108,7 @@ private:
 	D3D12ShaderCompilerInfo m_ShaderCompilerInfo;
 	D3D12Resources m_D3DResources;
 	UINT m_FrameCount = 2;
-	XMVECTOR m_EyeInit = { 17.f, 0.f, 0.f };
+	XMVECTOR m_EyeInit = { 0.f, 0.f, -17.0f };
 	XMVECTOR m_FocusInit = { 0.f, 0.f, 0.f };
 	XMVECTOR m_UpInit = { 0.f, 1.f, 0.f };
 	XMVECTOR m_Eye = m_EyeInit;
@@ -124,8 +124,8 @@ private:
 	std::vector<std::unique_ptr<RenderItem>> m_AllRenderItems;
 
 	// Render items per PSO
-	std::vector<std::unique_ptr<RenderItem*>> gBufferPassRenderItems;
-	std::vector<std::unique_ptr<RenderItem*>> rayTracingPassRenderItems;
+	std::vector<RenderItem*> m_GBufferPassRenderItems;
+	std::vector<RenderItem*> m_RayTracingPassRenderItems;
 
 	std::unique_ptr<MeshGeometry> m_Geometry;
 	std::unordered_map<std::string, std::unique_ptr<Model>> m_Models;

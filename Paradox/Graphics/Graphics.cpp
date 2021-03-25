@@ -2,6 +2,8 @@
 #include "../Helpers.h"
 #include "core.h"
 
+using namespace DirectX;
+
 #define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 #define SAFE_RELEASE(x) { if (x) { x->Release(); x = NULL; } }
 
@@ -20,8 +22,8 @@ void Graphics::Init(HWND hwnd)
 	m_Geometry = std::make_unique<MeshGeometry>();
 	m_Geometry->name = "Geometry";
 
-	LoadModel("models/skull.obj");
-	LoadModel("models/skull.obj");
+	LoadModel("skull.obj");
+	LoadModel("alter.obj");
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -53,7 +55,8 @@ void Graphics::Init(HWND hwnd)
 	CreateVertexBuffer(m_Model);
 	CreateIndexBuffer(m_Model);
 
-	BuildMeshGeometry();
+	BuildMeshGeometry("Geometry");
+	BuildRenderItems();
 //	CreateTexture(m_Material);
 
 	CreateBottomLevelAS();
@@ -149,7 +152,7 @@ namespace std
 
 using namespace std;
 
-void Graphics::LoadModel(std::string filepath)
+void Graphics::LoadModel(std::string filename)
 {
 	auto model = std::make_unique<Model>();
 	auto material = std::make_unique<Material>();
@@ -159,6 +162,8 @@ void Graphics::LoadModel(std::string filepath)
 	std::vector<shape_t> shapes;
 	std::vector<material_t> materials;
 	std::string err;
+
+	std::string filepath = "models/" + filename;
 
 	if (!LoadObj(&attrib, &shapes, &materials, &err, filepath.c_str(), "materials\\"))
 	{
@@ -812,6 +817,38 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, UINT64 byteS
 	return defaultBuffer;
 }
 
+void Graphics::BuildRenderItems()
+{
+	auto skull = std::make_unique<RenderItem>();
+	auto altar = std::make_unique<RenderItem>();
+
+	skull->world = XMMatrixTranspose(XMMatrixRotationY(270.0f) * XMMatrixTranslation(0.0f, 1.0f, 0.0f));
+	skull->objCBIndex = 0;
+	skull->geometry = m_Geometries["skull.obj"].get();
+	skull->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	skull->indexCount = skull->geometry->drawArgs["skull.obj"].indexCount;
+	skull->startIndexLocation = skull->geometry->drawArgs["skull.obj"].startIndexLocation;
+	skull->baseVertexLocation = skull->geometry->drawArgs["skull.obj"].baseVertexLocation;
+
+	m_GBufferPassRenderItems.push_back(skull.get());
+	m_RayTracingPassRenderItems.push_back(skull.get());
+	m_AllRenderItems.push_back(std::move(skull));
+
+	altar->world = XMMatrixTranspose(XMMatrixRotationY(270.0f) * XMMatrixTranslation(0.0, -1.0f, 0.0f));
+	altar->objCBIndex = 1;
+	altar->geometry = m_Geometries["altar.obj"].get();
+	altar->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	altar->indexCount = altar->geometry->drawArgs["altar.obj"].indexCount;
+	altar->startIndexLocation = altar->geometry->drawArgs["altar.obj"].startIndexLocation;
+	altar->baseVertexLocation = altar->geometry->drawArgs["altar.obj"].baseVertexLocation;
+
+
+	m_GBufferPassRenderItems.push_back(altar.get());
+	m_RayTracingPassRenderItems.push_back(altar.get());
+	m_AllRenderItems.push_back(std::move(altar));
+
+}
+
 /*
 void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource)
 {
@@ -1033,11 +1070,11 @@ void Graphics::UpdateGBufferPassSceneCB()
 	aspect = (float)m_D3DParams.width / (float)m_D3DParams.height;
 	fov = 65.f * (XM_PI / 180.f);
 
-	gBufferView = DirectX::XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
+	gBufferView = XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
 	proj = XMMatrixPerspectiveFovLH(fov, (float)m_D3DParams.width / (float)m_D3DParams.height, 0.1f, 100.0f);
 
 	GBufferPassSceneCB gBufferCB;
-	gBufferCB.gBufferView = DirectX::XMMatrixTranspose(gBufferView);
+	gBufferCB.gBufferView = XMMatrixTranspose(gBufferView);
 	gBufferCB.proj = XMMatrixTranspose(proj);
 
 	auto currentGBufferPassCB = m_CurrFrameResource->gBufferPassSceneCB.get();
