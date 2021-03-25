@@ -43,8 +43,10 @@ private:
 	void CreateRTVDescriptorHeaps();
 	void CreateBackBufferRTV();
 	
-	void BuildMeshGeometry();
-	
+	void BuildMeshGeometry(std::string geometryName);
+	ID3D12Resource* CreateDefaultBuffer(const void* initData, UINT64 byteSize, ID3D12Resource* uploadBuffer);
+
+
 	void CreateTexture(Material &material);
 	void UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture);
 
@@ -125,6 +127,7 @@ private:
 	std::vector<std::unique_ptr<RenderItem*>> gBufferPassRenderItems;
 	std::vector<std::unique_ptr<RenderItem*>> rayTracingPassRenderItems;
 
+	std::unique_ptr<MeshGeometry> m_Geometry;
 	std::unordered_map<std::string, std::unique_ptr<Model>> m_Models;
 	std::unordered_map<std::string, std::unique_ptr<Material>> m_Materials;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;

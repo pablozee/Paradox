@@ -65,6 +65,21 @@ struct Model
 {
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
+
+	std::vector<uint16_t>& GetIndices16()
+	{
+		if (m_Indices16.empty())
+		{
+			m_Indices16.resize(indices.size());
+			for (size_t i = 0; i < indices.size(); i++)
+			{
+				m_Indices16[i] = static_cast<uint16_t>(indices[i]);
+			}
+		}
+	}
+
+private:
+	std::vector<uint16_t> m_Indices16;
 };
 
 struct Material

@@ -17,6 +17,9 @@ Graphics::~Graphics()
 
 void Graphics::Init(HWND hwnd)
 {
+	m_Geometry = std::make_unique<MeshGeometry>();
+	m_Geometry->name = "Geometry";
+
 	LoadModel("models/skull.obj");
 	LoadModel("models/skull.obj");
 	InitializeShaderCompiler();
@@ -217,16 +220,14 @@ void Graphics::LoadModel(std::string filepath)
 	submeshGeometry.startIndexLocation = m_D3DValues.indicesCount;
 	submeshGeometry.indexCount = model->indices.size();
 
-	m_D3DValues.indicesCount += (UINT)model->indices.size();
 	m_D3DValues.vertexCount += (UINT)model->vertices.size();
+	m_D3DValues.indicesCount += (UINT)model->indices.size();
 
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->name = filepath;
-	geo->drawArgs[filepath] = submeshGeometry;
+	m_Geometry->drawArgs[filepath] = submeshGeometry;
 
 	m_Models[filepath] = std::move(model);
 	m_Materials[filepath] = std::move(material);
-	m_Geometries[geo->name] = std::move(geo);
+	m_Geometries[m_Geometry->name] = std::move(m_Geometry);
 }
 
 void Graphics::InitializeShaderCompiler()
@@ -712,7 +713,7 @@ void Graphics::CreateBackBufferRTV()
 	}
 }
 
-void BuildMeshGeometry()
+void Graphics::BuildMeshGeometry(std::string geometryName)
 {
 	/*
 		Build Mesh Data 
@@ -722,11 +723,96 @@ void BuildMeshGeometry()
 		Build Geometry for each mesh data object
 		Delete old create buffers
 	*/
-	UINT skull0Offset = 0;
-	UINT skull1Offset ;
+	std::vector<Vertex> vertices(m_D3DValues.vertexCount);
+	std::vector<std::uint16_t> indices;
+
+	for (auto it = std::begin(m_Models); it != std::end(m_Models); ++it)
+	{
+		auto tempModel = *it->second;
+
+		UINT x = 0;
+		for (size_t i = 0; i < tempModel.vertices.size(); i++)
+		{
+			vertices[x].position = tempModel.vertices[i].position;
+			vertices[x].normal = tempModel.vertices[i].normal;
+			vertices[x].uv = tempModel.vertices[i].uv;
+		}
+
+		auto modelIndices = tempModel.GetIndices16();
+		indices.insert(indices.end(), std::begin(modelIndices), std::end(modelIndices));
+
+	}
+	const UINT vertexBufferByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT indexBufferByteSize = (UINT)indices.size() * sizeof(uint16_t);
+
+	HRESULT hr = D3DCreateBlob(vertexBufferByteSize, &m_Geometries[geometryName]->vertexBufferCPU);
+	Helpers::Validate(hr, L"Failed to create Vertex Buffer Blob!");
+	CopyMemory(m_Geometries[geometryName]->vertexBufferCPU->GetBufferPointer(), vertices.data(), vertexBufferByteSize);
+	
+	HRESULT hr = D3DCreateBlob(indexBufferByteSize, &m_Geometries[geometryName]->indexBufferCPU);
+	Helpers::Validate(hr, L"Failed to create Index Buffer Blob!");
+	CopyMemory(m_Geometries[geometryName]->indexBufferCPU->GetBufferPointer(), indices.data(), indexBufferByteSize);
+
+	m_Geometries[geometryName]->vertexBufferGPU = CreateDefaultBuffer(vertices.data(), vertexBufferByteSize, m_Geometries[geometryName]->vertexBufferUploader);
+
+	m_Geometries[geometryName]->indexBufferGPU = CreateDefaultBuffer(indices.data(), indexBufferByteSize, m_Geometries[geometryName]->indexBufferUploader);
+
+	m_Geometries[geometryName]->vertexByteStride = sizeof(Vertex);
+	m_Geometries[geometryName]->vertexBufferByteSize = vertexBufferByteSize;
+	m_Geometries[geometryName]->indexBufferFormat = DXGI_FORMAT_R16_UINT;
+	m_Geometries[geometryName]->indexBufferByteSize = indexBufferByteSize;
+
 }
 
+ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, UINT64 byteSize, ID3D12Resource* uploadBuffer)
+{
+	ID3D12Resource* defaultBuffer;
 
+	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&defaultBuffer)
+	);
+
+	Helpers::Validate(hr, L"Failed to create default buffer!");
+
+	hr = m_D3DObjects.device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&uploadBuffer)
+	);
+
+	Helpers::Validate(hr, L"Failed to create upload buffer!");
+
+	D3D12_SUBRESOURCE_DATA subresourceData = {};
+	subresourceData.pData = initData;
+	subresourceData.RowPitch = byteSize;
+	subresourceData.SlicePitch = subresourceData.RowPitch;
+
+	m_D3DObjects.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+		defaultBuffer,
+		D3D12_RESOURCE_STATE_COMMON,
+		D3D12_RESOURCE_STATE_COPY_DEST
+	));
+
+	UpdateSubresources(m_D3DObjects.commandList, defaultBuffer, uploadBuffer, 0, 0, 1, &subresourceData);
+
+	m_D3DObjects.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+		defaultBuffer,
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_GENERIC_READ
+	));
+
+	return defaultBuffer;
+}
+
+/*
 void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource)
 {
 	D3D12_HEAP_PROPERTIES heapDesc = {};
@@ -794,6 +880,8 @@ void Graphics::CreateIndexBuffer(Model& model)
 	m_D3DResources.indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 	m_D3DResources.indexBufferView.SizeInBytes = static_cast<UINT>(info.size);
 }
+
+*/
 
 void Graphics::CreateTexture(Material& material)
 {
