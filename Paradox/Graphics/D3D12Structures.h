@@ -444,4 +444,11 @@ struct D3D12BufferInfo
 		state(InDefaultType),
 		flags(InUploadFlags)
 	{};
+
+	D3D12BufferInfo(UINT64 InSize, D3D12_HEAP_TYPE InDefaultType, D3D12_RESOURCE_STATES InUploadFlags)
+		:
+		size(InSize),
+		heapType(InDefaultType),
+		state(InUploadFlags)
+	{};
 };

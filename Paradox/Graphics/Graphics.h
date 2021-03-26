@@ -47,7 +47,8 @@ private:
 	void CreateBackBufferRTV();
 	
 	void CreateBuffer(D3D12BufferInfo& info, ID3D12Resource** ppResource);
-
+	void CreateVertexBuffer(std::string geometryName);
+	void CreateIndexBuffer(std::string geometryName);
 
 	void BuildMeshGeometry(std::string geometryName);
 	ID3D12Resource* CreateDefaultBuffer(const void* initData, ID3D12Resource* uploadBuffer, D3D12BufferCreateInfo bufferCreateInfo);

@@ -803,16 +803,18 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 	std::vector<Vertex> vertices(m_D3DValues.vertexCount);
 	std::vector<std::uint32_t> indices;
 
+	UINT x = 0;
+
 	for (auto it = std::begin(m_Models); it != std::end(m_Models); ++it)
 	{
 		auto tempModel = *it->second;
 
-		UINT x = 0;
 		for (size_t i = 0; i < tempModel.vertices.size(); i++)
 		{
 			vertices[x].position = tempModel.vertices[i].position;
 			vertices[x].normal = tempModel.vertices[i].normal;
 			vertices[x].uv = tempModel.vertices[i].uv;
+			x++;
 		}
 
 		auto modelIndices = tempModel.indices;
@@ -830,21 +832,20 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 	Validate(hr, L"Failed to create Index Buffer Blob!");
 	CopyMemory(m_Geometries[geometryName]->indexBufferCPU->GetBufferPointer(), indices.data(), indexBufferByteSize);
 
-	D3D12BufferCreateInfo vertexBufferCreateInfo = {};
-	vertexBufferCreateInfo.size = vertexBufferByteSize;
-
-	m_Geometries[geometryName]->vertexBufferGPU = CreateDefaultBuffer(vertices.data(), m_Geometries[geometryName]->vertexBufferUploader, vertexBufferCreateInfo);
-
-	D3D12BufferCreateInfo indexBufferCreateInfo = {};
-	indexBufferCreateInfo.size = indexBufferByteSize;
-
-	m_Geometries[geometryName]->indexBufferGPU = CreateDefaultBuffer(indices.data(), m_Geometries[geometryName]->indexBufferUploader, indexBufferCreateInfo);
-
 	m_Geometries[geometryName]->vertexByteStride = sizeof(Vertex);
 	m_Geometries[geometryName]->vertexBufferByteSize = vertexBufferByteSize;
 	m_Geometries[geometryName]->indexBufferFormat = DXGI_FORMAT_R32_UINT;
 	m_Geometries[geometryName]->indexBufferByteSize = indexBufferByteSize;
 
+	D3D12BufferCreateInfo vertexBufferCreateInfo = {};
+	vertexBufferCreateInfo.size = vertexBufferByteSize;
+
+	CreateVertexBuffer(geometryName);
+
+	D3D12BufferCreateInfo indexBufferCreateInfo = {};
+	indexBufferCreateInfo.size = indexBufferByteSize;
+
+	CreateIndexBuffer(geometryName);
 }
 
 ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, ID3D12Resource* uploadBuffer, D3D12BufferCreateInfo bufferCreateInfo)
@@ -994,11 +995,13 @@ void Graphics::CreateBuffer(D3D12BufferInfo& info, ID3D12Resource** ppResource)
 	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(&heapDesc, D3D12_HEAP_FLAG_NONE, &resourceDesc, info.state, nullptr, IID_PPV_ARGS(ppResource));
 	Validate(hr, L"Failed to create buffer resource!");
 }
-/*
-void Graphics::CreateVertexBuffer(Model& model)
+
+void Graphics::CreateVertexBuffer(std::string geometryName)
 {
-	D3D12BufferCreateInfo info((UINT)model.vertices.size() * sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
-	CreateBuffer(info, &m_D3DResources.vertexBuffer);
+	ID3D12Resource* tempVertexBuffer;
+	D3D12BufferInfo info(m_Geometries[geometryName].get()->vertexBufferByteSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	info.flags = D3D12_RESOURCE_FLAG_NONE;
+	CreateBuffer(info, &tempVertexBuffer);
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.vertexBuffer->SetName(L"Vertex Buffer");
@@ -1006,21 +1009,28 @@ void Graphics::CreateVertexBuffer(Model& model)
 
 	UINT8* pVertexDataBegin;
 	D3D12_RANGE readRange = {};
-	HRESULT hr = m_D3DResources.vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
+	HRESULT hr = tempVertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
 	Validate(hr, L"Failed to map vertex buffer");
 
-	memcpy(pVertexDataBegin, model.vertices.data(), info.size);
-	m_D3DResources.vertexBuffer->Unmap(0, nullptr);
+	memcpy(pVertexDataBegin, m_Geometries[geometryName].get()->vertexBufferCPU->GetBufferPointer(), info.size);
+	tempVertexBuffer->Unmap(0, nullptr);
 
+	m_Geometries[geometryName].get()->vertexBufferGPU = tempVertexBuffer;
+
+	/*
 	m_D3DResources.vertexBufferView.BufferLocation = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
 	m_D3DResources.vertexBufferView.SizeInBytes = static_cast<UINT>(info.size);
 	m_D3DResources.vertexBufferView.StrideInBytes = sizeof(Vertex);
+	*/
+	
 }
 
-void Graphics::CreateIndexBuffer(Model& model)
+void Graphics::CreateIndexBuffer(std::string geometryName)
 {
-	D3D12BufferCreateInfo info((UINT)model.indices.size() * sizeof(UINT), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
-	CreateBuffer(info, &m_D3DResources.indexBuffer);
+	ID3D12Resource* tempIndexBuffer;
+
+	D3D12BufferInfo info(m_Geometries[geometryName].get()->indexBufferByteSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	CreateBuffer(info, &tempIndexBuffer);
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.indexBuffer->SetName(L"Index Buffer");
@@ -1028,18 +1038,21 @@ void Graphics::CreateIndexBuffer(Model& model)
 
 	UINT8* pIndexDataBegin;
 	D3D12_RANGE readRange = {};
-	HRESULT hr = m_D3DResources.indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pIndexDataBegin));
+	HRESULT hr = tempIndexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pIndexDataBegin));
 	Validate(hr, L"Failed to map index buffer");
 
-	memcpy(pIndexDataBegin, model.indices.data(), info.size);
-	m_D3DResources.indexBuffer->Unmap(0, nullptr);
+	memcpy(pIndexDataBegin, m_Geometries[geometryName].get()->indexBufferCPU->GetBufferPointer(), info.size);
+	tempIndexBuffer->Unmap(0, nullptr);
 
+	m_Geometries[geometryName].get()->indexBufferGPU = tempIndexBuffer;
+	/*
 	m_D3DResources.indexBufferView.BufferLocation = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
 	m_D3DResources.indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 	m_D3DResources.indexBufferView.SizeInBytes = static_cast<UINT>(info.size);
+	*/
 }
 
-*/
+
 
 void Graphics::CreateTexture(Material& material)
 {
