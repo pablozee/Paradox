@@ -63,7 +63,8 @@ VSOutput main(VSInput vsInput)
 {
 	VSOutput vso;
 
-	vso.PosW = mul(vsInput.Pos, (float3x3)world);
+	float4 homogPosW = mul(float4(vsInput.Pos, 1.0f), world);
+	vso.PosW = homogPosW.xyz / homogPosW.w;
 
 	vso.NormalW = vsInput.Normal;
 

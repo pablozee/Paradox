@@ -903,7 +903,7 @@ void Graphics::BuildRenderItems()
 	auto skull = std::make_unique<RenderItem>();
 	auto altar = std::make_unique<RenderItem>();
 
-	skull->world = XMMatrixTranspose(XMMatrixRotationY(270.0f) * XMMatrixTranslation(0.0f, 1.0f, 0.0f));
+	skull->world = XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0f, 4.0f, 0.0f);
 	skull->objCBIndex = 0;
 	skull->matCBIndex = 0;
 	skull->geometry = m_Geometries["Geometry"].get();
@@ -916,7 +916,7 @@ void Graphics::BuildRenderItems()
 	m_RayTracingPassRenderItems.push_back(skull.get());
 	m_AllRenderItems.push_back(std::move(skull));
 
-	altar->world = XMMatrixTranspose(XMMatrixRotationY(270.0f) * XMMatrixTranslation(0.0, -1.0f, 0.0f));
+	altar->world = XMMatrixScaling(3.3f, 3.3f, 3.3f) * XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, -7.6f, 0.0f);
 	altar->objCBIndex = 1;
 	altar->matCBIndex = 1;
 	altar->geometry = m_Geometries["Geometry"].get();
