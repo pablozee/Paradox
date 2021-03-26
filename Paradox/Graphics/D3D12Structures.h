@@ -38,7 +38,7 @@ struct MeshGeometry
 	UINT						indexBufferByteSize = 0;
 
 	// Container holding submesh for each geometry in index / vertex buffer
-	std::unordered_map<std::string, SubmeshGeometry> drawArgs;
+	std::unordered_map<std::string, unique_ptr<SubmeshGeometry>> drawArgs;
 
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
 	{

@@ -17,13 +17,13 @@ Graphics::~Graphics()
 
 void Graphics::Init(HWND hwnd)
 {
-	MeshGeometry meshGeo;
+	m_Geometry = make_unique<MeshGeometry>();
 	std::string name = "Geometry";
-	m_Geometry = &meshGeo;
 	m_Geometry->name = name;
-
-	LoadModel("models/skull.obj", m_Geometry, 0);
-	LoadModel("models/altar.obj", m_Geometry, 1);
+	m_Geometries[m_Geometry->name] = std::move(m_Geometry);
+	
+	LoadModel("models/skull.obj", name, 0);
+	LoadModel("models/altar.obj", name, 1);
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -172,7 +172,7 @@ void Graphics::Validate(HRESULT hr, LPWSTR message)
 	}
 }
 
-void Graphics::LoadModel(std::string filename, MeshGeometry* geometry, INT matCBIndex)
+void Graphics::LoadModel(std::string filename, std::string geometryName, INT matCBIndex)
 {
 	auto model = std::make_unique<Model>();
 	auto material = std::make_unique<Material>();
@@ -182,8 +182,6 @@ void Graphics::LoadModel(std::string filename, MeshGeometry* geometry, INT matCB
 	std::vector<shape_t> shapes;
 	std::vector<material_t> materials;
 	std::string err;
-
-	//	std::string filepath = "models/" + filename;
 
 	if (!LoadObj(&attrib, &shapes, &materials, &err, filename.c_str(), "materials\\"))
 	{
@@ -249,9 +247,12 @@ void Graphics::LoadModel(std::string filename, MeshGeometry* geometry, INT matCB
 	m_D3DValues.vertexCount += (UINT)model->vertices.size();
 	m_D3DValues.indicesCount += (UINT)model->indices.size();
 
+	/*
+
 	geometry->drawArgs[filename].baseVertexLocation = submeshGeometry.baseVertexLocation;
 	geometry->drawArgs[filename].startIndexLocation = submeshGeometry.startIndexLocation;
 	geometry->drawArgs[filename].indexCount = submeshGeometry.indexCount;
+	*/
 
 	unique_ptr<SubmeshGeometry> submeshGeo = make_unique<SubmeshGeometry>();
 
@@ -259,13 +260,15 @@ void Graphics::LoadModel(std::string filename, MeshGeometry* geometry, INT matCB
 	submeshGeo->startIndexLocation = submeshGeometry.startIndexLocation;
 	submeshGeo->indexCount = submeshGeometry.indexCount;
 
-	unique_ptr<MeshGeometry> meshGeo = make_unique<MeshGeometry>();
-	meshGeo->name = geometry->name;
-	meshGeo->drawArgs[filename] = geometry->drawArgs[filename];
-
 	m_Models[filename] = std::move(model);
 	m_Materials[filename] = std::move(material);
-	m_Geometries[geometry->name] = std::move(meshGeo);
+	
+	m_Geometries[geometryName]->drawArgs[filename] = std::move(submeshGeo);
+	/*
+	m_Geometries[geometry->name]->drawArgs[filename].baseVertexLocation = meshGeo->drawArgs[filename].baseVertexLocation;
+	m_Geometries[geometry->name]->drawArgs[filename].startIndexLocation = meshGeo->drawArgs[filename].startIndexLocation;
+	m_Geometries[geometry->name]->drawArgs[filename].indexCount = meshGeo->drawArgs[filename].indexCount;
+	*/
 }
 
 void Graphics::FormatTexture(TextureInfo& info, UINT8* pixels)
@@ -904,9 +907,9 @@ void Graphics::BuildRenderItems()
 	skull->matCBIndex = 0;
 	skull->geometry = m_Geometries["Geometry"].get();
 	skull->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	skull->indexCount = skull->geometry->drawArgs["skull.obj"].indexCount;
-	skull->startIndexLocation = skull->geometry->drawArgs["skull.obj"].startIndexLocation;
-	skull->baseVertexLocation = skull->geometry->drawArgs["skull.obj"].baseVertexLocation;
+	skull->indexCount = skull->geometry->drawArgs["models/skull.obj"].get()->indexCount;
+	skull->startIndexLocation = skull->geometry->drawArgs["models/skull.obj"].get()->startIndexLocation;
+	skull->baseVertexLocation = skull->geometry->drawArgs["models/skull.obj"].get()->baseVertexLocation;
 
 	m_GBufferPassRenderItems.push_back(skull.get());
 	m_RayTracingPassRenderItems.push_back(skull.get());
@@ -917,9 +920,9 @@ void Graphics::BuildRenderItems()
 	altar->matCBIndex = 1;
 	altar->geometry = m_Geometries["Geometry"].get();
 	altar->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	altar->indexCount = altar->geometry->drawArgs["altar.obj"].indexCount;
-	altar->startIndexLocation = altar->geometry->drawArgs["altar.obj"].startIndexLocation;
-	altar->baseVertexLocation = altar->geometry->drawArgs["altar.obj"].baseVertexLocation;
+	altar->indexCount = altar->geometry->drawArgs["models/altar.obj"].get()->indexCount;
+	altar->startIndexLocation = altar->geometry->drawArgs["models/altar.obj"].get()->startIndexLocation;
+	altar->baseVertexLocation = altar->geometry->drawArgs["models/altar.obj"].get()->baseVertexLocation;
 
 
 	m_GBufferPassRenderItems.push_back(altar.get());
