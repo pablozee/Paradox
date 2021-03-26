@@ -14,21 +14,9 @@ struct PointLight
 	float			 pointLightPadding1;
 };
 
-cbuffer SceneCB : register(b0)
+cbuffer ObjectCB : register(b0)
 {
-	matrix			 view;
-	matrix			 gBufferView;
-	matrix			 proj;
-	float4			 viewOriginAndTanHalfFovY;
-	float2			 resolution;
-	float			 numDirLights;
-	float			 numPointLights;
-	float3			 randomSeedVector0;
-	float			 padding;
-	float3			 randomSeedVector1;
-	float			 padding1;
-	DirectionalLight directionalLights[10];
-	PointLight		 pointLights[10];
+	matrix world;
 }
 
 cbuffer MaterialCB : register(b1)
@@ -49,6 +37,13 @@ cbuffer MaterialCB : register(b1)
 	int				 useTex;
 }
 
+cbuffer GBufferPassSceneCB : register(b2)
+{
+	matrix gBufferView;
+	matrix proj;
+
+};
+
 struct VSInput
 {
 	float3 Pos : POSITION;
@@ -68,7 +63,7 @@ VSOutput main(VSInput vsInput)
 {
 	VSOutput vso;
 
-	vso.PosW = vsInput.Pos;
+	vso.PosW = mul(vsInput.Pos, (float3x3)world);
 
 	vso.NormalW = vsInput.Normal;
 
@@ -76,7 +71,7 @@ VSOutput main(VSInput vsInput)
 
 	matrix viewProj = mul(gBufferView, proj);
 
-	vso.PosH = mul(float4(vsInput.Pos, 1.0f), viewProj);
+	vso.PosH = mul(float4(vso.PosW, 1.0f), viewProj);
 
 	return vso;
 }
