@@ -22,8 +22,8 @@ void Graphics::Init(HWND hwnd)
 	m_Geometry = &meshGeo;
 	m_Geometry->name = name;
 
-	LoadModel("models/skull.obj", m_Geometry);
-	LoadModel("models/altar.obj", m_Geometry);
+	LoadModel("models/skull.obj", m_Geometry, 0);
+	LoadModel("models/altar.obj", m_Geometry, 1);
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -172,7 +172,7 @@ void Graphics::Validate(HRESULT hr, LPWSTR message)
 	}
 }
 
-void Graphics::LoadModel(std::string filename, MeshGeometry* geometry)
+void Graphics::LoadModel(std::string filename, MeshGeometry* geometry, INT matCBIndex)
 {
 	auto model = std::make_unique<Model>();
 	auto material = std::make_unique<Material>();
@@ -191,6 +191,7 @@ void Graphics::LoadModel(std::string filename, MeshGeometry* geometry)
 	}
 
 	material->name = materials[0].name;
+	material->materialCBIndex = matCBIndex;
 	material->ambient = XMFLOAT3(materials[0].ambient[0], materials[0].ambient[1], materials[0].ambient[2]);
 	material->diffuse = XMFLOAT3(materials[0].diffuse[0], materials[0].diffuse[1], materials[0].diffuse[2]);
 	material->specular = XMFLOAT3(materials[0].specular[0], materials[0].specular[1], materials[0].specular[2]);
@@ -817,7 +818,7 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 
 	}
 	const UINT vertexBufferByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT indexBufferByteSize = (UINT)indices.size() * sizeof(uint16_t);
+	const UINT indexBufferByteSize = (UINT)indices.size() * sizeof(uint32_t);
 
 	HRESULT hr = D3DCreateBlob(vertexBufferByteSize, &m_Geometries[geometryName]->vertexBufferCPU);
 	Validate(hr, L"Failed to create Vertex Buffer Blob!");
@@ -839,7 +840,7 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 
 	m_Geometries[geometryName]->vertexByteStride = sizeof(Vertex);
 	m_Geometries[geometryName]->vertexBufferByteSize = vertexBufferByteSize;
-	m_Geometries[geometryName]->indexBufferFormat = DXGI_FORMAT_R32_TYPELESS;
+	m_Geometries[geometryName]->indexBufferFormat = DXGI_FORMAT_R32_UINT;
 	m_Geometries[geometryName]->indexBufferByteSize = indexBufferByteSize;
 
 }
@@ -1885,11 +1886,11 @@ void Graphics::CreateShaderTable()
 	shaderTableSize = ALIGN(D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT, shaderTableSize);
 
 	// Create the shader table buffer
-	D3D12BufferCreateInfo bufferInfo = {};
+	D3D12BufferInfo bufferInfo = {};
 	bufferInfo.size = shaderTableSize;
-	bufferInfo.defaultBufferHeapType = D3D12_HEAP_TYPE_UPLOAD;
-	bufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_GENERIC_READ;
-	CreateDefaultBuffer(nullptr, m_DXRObjects.shaderTable, bufferInfo);
+	bufferInfo.heapType = D3D12_HEAP_TYPE_UPLOAD;
+	bufferInfo.state = D3D12_RESOURCE_STATE_GENERIC_READ;
+	CreateBuffer(bufferInfo, &m_DXRObjects.shaderTable);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.shaderTable->SetName(L"DXR Shader Table");
 #endif

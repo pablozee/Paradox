@@ -84,7 +84,7 @@ private:
 struct Material
 {
 	std::string name = "defaultMaterial";
-	int materialCBIndex = -1;
+	int materialCBIndex;
 	int numFramesDirty = gNumFrameResources;
 	int useTex = 0;
 	XMFLOAT3 ambient;

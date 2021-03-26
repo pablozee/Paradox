@@ -133,7 +133,6 @@ struct MaterialCB
 	XMMATRIX materialTransform;
 	float sheen;
 	int useTex;
-
 };
 
 struct D3D12Params

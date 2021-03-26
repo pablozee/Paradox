@@ -22,7 +22,7 @@ public:
 
 private:
 	void Validate(HRESULT hr, LPWSTR message);
-	void LoadModel(std::string filepath, MeshGeometry* geometry);
+	void LoadModel(std::string filepath, MeshGeometry* geometry, INT matCBIndex);
 	TextureInfo LoadTexture(std::string filepath);
 	void FormatTexture(TextureInfo& info, UINT8* pixels);
 
