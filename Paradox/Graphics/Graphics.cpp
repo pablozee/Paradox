@@ -1946,6 +1946,8 @@ void Graphics::BuildGBufferCommandList()
 	HRESULT hr = commandListAlloc->Reset();
 	Validate(hr, L"Failed to reset G Buffer command list allocator!");
 
+	m_D3DObjects.gBufferPassCommandList->Close();
+
 	hr = m_D3DObjects.gBufferPassCommandList->Reset(commandListAlloc, m_D3DObjects.gBufferPassPipelineState);
 
 	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootSignature(m_D3DObjects.gBufferPassRootSignature);
