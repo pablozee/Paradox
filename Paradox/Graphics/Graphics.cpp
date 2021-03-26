@@ -256,9 +256,8 @@ void Graphics::LoadModel(std::string filename, MeshGeometry* geometry, INT matCB
 	unique_ptr<SubmeshGeometry> submeshGeo = make_unique<SubmeshGeometry>();
 
 	submeshGeo->baseVertexLocation = submeshGeometry.baseVertexLocation;
-	submeshGeo->startIndexLocation = submeshGeometry.baseVertexLocation;
-	submeshGeo->indexCount = submeshGeometry.baseVertexLocation;
-	submeshGeo->baseVertexLocation = submeshGeometry.baseVertexLocation;
+	submeshGeo->startIndexLocation = submeshGeometry.startIndexLocation;
+	submeshGeo->indexCount = submeshGeometry.indexCount;
 
 	unique_ptr<MeshGeometry> meshGeo = make_unique<MeshGeometry>();
 	meshGeo->name = geometry->name;
