@@ -817,7 +817,7 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 
 	}
 	const UINT vertexBufferByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT indexBufferByteSize = (UINT)indices.size() * sizeof(uint16_t);
+	const UINT indexBufferByteSize = (UINT)indices.size() * sizeof(uint32_t);
 
 	HRESULT hr = D3DCreateBlob(vertexBufferByteSize, &m_Geometries[geometryName]->vertexBufferCPU);
 	Validate(hr, L"Failed to create Vertex Buffer Blob!");
@@ -839,7 +839,7 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 
 	m_Geometries[geometryName]->vertexByteStride = sizeof(Vertex);
 	m_Geometries[geometryName]->vertexBufferByteSize = vertexBufferByteSize;
-	m_Geometries[geometryName]->indexBufferFormat = DXGI_FORMAT_R32_TYPELESS;
+	m_Geometries[geometryName]->indexBufferFormat = DXGI_FORMAT_R32_UINT;
 	m_Geometries[geometryName]->indexBufferByteSize = indexBufferByteSize;
 
 }
