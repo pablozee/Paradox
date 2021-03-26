@@ -487,7 +487,8 @@ void Graphics::CreateDSVDescriptorHeap()
 
 void Graphics::CreateGBufferPassRootSignature()
 {
-	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+
 	slotRootParameter[0].InitAsConstantBufferView(0);
 	slotRootParameter[1].InitAsConstantBufferView(1);
 	slotRootParameter[2].InitAsConstantBufferView(2);
@@ -1298,12 +1299,12 @@ void Graphics::CreateTopLevelAS()
 	instanceDesc.AccelerationStructure = m_DXRObjects.BLAS.pResult->GetGPUVirtualAddress();
 	instanceDesc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
 
-	D3D12BufferCreateInfo instanceBufferInfo = {};
+	D3D12BufferInfo instanceBufferInfo = {};
 	instanceBufferInfo.size = sizeof(instanceDesc);
-	instanceBufferInfo.defaultBufferHeapType = D3D12_HEAP_TYPE_UPLOAD;
-	instanceBufferInfo.defaultBufferResourceFlags = D3D12_RESOURCE_FLAG_NONE;
-	instanceBufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_GENERIC_READ;
-	CreateDefaultBuffer(nullptr, m_DXRObjects.TLAS.pInstanceDesc, instanceBufferInfo);
+	instanceBufferInfo.heapType = D3D12_HEAP_TYPE_UPLOAD;
+	instanceBufferInfo.flags = D3D12_RESOURCE_FLAG_NONE;
+	instanceBufferInfo.state = D3D12_RESOURCE_STATE_GENERIC_READ;
+	CreateBuffer(instanceBufferInfo, &m_DXRObjects.TLAS.pInstanceDesc);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.TLAS.pInstanceDesc->SetName(L"DXR TLAS Instance Descriptors");
 #endif
@@ -1330,19 +1331,19 @@ void Graphics::CreateTopLevelAS()
 
 	m_DXRObjects.tlasSize = ASPreBuildInfo.ResultDataMaxSizeInBytes;
 
-	D3D12BufferCreateInfo bufferInfo = {};
+	D3D12BufferInfo bufferInfo = {};
 	bufferInfo.size = ASPreBuildInfo.ScratchDataSizeInBytes;
-	bufferInfo.defaultBufferResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-	bufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+	bufferInfo.flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	bufferInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 	bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
-	CreateDefaultBuffer(nullptr, m_DXRObjects.TLAS.pScratch, bufferInfo);
+	CreateBuffer(bufferInfo, &m_DXRObjects.TLAS.pScratch);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.TLAS.pScratch->SetName(L"DXR TLAS Scratch");
 #endif
 
 	bufferInfo.size = ASPreBuildInfo.ResultDataMaxSizeInBytes;
-	bufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-	CreateDefaultBuffer(nullptr, m_DXRObjects.TLAS.pResult, bufferInfo);
+	bufferInfo.state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+	CreateBuffer(bufferInfo, &m_DXRObjects.TLAS.pResult);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.TLAS.pScratch->SetName(L"DXR TLAS");
 #endif

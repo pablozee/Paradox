@@ -90,6 +90,8 @@ private:
 	void CreatePipelineStateObject();
 	void CreateShaderTable();
 
+	void CreateRTRootSignature();
+
 	void WaitForGPU();
 
 	void BuildGBufferCommandList();
