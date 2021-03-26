@@ -55,9 +55,8 @@ void Graphics::Init(HWND hwnd)
 
 	BuildMeshGeometry("Geometry");
 	BuildRenderItems();
+	BuildFrameResources();
 //	CreateTexture(m_Material);
-
-	DrawRenderItems(m_GBufferPassRenderItems);
 
 	CreateBottomLevelAS();
 	CreateTopLevelAS();
@@ -881,7 +880,9 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, ID3D12Resour
 		D3D12_RESOURCE_STATE_COPY_DEST
 	));
 
-	UpdateSubresources(m_D3DObjects.commandList, defaultBuffer, uploadBuffer, 0, 0, 1, &subresourceData);
+	UpdateSubresources<1>(m_D3DObjects.commandList, defaultBuffer, uploadBuffer, 0, 0, 1, &subresourceData);
+
+//	memcpy(defaultBuffer, uploadBuffer, bufferCreateInfo.size);
 
 	m_D3DObjects.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
 		defaultBuffer,
@@ -923,7 +924,14 @@ void Graphics::BuildRenderItems()
 	m_GBufferPassRenderItems.push_back(altar.get());
 	m_RayTracingPassRenderItems.push_back(altar.get());
 	m_AllRenderItems.push_back(std::move(altar));
+}
 
+void Graphics::BuildFrameResources()
+{
+	for (int i = 0; i < gNumFrameResources; i++)
+	{
+		m_FrameResources.push_back(std::make_unique<FrameResource>(m_D3DObjects.device, 2, (UINT)m_AllRenderItems.size(), (UINT)m_Materials.size()));
+	}
 }
 
 void Graphics::DrawRenderItems(const std::vector<RenderItem*>& renderItems)
@@ -958,8 +966,8 @@ void Graphics::DrawRenderItems(const std::vector<RenderItem*>& renderItems)
 	}
 };
 
-/*
-void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource)
+
+void Graphics::CreateBuffer(D3D12BufferInfo& info, ID3D12Resource** ppResource)
 {
 	D3D12_HEAP_PROPERTIES heapDesc = {};
 	heapDesc.Type = info.heapType;
@@ -982,7 +990,7 @@ void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppReso
 	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(&heapDesc, D3D12_HEAP_FLAG_NONE, &resourceDesc, info.state, nullptr, IID_PPV_ARGS(ppResource));
 	Validate(hr, L"Failed to create buffer resource!");
 }
-
+/*
 void Graphics::CreateVertexBuffer(Model& model)
 {
 	D3D12BufferCreateInfo info((UINT)model.vertices.size() * sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -1108,14 +1116,6 @@ void Graphics::UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcRe
 	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
 	m_D3DObjects.commandList->ResourceBarrier(1, &barrier);
-}
-
-void Graphics::BuildFrameResources()
-{
-	for (int i = 0; i < gNumFrameResources; i++)
-	{
-		m_FrameResources.push_back(std::make_unique<FrameResource>(m_D3DObjects.device, 1, (UINT)m_AllRenderItems.size()));
-	}
 }
 
 void Graphics::UpdateObjectCBs()
@@ -1254,21 +1254,21 @@ void Graphics::CreateBottomLevelAS()
 	ASPreBuildInfo.ScratchDataSizeInBytes = ALIGN(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, ASPreBuildInfo.ScratchDataSizeInBytes);
 	ASPreBuildInfo.ResultDataMaxSizeInBytes = ALIGN(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, ASPreBuildInfo.ResultDataMaxSizeInBytes);
 
-	D3D12BufferCreateInfo bufferInfo = {};
+	D3D12BufferInfo bufferInfo = {};
 	bufferInfo.size = ASPreBuildInfo.ScratchDataSizeInBytes;
-	bufferInfo.defaultBufferResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-	bufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+	bufferInfo.state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+	bufferInfo.flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
 	bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
-//	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pScratch);
-	CreateDefaultBuffer(nullptr, m_DXRObjects.BLAS.pScratch, bufferInfo);
+	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pScratch);
+//	CreateDefaultBuffer(nullptr, m_DXRObjects.BLAS.pScratch, bufferInfo);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.BLAS.pScratch->SetName(L"DXR BLAS Scratch");
 #endif
 
 	bufferInfo.size = ASPreBuildInfo.ResultDataMaxSizeInBytes;
-	bufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-	CreateDefaultBuffer(nullptr, m_DXRObjects.BLAS.pResult, bufferInfo);
+	bufferInfo.state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pResult);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.BLAS.pResult->SetName(L"DXR BLAS");
 #endif
@@ -1412,7 +1412,7 @@ void Graphics::CreateDescriptorHeaps()
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
-		auto objectCB = m_FrameResources[frameIndex]->objectCB->Resource();
+		auto objectCB = m_FrameResources[m_CurrFrameResourceIndex]->objectCB->Resource();
 		for (int i = 0; i < objectCount; i++)
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
@@ -1915,6 +1915,14 @@ void Graphics::WaitForGPU()
 void Graphics::BuildGBufferCommandList()
 {
 	WaitForGPU();
+	
+	auto commandListAlloc = m_CurrFrameResource->CommandListAllocator;
+
+	HRESULT hr = commandListAlloc->Reset();
+	Validate(hr, L"Failed to reset G Buffer command list allocator!");
+
+	hr = m_D3DObjects.gBufferPassCommandList->Reset(commandListAlloc, m_D3DObjects.gBufferPassPipelineState);
+	
 	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootSignature(m_D3DObjects.gBufferPassRootSignature);
 
 	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);

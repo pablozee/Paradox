@@ -429,3 +429,20 @@ static const D3D12_HEAP_PROPERTIES DefaultHeapProperties =
 	0
 };
 
+struct D3D12BufferInfo
+{
+	UINT64 size = 0;
+	UINT64 alignment = 0;
+	D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
+	D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+	D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
+
+	D3D12BufferInfo() {};
+
+	D3D12BufferInfo(UINT64 InSize, D3D12_RESOURCE_STATES InDefaultType, D3D12_RESOURCE_FLAGS InUploadFlags)
+		:
+		size(InSize),
+		state(InDefaultType),
+		flags(InUploadFlags)
+	{};
+};

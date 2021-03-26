@@ -46,6 +46,9 @@ private:
 	void CreateRTVDescriptorHeaps();
 	void CreateBackBufferRTV();
 	
+	void CreateBuffer(D3D12BufferInfo& info, ID3D12Resource** ppResource);
+
+
 	void BuildMeshGeometry(std::string geometryName);
 	ID3D12Resource* CreateDefaultBuffer(const void* initData, ID3D12Resource* uploadBuffer, D3D12BufferCreateInfo bufferCreateInfo);
 	void BuildRenderItems();

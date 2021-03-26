@@ -1,10 +1,8 @@
 #pragma once
-
 #include "Graphics/core.h"
+#include "Graphics/Core.cpp"
 
 using namespace DirectX;
-
-const UINT gNumFrameResources = 3;
 
 struct Config
 {

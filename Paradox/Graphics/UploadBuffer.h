@@ -13,10 +13,11 @@ public:
 	{
 		elementByteSize = sizeof(T);
 
-		if (isConstantBuffer) elementByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(T));
+	//	if (isConstantBuffer) elementByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(T));
+		if (isConstantBuffer) elementByteSize = CalcConstantBufferByteSize(sizeof(T));
 
 		HRESULT hr = device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementCount),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -60,6 +61,11 @@ public:
 			MessageBox(NULL, message, L"Error", MB_OK);
 			PostQuitMessage(EXIT_FAILURE);
 		}
+	}
+
+	static UINT CalcConstantBufferByteSize(UINT byteSize)
+	{
+		return (byteSize + 255) & ~255;
 	}
 
 private:
