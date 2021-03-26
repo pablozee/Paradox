@@ -56,7 +56,7 @@ void Graphics::Init(HWND hwnd)
 	BuildMeshGeometry("Geometry");
 	BuildRenderItems();
 	BuildFrameResources();
-//	CreateTexture(m_Material);
+	//	CreateTexture(m_Material);
 
 	CreateBottomLevelAS();
 	CreateTopLevelAS();
@@ -153,14 +153,14 @@ using namespace std;
 
 
 #ifndef STB_IMAGE_IMPLEMENTATION
-	#define STB_IMAGE_IMPLEMENTATION
-	#define STBI_ASSERT(x)
-	#include "stb_image.h"
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ASSERT(x)
+#include "stb_image.h"
 #endif
 
 #ifndef TINYOBJLOADER_IMPLEMENTATION
-   #define TINYOBJLOADER_IMPLEMENTATION
-   #include "tiny_obj_loader.h"
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
 #endif
 
 void Graphics::Validate(HRESULT hr, LPWSTR message)
@@ -183,7 +183,7 @@ void Graphics::LoadModel(std::string filename, MeshGeometry* geometry)
 	std::vector<material_t> materials;
 	std::string err;
 
-//	std::string filepath = "models/" + filename;
+	//	std::string filepath = "models/" + filename;
 
 	if (!LoadObj(&attrib, &shapes, &materials, &err, filename.c_str(), "materials\\"))
 	{
@@ -205,9 +205,9 @@ void Graphics::LoadModel(std::string filename, MeshGeometry* geometry)
 	material->texturePath = materials[0].diffuse_texname;
 
 	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
-	for (const auto &shape : shapes)
+	for (const auto& shape : shapes)
 	{
-		for (const auto &index : shape.mesh.indices)
+		for (const auto& index : shape.mesh.indices)
 		{
 			Vertex vertex = {};
 			vertex.position =
@@ -336,7 +336,7 @@ void Graphics::CreateDevice()
 
 		if (adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
 		{
-			continue; 
+			continue;
 		}
 
 		if (SUCCEEDED(D3D12CreateDevice(m_D3DObjects.adapter, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&m_D3DObjects.device))))
@@ -419,7 +419,7 @@ void Graphics::CreateFence()
 	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
 
 	m_D3DObjects.fenceEvent = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
-	
+
 	if (m_D3DObjects.fenceEvent == nullptr)
 	{
 		hr = HRESULT_FROM_WIN32(GetLastError());
@@ -496,7 +496,7 @@ void Graphics::CreateGBufferPassRootSignature()
 	D3D12_ROOT_SIGNATURE_DESC rootSigDesc = {};
 	rootSigDesc.NumParameters = _countof(slotRootParameter);
 	rootSigDesc.pParameters = slotRootParameter;
-	rootSigDesc.Flags =	D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+	rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	ID3DBlob* signature;
 	ID3DBlob* error;
 
@@ -598,8 +598,8 @@ void Graphics::CreateGBufferPassPSO()
 
 	psoDesc.VS = { reinterpret_cast<UINT8*>(m_D3DObjects.vsBlob->GetBufferPointer()), m_D3DObjects.vsBlob->GetBufferSize() };
 	psoDesc.PS = { reinterpret_cast<UINT8*>(m_D3DObjects.psBlob->GetBufferPointer()), m_D3DObjects.psBlob->GetBufferSize() };
-//	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_D3DObjects.vsBlob);
-//	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_D3DObjects.psBlob);
+	//	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_D3DObjects.vsBlob);
+	//	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_D3DObjects.psBlob);
 
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC1(D3D12_DEFAULT);
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
@@ -617,7 +617,7 @@ void Graphics::CreateGBufferPassPSO()
 	psoDesc.RTVFormats[6] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[7] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.SampleDesc.Count = 1;
-	
+
 	HRESULT hr = m_D3DObjects.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_D3DObjects.gBufferPassPipelineState));
 	Validate(hr, L"Failed to create G Buffer Pipeline State!");
 }
@@ -625,7 +625,7 @@ void Graphics::CreateGBufferPassPSO()
 void Graphics::CreateGBufferPassRTVDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC gBufRTVHeapDesc = {};
-	gBufRTVHeapDesc.NumDescriptors = 10;
+	gBufRTVHeapDesc.NumDescriptors = 8;
 	gBufRTVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 
 	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&gBufRTVHeapDesc, IID_PPV_ARGS(&m_D3DResources.gBufferPassRTVHeap));
@@ -697,7 +697,7 @@ void Graphics::CreateGBufferPassRTVs()
 {
 	HRESULT hr;
 	D3D12_CPU_DESCRIPTOR_HANDLE gBufRTVHandle = m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart();
-	
+
 	for (int i = 0; i < 2; i++)
 	{
 		m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferWorldPos[i], nullptr, gBufRTVHandle);
@@ -790,7 +790,7 @@ void Graphics::CreateBackBufferRTV()
 void Graphics::BuildMeshGeometry(std::string geometryName)
 {
 	/*
-		Build Mesh Data 
+		Build Mesh Data
 			- Change Load Model to return MeshData object
 			- Save as mesh data variables
 		Build Submesh Geometry for each mesh data object
@@ -798,7 +798,7 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 		Delete old create buffers
 	*/
 	std::vector<Vertex> vertices(m_D3DValues.vertexCount);
-	std::vector<std::uint16_t> indices;
+	std::vector<std::uint32_t> indices;
 
 	for (auto it = std::begin(m_Models); it != std::end(m_Models); ++it)
 	{
@@ -812,7 +812,7 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 			vertices[x].uv = tempModel.vertices[i].uv;
 		}
 
-		auto modelIndices = tempModel.GetIndices16();
+		auto modelIndices = tempModel.indices;
 		indices.insert(indices.end(), std::begin(modelIndices), std::end(modelIndices));
 
 	}
@@ -822,7 +822,7 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 	HRESULT hr = D3DCreateBlob(vertexBufferByteSize, &m_Geometries[geometryName]->vertexBufferCPU);
 	Validate(hr, L"Failed to create Vertex Buffer Blob!");
 	CopyMemory(m_Geometries[geometryName]->vertexBufferCPU->GetBufferPointer(), vertices.data(), vertexBufferByteSize);
-	
+
 	hr = D3DCreateBlob(indexBufferByteSize, &m_Geometries[geometryName]->indexBufferCPU);
 	Validate(hr, L"Failed to create Index Buffer Blob!");
 	CopyMemory(m_Geometries[geometryName]->indexBufferCPU->GetBufferPointer(), indices.data(), indexBufferByteSize);
@@ -839,7 +839,7 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 
 	m_Geometries[geometryName]->vertexByteStride = sizeof(Vertex);
 	m_Geometries[geometryName]->vertexBufferByteSize = vertexBufferByteSize;
-	m_Geometries[geometryName]->indexBufferFormat = DXGI_FORMAT_R16_UINT;
+	m_Geometries[geometryName]->indexBufferFormat = DXGI_FORMAT_R32_TYPELESS;
 	m_Geometries[geometryName]->indexBufferByteSize = indexBufferByteSize;
 
 }
@@ -883,7 +883,7 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, ID3D12Resour
 
 	UpdateSubresources<1>(m_D3DObjects.commandList, defaultBuffer, uploadBuffer, 0, 0, 1, &subresourceData);
 
-//	memcpy(defaultBuffer, uploadBuffer, bufferCreateInfo.size);
+	//	memcpy(defaultBuffer, uploadBuffer, bufferCreateInfo.size);
 
 	m_D3DObjects.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
 		defaultBuffer,
@@ -960,7 +960,7 @@ void Graphics::DrawRenderItems(const std::vector<RenderItem*>& renderItems)
 		m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(1, materialCBAddress);
 
 		D3D12_GPU_VIRTUAL_ADDRESS gBufferPassCBAddress = gBufferPassCB->GetGPUVirtualAddress();
-	
+
 		m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(2, gBufferPassCBAddress);
 
 		m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(renderItem->indexCount, 1, renderItem->startIndexLocation, renderItem->baseVertexLocation, 0);
@@ -1102,7 +1102,7 @@ void Graphics::UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcRe
 	source.PlacedFootprint = footprint;
 	source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 
-	D3D12_TEXTURE_COPY_LOCATION destination = {}; 
+	D3D12_TEXTURE_COPY_LOCATION destination = {};
 	destination.pResource = destResource;
 	destination.SubresourceIndex = 0;
 	destination.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
@@ -1210,7 +1210,7 @@ void Graphics::UpdateRayTracingPassSceneCB()
 	rtPassCB.randomSeedVector0 = m_RandomVectorSeed0;
 	rtPassCB.padding = 0.f;
 	rtPassCB.randomSeedVector1 = m_RandomVectorSeed1;
-	
+
 	// TODO Remove this padding if unnecessary
 	rtPassCB.padding1 = 0.f;
 
@@ -1262,7 +1262,7 @@ void Graphics::CreateBottomLevelAS()
 
 	bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
 	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pScratch);
-//	CreateDefaultBuffer(nullptr, m_DXRObjects.BLAS.pScratch, bufferInfo);
+	//	CreateDefaultBuffer(nullptr, m_DXRObjects.BLAS.pScratch, bufferInfo);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.BLAS.pScratch->SetName(L"DXR BLAS Scratch");
 #endif
@@ -1285,7 +1285,7 @@ void Graphics::CreateBottomLevelAS()
 	uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
 	uavBarrier.UAV.pResource = m_DXRObjects.BLAS.pResult;
 	uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	
+
 	m_D3DObjects.commandList->ResourceBarrier(1, &uavBarrier);
 };
 
@@ -1390,7 +1390,7 @@ void Graphics::CreateDescriptorHeaps()
 	UINT materialCount = (UINT)m_Materials.size();
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 5 + (objectCount * gNumFrameResources) + (2 * gNumFrameResources) + (materialCount * gNumFrameResources);
+	heapDesc.NumDescriptors = 5u + (objectCount * gNumFrameResources) + (2u * gNumFrameResources) + (materialCount * gNumFrameResources);
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
@@ -1408,7 +1408,7 @@ void Graphics::CreateDescriptorHeaps()
 	UINT materialCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(MaterialCB));
 	UINT gBufferPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(GBufferPassSceneCB));
 	UINT rayTracingPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(RayTracingPassSceneCB));
-	
+
 	int heapIndex = 0;
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
@@ -1419,65 +1419,88 @@ void Graphics::CreateDescriptorHeaps()
 			D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
 			objCBAddress += i * objectCBByteSize;
 
-			heapIndex = (objectCount * frameIndex) + i;
-			handle.Offset(heapIndex, handleIncrement);
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
 			constantBufferViewDesc.BufferLocation = objCBAddress;
 			constantBufferViewDesc.SizeInBytes = objectCBByteSize;
-			
+
 			m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
+			/*
+			heapIndex = (objectCount * frameIndex) + i;
+			handle.Offset(heapIndex, handleIncrement);
+			*/
+			handle.ptr += handleIncrement;
 		}
 	}
+
+	handle.ptr -= handleIncrement;
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
 		auto materialCB = m_FrameResources[frameIndex]->materialCB->Resource();
-		int matHeapIndex = (objectCount * gNumFrameResources);
 		for (int i = 0; i < materialCount; i++)
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress();
 			matCBAddress += i * materialCBByteSize;
 
-			heapIndex = matHeapIndex + (materialCount * frameIndex) + i;
-			handle.Offset(heapIndex, handleIncrement);
+			//	heapIndex = (materialCount * frameIndex) + i + (objectCount * frameIndex);
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
 			constantBufferViewDesc.BufferLocation = matCBAddress;
 			constantBufferViewDesc.SizeInBytes = materialCBByteSize;
 
 			m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
+
+			/*
+			int index = (materialCount * frameIndex) + i;
+			handle.Offset(matBaseHeapIndex + index, handleIncrement);
+			*/
+			handle.ptr += handleIncrement;
 		}
 	}
+
+	handle.ptr -= handleIncrement;
+
+//	int gBufferBaseHeapIndex = matBaseHeapIndex;
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
 		auto gBufferPassCB = m_FrameResources[frameIndex]->gBufferPassSceneCB->Resource();
-		int gBufferHeapIndex = (objectCount + materialCount) * gNumFrameResources;
+
 		D3D12_GPU_VIRTUAL_ADDRESS gBufferPassCBAddress = gBufferPassCB->GetGPUVirtualAddress();
 
-		handle.Offset(gBufferHeapIndex, handleIncrement);
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
 		constantBufferViewDesc.BufferLocation = gBufferPassCBAddress;
 		constantBufferViewDesc.SizeInBytes = gBufferPassCBByteSize;
 
 		m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
+		
+		handle.ptr += handleIncrement;
+		/*
+		gBufferBaseHeapIndex = gBufferBaseHeapIndex + frameIndex;
+		handle.Offset(heapIndex, handleIncrement);
+		*/
 	}
+
+	handle.ptr -= handleIncrement;
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
 		auto rayTracingPassCB = m_FrameResources[frameIndex]->rayTracingPassSceneCB->Resource();
-		int rayTracingHeapIndex = (objectCount + materialCount + 1) * gNumFrameResources;
+		heapIndex = heapIndex + frameIndex;
 		D3D12_GPU_VIRTUAL_ADDRESS rayTracingPassCBAddress = rayTracingPassCB->GetGPUVirtualAddress();
 
-		handle.Offset(rayTracingHeapIndex, handleIncrement);
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
 		constantBufferViewDesc.BufferLocation = rayTracingPassCBAddress;
 		constantBufferViewDesc.SizeInBytes = rayTracingPassCBByteSize;
 
 		m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
+
+		if (frameIndex < gNumFrameResources - 1) handle.ptr += handleIncrement;
+
+	//	if (frameIndex < gNumFrameResources - 1) handle.Offset(heapIndex, rayTracingPassCBByteSize);
 	}
 
 	// Create DXR Output Buffer UAV 
@@ -1500,7 +1523,7 @@ void Graphics::CreateDescriptorHeaps()
 	// Create the Index Buffer SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC indexSrvDesc = {};
 	indexSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-	indexSrvDesc.Format = DXGI_FORMAT_R16_TYPELESS;
+	indexSrvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 	indexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	indexSrvDesc.Buffer.StructureByteStride = 0;
 	indexSrvDesc.Buffer.FirstElement = 0;
@@ -1607,7 +1630,7 @@ void Graphics::CompileShader(D3D12ShaderInfo& info, IDxcBlob** blob)
 	Validate(hr, L"Failed to get shader blob result!");
 }
 
-void Graphics::CompileShader(RtProgram &program)
+void Graphics::CompileShader(RtProgram& program)
 {
 	CompileShader(program.info, &program.blob);
 	program.SetBytecode();
@@ -1850,7 +1873,7 @@ void Graphics::CreateShaderTable()
 	=	40 bytes ->> aligns to 64 bytes
 	The entry size must be aligned up to D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT
 	*/
-	
+
 	uint32_t shaderIdSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 	uint32_t shaderTableSize = 0;
 
@@ -1916,14 +1939,14 @@ void Graphics::WaitForGPU()
 void Graphics::BuildGBufferCommandList()
 {
 	WaitForGPU();
-	
+
 	auto commandListAlloc = m_CurrFrameResource->CommandListAllocator;
 
 	HRESULT hr = commandListAlloc->Reset();
 	Validate(hr, L"Failed to reset G Buffer command list allocator!");
 
 	hr = m_D3DObjects.gBufferPassCommandList->Reset(commandListAlloc, m_D3DObjects.gBufferPassPipelineState);
-	
+
 	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootSignature(m_D3DObjects.gBufferPassRootSignature);
 
 	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -1960,11 +1983,11 @@ void Graphics::BuildGBufferCommandList()
 	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(4, &rtvHandle, TRUE, &dsvHandle);
 
 	const float clearColour[] = { 0.22f, 0.33f, 0.44f, 0.f };
-	
+
 	for (int i = 0; i < 4; i++)
 	{
 		m_D3DObjects.gBufferPassCommandList->ClearRenderTargetView(rtvHandle, clearColour, 1, &m_D3DObjects.scissorRect);
-		
+
 		if (i < 4) rtvHandle.ptr += rtvDescSize;
 	}
 
@@ -2179,7 +2202,7 @@ void Graphics::RotateUp(float amount)
 {
 	XMMATRIX rotationMatrix = XMMatrixRotationAxis(XMVector3Normalize(XMVector3Cross(m_Eye, m_Up)), XMConvertToRadians(amount));
 	m_Up = XMVector3TransformCoord(m_Up, rotationMatrix);
-	m_Eye = XMVector3TransformCoord(m_Eye, rotationMatrix); 
+	m_Eye = XMVector3TransformCoord(m_Eye, rotationMatrix);
 	XMVector3Normalize(m_Up);
 	XMVector3Normalize(m_Eye);
 }
@@ -2199,6 +2222,6 @@ void Graphics::SeedRandomVector(XMFLOAT3 randomVector)
 	float y = float(rand() % 100) + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 	srand((UINT)time(NULL));
 	float z = float(rand() % 100) + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-	
+
 	randomVector = XMFLOAT3{ x, y, z };
 }
