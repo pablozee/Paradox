@@ -44,6 +44,7 @@ cbuffer MaterialCB : register(b1)
 	float3			 emission;
 	float			 metallic;
 	float4			 textureResolution;
+	matrix			 materialTransform;
 	float			 sheen;
 	int				 useTex;
 }

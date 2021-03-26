@@ -18,6 +18,9 @@ struct SubmeshGeometry
 
 struct MeshGeometry
 {
+	MeshGeometry::MeshGeometry()
+	{};
+
 	string						name;
 
 	ID3DBlob* vertexBufferCPU;

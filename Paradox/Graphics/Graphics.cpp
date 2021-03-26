@@ -17,11 +17,13 @@ Graphics::~Graphics()
 
 void Graphics::Init(HWND hwnd)
 {
-	m_Geometry = std::make_unique<MeshGeometry>();
-	m_Geometry->name = "Geometry";
+	MeshGeometry meshGeo;
+	std::string name = "Geometry";
+	m_Geometry = &meshGeo;
+	m_Geometry->name = name;
 
-	LoadModel("skull.obj", std::move(m_Geometry));
-	LoadModel("altar.obj", std::move(m_Geometry));
+	LoadModel("models/skull.obj", m_Geometry);
+	LoadModel("models/altar.obj", m_Geometry);
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -162,8 +164,16 @@ using namespace std;
    #include "tiny_obj_loader.h"
 #endif
 
+void Graphics::Validate(HRESULT hr, LPWSTR message)
+{
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, message, L"Error", MB_OK);
+		PostQuitMessage(EXIT_FAILURE);
+	}
+}
 
-void Graphics::LoadModel(std::string filename, unique_ptr<MeshGeometry> geometry)
+void Graphics::LoadModel(std::string filename, MeshGeometry* geometry)
 {
 	auto model = std::make_unique<Model>();
 	auto material = std::make_unique<Material>();
@@ -174,9 +184,9 @@ void Graphics::LoadModel(std::string filename, unique_ptr<MeshGeometry> geometry
 	std::vector<material_t> materials;
 	std::string err;
 
-	std::string filepath = "models/" + filename;
+//	std::string filepath = "models/" + filename;
 
-	if (!LoadObj(&attrib, &shapes, &materials, &err, filepath.c_str(), "materials\\"))
+	if (!LoadObj(&attrib, &shapes, &materials, &err, filename.c_str(), "materials\\"))
 	{
 		throw std::runtime_error(err);
 	}
@@ -239,7 +249,9 @@ void Graphics::LoadModel(std::string filename, unique_ptr<MeshGeometry> geometry
 	m_D3DValues.vertexCount += (UINT)model->vertices.size();
 	m_D3DValues.indicesCount += (UINT)model->indices.size();
 
-	geometry->drawArgs[filepath] = submeshGeometry;
+	geometry->drawArgs[filename].baseVertexLocation = submeshGeometry.baseVertexLocation;
+	geometry->drawArgs[filename].startIndexLocation = submeshGeometry.startIndexLocation;
+	geometry->drawArgs[filename].indexCount = submeshGeometry.indexCount;
 
 	unique_ptr<SubmeshGeometry> submeshGeo = make_unique<SubmeshGeometry>();
 
@@ -248,9 +260,13 @@ void Graphics::LoadModel(std::string filename, unique_ptr<MeshGeometry> geometry
 	submeshGeo->indexCount = submeshGeometry.baseVertexLocation;
 	submeshGeo->baseVertexLocation = submeshGeometry.baseVertexLocation;
 
-	m_Models[filepath] = std::move(model);
-	m_Materials[filepath] = std::move(material);
-	m_Geometries[geometry->name] = std::move(geometry);
+	unique_ptr<MeshGeometry> meshGeo = make_unique<MeshGeometry>();
+	meshGeo->name = geometry->name;
+	meshGeo->drawArgs[filename] = geometry->drawArgs[filename];
+
+	m_Models[filename] = std::move(model);
+	m_Materials[filename] = std::move(material);
+	m_Geometries[geometry->name] = std::move(meshGeo);
 }
 
 void Graphics::FormatTexture(TextureInfo& info, UINT8* pixels)
@@ -292,13 +308,13 @@ TextureInfo Graphics::LoadTexture(std::string filepath)
 void Graphics::InitializeShaderCompiler()
 {
 	HRESULT hr = m_ShaderCompilerInfo.DxcDllHelper.Initialize();
-	Helpers::Validate(hr, L"Failed to initialize DxCDllSupport!");
+	Validate(hr, L"Failed to initialize DxCDllSupport!");
 
 	hr = m_ShaderCompilerInfo.DxcDllHelper.CreateInstance(CLSID_DxcCompiler, &m_ShaderCompilerInfo.compiler);
-	Helpers::Validate(hr, L"Failed to create DxcCompiler!");
+	Validate(hr, L"Failed to create DxcCompiler!");
 
 	hr = m_ShaderCompilerInfo.DxcDllHelper.CreateInstance(CLSID_DxcLibrary, &m_ShaderCompilerInfo.library);
-	Helpers::Validate(hr, L"Failed to create DxcLibrary!");
+	Validate(hr, L"Failed to create DxcLibrary!");
 }
 
 void Graphics::CreateDevice()
@@ -312,7 +328,7 @@ void Graphics::CreateDevice()
 #endif
 
 	HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&m_D3DObjects.factory));
-	Helpers::Validate(hr, L"Failed to create factory!");
+	Validate(hr, L"Failed to create factory!");
 
 	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != m_D3DObjects.factory->EnumAdapters1(adapterIndex, &m_D3DObjects.adapter); ++adapterIndex)
 	{
@@ -345,7 +361,7 @@ void Graphics::CreateDevice()
 
 		if (m_D3DObjects.device == nullptr)
 		{
-			Helpers::Validate(E_FAIL, L"Failed to create ray tracing device!");
+			Validate(E_FAIL, L"Failed to create ray tracing device!");
 		}
 	}
 }
@@ -357,7 +373,7 @@ void Graphics::CreateCommandQueue()
 	desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
 	HRESULT hr = m_D3DObjects.device->CreateCommandQueue(&desc, IID_PPV_ARGS(&m_D3DObjects.commandQueue));
-	Helpers::Validate(hr, L"Failed to create command queue!");
+	Validate(hr, L"Failed to create command queue!");
 
 #if NAME_D3D_RESOURCES
 	m_D3DObjects.commandQueue->SetName(L"D3D12 Command Queue");
@@ -369,7 +385,7 @@ void Graphics::CreateCommandAllocator()
 	for (int n = 0; n < 2; ++n)
 	{
 		HRESULT hr = m_D3DObjects.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_D3DObjects.commandAllocators[n]));
-		Helpers::Validate(hr, L"Failed to create command allocator!");
+		Validate(hr, L"Failed to create command allocator!");
 	}
 
 #if NAME_D3D_RESOURCES
@@ -383,7 +399,7 @@ void Graphics::CreateGBufferPassCommandAllocator()
 	for (int n = 0; n < 2; ++n)
 	{
 		HRESULT hr = m_D3DObjects.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_D3DObjects.gBufferPassCommandAllocators[n]));
-		Helpers::Validate(hr, L"Failed to create raster command allocator!");
+		Validate(hr, L"Failed to create raster command allocator!");
 	}
 
 #if NAME_D3D_RESOURCES
@@ -395,7 +411,7 @@ void Graphics::CreateGBufferPassCommandAllocator()
 void Graphics::CreateFence()
 {
 	HRESULT hr = m_D3DObjects.device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_D3DObjects.fence));
-	Helpers::Validate(hr, L"Failed to create fence!");
+	Validate(hr, L"Failed to create fence!");
 
 #if NAME_D3D_RESOURCES
 	m_D3DObjects.fence->SetName(L"D3D12 Fence");
@@ -408,7 +424,7 @@ void Graphics::CreateFence()
 	if (m_D3DObjects.fenceEvent == nullptr)
 	{
 		hr = HRESULT_FROM_WIN32(GetLastError());
-		Helpers::Validate(hr, L"Failed to create fence event!");
+		Validate(hr, L"Failed to create fence event!");
 	}
 }
 
@@ -425,13 +441,13 @@ void Graphics::CreateSwapChain(HWND hwnd)
 
 	IDXGISwapChain1* swapChain;
 	HRESULT hr = m_D3DObjects.factory->CreateSwapChainForHwnd(m_D3DObjects.commandQueue, hwnd, &desc, nullptr, nullptr, &swapChain);
-	Helpers::Validate(hr, L"Failed to create swap chain!");
+	Validate(hr, L"Failed to create swap chain!");
 
 	hr = m_D3DObjects.factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
-	Helpers::Validate(hr, L"Failed to make window association");
+	Validate(hr, L"Failed to make window association");
 
 	hr = swapChain->QueryInterface(__uuidof(IDXGISwapChain3), reinterpret_cast<void**>(&m_D3DObjects.swapChain));
-	Helpers::Validate(hr, L"Failed to cast swap chain!");
+	Validate(hr, L"Failed to cast swap chain!");
 
 	swapChain->Release();
 	m_D3DValues.frameIndex = m_D3DObjects.swapChain->GetCurrentBackBufferIndex();
@@ -440,7 +456,7 @@ void Graphics::CreateSwapChain(HWND hwnd)
 void Graphics::CreateGBufferPassCommandList()
 {
 	HRESULT hr = m_D3DObjects.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex], nullptr, IID_PPV_ARGS(&m_D3DObjects.gBufferPassCommandList));
-	Helpers::Validate(hr, L"Failed to create raster command list!");
+	Validate(hr, L"Failed to create raster command list!");
 	hr = m_D3DObjects.gBufferPassCommandList->Close();
 
 #if NAME_D3D_RESOURCES
@@ -451,10 +467,10 @@ void Graphics::CreateGBufferPassCommandList()
 void Graphics::ResetGBufferPassCommandList()
 {
 	HRESULT hr = m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex]->Reset();
-	Helpers::Validate(hr, L"Failed to reset G Buffer Command Allocator!");
+	Validate(hr, L"Failed to reset G Buffer Command Allocator!");
 
 	hr = m_D3DObjects.gBufferPassCommandList->Reset(m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex], nullptr);
-	Helpers::Validate(hr, L"Failed to reset G Buffer Command List!");
+	Validate(hr, L"Failed to reset G Buffer Command List!");
 }
 
 
@@ -467,7 +483,7 @@ void Graphics::CreateDSVDescriptorHeap()
 	dsvDescHeapDesc.NodeMask = 0;
 
 	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&dsvDescHeapDesc, IID_PPV_ARGS(&m_D3DResources.dsvDescriptorHeap));
-	Helpers::Validate(hr, L"Failed to create Depth Stencil View Heap!");
+	Validate(hr, L"Failed to create Depth Stencil View Heap!");
 }
 
 void Graphics::CreateGBufferPassRootSignature()
@@ -485,10 +501,10 @@ void Graphics::CreateGBufferPassRootSignature()
 	ID3DBlob* error;
 
 	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
-	Helpers::Validate(hr, L"Failed to serialize root signature!");
+	Validate(hr, L"Failed to serialize root signature!");
 
 	hr = m_D3DObjects.device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_D3DObjects.gBufferPassRootSignature));
-	Helpers::Validate(hr, L"Failed to create root signature!");
+	Validate(hr, L"Failed to create root signature!");
 }
 
 void Graphics::CreateDepthStencilView()
@@ -531,9 +547,9 @@ void Graphics::CreateDepthStencilView()
 		IID_PPV_ARGS(&m_D3DResources.depthStencilView)
 	);
 
-	Helpers::Validate(hr, L"Failed to create Depth Stencil View!");
+	Validate(hr, L"Failed to create Depth Stencil View!");
 	hr = m_D3DObjects.device->GetDeviceRemovedReason();
-	Helpers::Validate(hr, L"Device Removed");
+	Validate(hr, L"Device Removed");
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.depthStencilView->SetName(L"D3D12 Depth Stencil View");
@@ -551,16 +567,16 @@ void Graphics::CompileGBufferPassShaders()
 #endif
 
 	HRESULT hr = D3DCompileFromFile(L"shaders/VertexShader.hlsl", nullptr, nullptr, "main", "vs_5_0", compileFlags, 0, &m_D3DObjects.vsBlob, nullptr);
-	Helpers::Validate(hr, L"Failed to compile Vertex Shader!");
+	Validate(hr, L"Failed to compile Vertex Shader!");
 	hr = D3DCompileFromFile(L"shaders/PixelShader.hlsl", nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, &m_D3DObjects.psBlob, nullptr);
-	Helpers::Validate(hr, L"Failed to compile Pixel Shader!");
+	Validate(hr, L"Failed to compile Pixel Shader!");
 }
 
 void Graphics::CreateCommandList()
 {
 	HRESULT hr = m_D3DObjects.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_D3DObjects.commandAllocators[m_D3DValues.frameIndex], nullptr, IID_PPV_ARGS(&m_D3DObjects.commandList));
 	hr = m_D3DObjects.commandList->Close();
-	Helpers::Validate(hr, L"Failed to create command list!");
+	Validate(hr, L"Failed to create command list!");
 
 #if NAME_D3D_RESOURCES
 	m_D3DObjects.commandList->SetName(L"D3D12 Command List");
@@ -603,7 +619,7 @@ void Graphics::CreateGBufferPassPSO()
 	psoDesc.SampleDesc.Count = 1;
 	
 	HRESULT hr = m_D3DObjects.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_D3DObjects.gBufferPassPipelineState));
-	Helpers::Validate(hr, L"Failed to create G Buffer Pipeline State!");
+	Validate(hr, L"Failed to create G Buffer Pipeline State!");
 }
 
 void Graphics::CreateGBufferPassRTVDescriptorHeaps()
@@ -613,7 +629,7 @@ void Graphics::CreateGBufferPassRTVDescriptorHeaps()
 	gBufRTVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 
 	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&gBufRTVHeapDesc, IID_PPV_ARGS(&m_D3DResources.gBufferPassRTVHeap));
-	Helpers::Validate(hr, L"Failed to create G Buffer RTV Descriptor Heap");
+	Validate(hr, L"Failed to create G Buffer RTV Descriptor Heap");
 }
 
 void Graphics::CreateGBufferPassRTVResources()
@@ -716,20 +732,20 @@ void Graphics::CreateGBufferPassRTVs()
 void Graphics::ResetCommandList()
 {
 	HRESULT hr = m_D3DObjects.commandAllocators[m_D3DValues.frameIndex]->Reset();
-	Helpers::Validate(hr, L"Failed to reset command allocator!");
+	Validate(hr, L"Failed to reset command allocator!");
 
 	hr = m_D3DObjects.commandList->Reset(m_D3DObjects.commandAllocators[m_D3DValues.frameIndex], nullptr);
-	Helpers::Validate(hr, L"Failed to reset command list!");
+	Validate(hr, L"Failed to reset command list!");
 }
 
 void Graphics::ResetGBufferCommandList()
 {
 	HRESULT hr = m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex]->Reset();
-	Helpers::Validate(hr, L"Failed to reset G Buffer Command Allocator!");
+	Validate(hr, L"Failed to reset G Buffer Command Allocator!");
 
 
 	hr = m_D3DObjects.gBufferPassCommandList->Reset(m_D3DObjects.gBufferPassCommandAllocators[m_D3DValues.frameIndex], m_D3DObjects.gBufferPassPipelineState);
-	Helpers::Validate(hr, L"Failed to reset G Buffer Command List!");
+	Validate(hr, L"Failed to reset G Buffer Command List!");
 }
 
 void Graphics::CreateRTVDescriptorHeaps()
@@ -740,7 +756,7 @@ void Graphics::CreateRTVDescriptorHeaps()
 	desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_D3DResources.rtvHeap));
-	Helpers::Validate(hr, L"Failed to create RTV descriptor heap!");
+	Validate(hr, L"Failed to create RTV descriptor heap!");
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.rtvHeap->SetName(L"Render Target View Descriptor Heap");
@@ -757,7 +773,7 @@ void Graphics::CreateBackBufferRTV()
 	for (UINT n = 0; n < m_D3DValues.swapChainBufferCount; ++n)
 	{
 		hr = m_D3DObjects.swapChain->GetBuffer(n, IID_PPV_ARGS(&m_D3DObjects.backBuffer[n]));
-		Helpers::Validate(hr, L"Failed to create back buffers!");
+		Validate(hr, L"Failed to create back buffers!");
 
 		m_D3DObjects.device->CreateRenderTargetView(m_D3DObjects.backBuffer[n], nullptr, rtvHandle);
 
@@ -804,11 +820,11 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 	const UINT indexBufferByteSize = (UINT)indices.size() * sizeof(uint16_t);
 
 	HRESULT hr = D3DCreateBlob(vertexBufferByteSize, &m_Geometries[geometryName]->vertexBufferCPU);
-	Helpers::Validate(hr, L"Failed to create Vertex Buffer Blob!");
+	Validate(hr, L"Failed to create Vertex Buffer Blob!");
 	CopyMemory(m_Geometries[geometryName]->vertexBufferCPU->GetBufferPointer(), vertices.data(), vertexBufferByteSize);
 	
 	hr = D3DCreateBlob(indexBufferByteSize, &m_Geometries[geometryName]->indexBufferCPU);
-	Helpers::Validate(hr, L"Failed to create Index Buffer Blob!");
+	Validate(hr, L"Failed to create Index Buffer Blob!");
 	CopyMemory(m_Geometries[geometryName]->indexBufferCPU->GetBufferPointer(), indices.data(), indexBufferByteSize);
 
 	D3D12BufferCreateInfo vertexBufferCreateInfo = {};
@@ -841,7 +857,7 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, ID3D12Resour
 		IID_PPV_ARGS(&defaultBuffer)
 	);
 
-	Helpers::Validate(hr, L"Failed to create default buffer!");
+	Validate(hr, L"Failed to create default buffer!");
 
 	hr = m_D3DObjects.device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(bufferCreateInfo.uploadBufferHeapType),
@@ -852,7 +868,7 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, ID3D12Resour
 		IID_PPV_ARGS(&uploadBuffer)
 	);
 
-	Helpers::Validate(hr, L"Failed to create upload buffer!");
+	Validate(hr, L"Failed to create upload buffer!");
 
 	D3D12_SUBRESOURCE_DATA subresourceData = {};
 	subresourceData.pData = initData;
@@ -964,7 +980,7 @@ void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppReso
 	resourceDesc.Flags = info.flags;
 
 	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(&heapDesc, D3D12_HEAP_FLAG_NONE, &resourceDesc, info.state, nullptr, IID_PPV_ARGS(ppResource));
-	Helpers::Validate(hr, L"Failed to create buffer resource!");
+	Validate(hr, L"Failed to create buffer resource!");
 }
 
 void Graphics::CreateVertexBuffer(Model& model)
@@ -979,7 +995,7 @@ void Graphics::CreateVertexBuffer(Model& model)
 	UINT8* pVertexDataBegin;
 	D3D12_RANGE readRange = {};
 	HRESULT hr = m_D3DResources.vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
-	Helpers::Validate(hr, L"Failed to map vertex buffer");
+	Validate(hr, L"Failed to map vertex buffer");
 
 	memcpy(pVertexDataBegin, model.vertices.data(), info.size);
 	m_D3DResources.vertexBuffer->Unmap(0, nullptr);
@@ -1001,7 +1017,7 @@ void Graphics::CreateIndexBuffer(Model& model)
 	UINT8* pIndexDataBegin;
 	D3D12_RANGE readRange = {};
 	HRESULT hr = m_D3DResources.indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pIndexDataBegin));
-	Helpers::Validate(hr, L"Failed to map index buffer");
+	Validate(hr, L"Failed to map index buffer");
 
 	memcpy(pIndexDataBegin, model.indices.data(), info.size);
 	m_D3DResources.indexBuffer->Unmap(0, nullptr);
@@ -1028,7 +1044,7 @@ void Graphics::CreateTexture(Material& material)
 	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
 	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(&DefaultHeapProperties, D3D12_HEAP_FLAG_NONE, &textureDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m_D3DResources.texture));
-	Helpers::Validate(hr, L"Failed to create texture!");
+	Validate(hr, L"Failed to create texture!");
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.texture->SetName(L"Texture");
@@ -1045,7 +1061,7 @@ void Graphics::CreateTexture(Material& material)
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 
 	hr = m_D3DObjects.device->CreateCommittedResource(&UploadHeapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_D3DResources.textureUploadResource));
-	Helpers::Validate(hr, L"Failed to create texture upload heap!");
+	Validate(hr, L"Failed to create texture upload heap!");
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.textureUploadResource->SetName(L"Texture Upload Buffer");
@@ -1360,7 +1376,7 @@ void Graphics::CreateDXROutput()
 	desc.SampleDesc.Quality = 0;
 
 	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(&DefaultHeapProperties, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COPY_SOURCE, nullptr, IID_PPV_ARGS(&m_D3DResources.DXROutputBuffer));
-	Helpers::Validate(hr, L"Failed to create DXR Output Buffer");
+	Validate(hr, L"Failed to create DXR Output Buffer");
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.DXROutputBuffer->SetName(L"DXR Output Buffer");
@@ -1369,8 +1385,8 @@ void Graphics::CreateDXROutput()
 
 void Graphics::CreateDescriptorHeaps()
 {
-	UINT objectCount = m_AllRenderItems.size();
-	UINT materialCount = m_Materials.size();
+	UINT objectCount = (UINT)m_AllRenderItems.size();
+	UINT materialCount = (UINT)m_Materials.size();
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
 	heapDesc.NumDescriptors = 5 + (objectCount * gNumFrameResources) + (2 * gNumFrameResources) + (materialCount * gNumFrameResources);
@@ -1378,7 +1394,7 @@ void Graphics::CreateDescriptorHeaps()
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
 	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_D3DResources.descriptorHeap));
-	Helpers::Validate(hr, L"Failed to create descriptor heap!");
+	Validate(hr, L"Failed to create descriptor heap!");
 
 	auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_D3DResources.descriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	UINT handleIncrement = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -1523,11 +1539,11 @@ ID3D12RootSignature* Graphics::CreateRootSignature(const D3D12_ROOT_SIGNATURE_DE
 	ID3DBlob* sig;
 	ID3DBlob* error;
 	HRESULT hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &sig, &error);
-	Helpers::Validate(hr, L"Failed to serialize root signature!");
+	Validate(hr, L"Failed to serialize root signature!");
 
 	ID3D12RootSignature* pRootSig;
 	hr = m_D3DObjects.device->CreateRootSignature(0, sig->GetBufferPointer(), sig->GetBufferSize(), IID_PPV_ARGS(&pRootSig));
-	Helpers::Validate(hr, L"Failed to create root signature!");
+	Validate(hr, L"Failed to create root signature!");
 
 	SAFE_RELEASE(sig);
 	SAFE_RELEASE(error);
@@ -1543,12 +1559,12 @@ void Graphics::CompileShader(D3D12ShaderInfo& info, IDxcBlob** blob)
 
 	//Load and encode the shader file
 	hr = m_ShaderCompilerInfo.library->CreateBlobFromFile(info.filename, &code, &pShaderText);
-	Helpers::Validate(hr, L"Failed to create blob from shader file!");
+	Validate(hr, L"Failed to create blob from shader file!");
 
 	//Create the compiler include handler
 	IDxcIncludeHandler* dxcIncludeHandler;
 	hr = m_ShaderCompilerInfo.library->CreateIncludeHandler(&dxcIncludeHandler);
-	Helpers::Validate(hr, L"Failed to create include handler!");
+	Validate(hr, L"Failed to create include handler!");
 
 	//Compile the shader
 	IDxcOperationResult* result;
@@ -1564,7 +1580,7 @@ void Graphics::CompileShader(D3D12ShaderInfo& info, IDxcBlob** blob)
 		dxcIncludeHandler,
 		&result);
 
-	Helpers::Validate(hr, L"Failed to compile shader!");
+	Validate(hr, L"Failed to compile shader!");
 
 	//Verify the result
 	result->GetStatus(&hr);
@@ -1572,7 +1588,7 @@ void Graphics::CompileShader(D3D12ShaderInfo& info, IDxcBlob** blob)
 	{
 		IDxcBlobEncoding* error;
 		hr = result->GetErrorBuffer(&error);
-		Helpers::Validate(hr, L"Failed to get shader compiler error buffer!");
+		Validate(hr, L"Failed to get shader compiler error buffer!");
 
 		//Convert error blob to a string
 		vector<char> infoLog(error->GetBufferSize() + 1);
@@ -1587,7 +1603,7 @@ void Graphics::CompileShader(D3D12ShaderInfo& info, IDxcBlob** blob)
 	}
 
 	hr = result->GetResult(blob);
-	Helpers::Validate(hr, L"Failed to get shader blob result!");
+	Validate(hr, L"Failed to get shader blob result!");
 }
 
 void Graphics::CompileShader(RtProgram &program)
@@ -1809,14 +1825,14 @@ void Graphics::CreatePipelineStateObject()
 
 	// Create the RT Pipeline State Object (RTPSO)
 	HRESULT hr = m_D3DObjects.device->CreateStateObject(&pipelineDesc, IID_PPV_ARGS(&m_DXRObjects.rtpso));
-	Helpers::Validate(hr, L"Failed to create Raytracing Pipeline State Object!");
+	Validate(hr, L"Failed to create Raytracing Pipeline State Object!");
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.rtpso->SetName(L"DXR Pipeline State Object");
 #endif
 
 	// Get the RTPSO properties
 	hr = m_DXRObjects.rtpso->QueryInterface(IID_PPV_ARGS(&m_DXRObjects.rtpsoInfo));
-	Helpers::Validate(hr, L"Failed to get RTPSO info object");
+	Validate(hr, L"Failed to get RTPSO info object");
 }
 
 void Graphics::CreateShaderTable()
@@ -1857,7 +1873,7 @@ void Graphics::CreateShaderTable()
 	// Map the buffer
 	uint8_t* pData = 0;
 	HRESULT hr = m_DXRObjects.shaderTable->Map(0, nullptr, (void**)&pData);
-	Helpers::Validate(hr, L"Failed to map shader table!");
+	Validate(hr, L"Failed to map shader table!");
 
 	// Shader Record 0 - Ray Generation program and local root parameter data (descriptor table with constant buffer and index buffer / vertex buffer pointers)
 	memcpy(pData, m_DXRObjects.rtpsoInfo->GetShaderIdentifier(L"RayGen_12"), shaderIdSize);
@@ -1884,11 +1900,11 @@ void Graphics::WaitForGPU()
 {
 	// Schedule a signal command in the queue
 	HRESULT hr = m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, m_D3DValues.fenceValues[m_D3DValues.frameIndex]);
-	Helpers::Validate(hr, L"Failed to signal fence!");
+	Validate(hr, L"Failed to signal fence!");
 
 	// Wait until the fence has been processed
 	hr = m_D3DObjects.fence->SetEventOnCompletion(m_D3DValues.fenceValues[m_D3DValues.frameIndex], m_D3DObjects.fenceEvent);
-	Helpers::Validate(hr, L"Failed to set fence event!");
+	Validate(hr, L"Failed to set fence event!");
 
 	WaitForSingleObjectEx(m_D3DObjects.fenceEvent, INFINITE, FALSE);
 
@@ -1906,8 +1922,8 @@ void Graphics::BuildGBufferCommandList()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 
-	m_D3DObjects.viewport.Height = m_D3DParams.height;
-	m_D3DObjects.viewport.Width = m_D3DParams.width;
+	m_D3DObjects.viewport.Height = (float)m_D3DParams.height;
+	m_D3DObjects.viewport.Width = (float)m_D3DParams.width;
 	m_D3DObjects.viewport.TopLeftX = 0.f;
 	m_D3DObjects.viewport.TopLeftY = 0.f;
 	m_D3DObjects.viewport.MaxDepth = 1.f;
@@ -1963,7 +1979,7 @@ void Graphics::SubmitGBufferCommandList()
 	ID3D12CommandList* pGraphicsList = { m_D3DObjects.gBufferPassCommandList };
 	m_D3DObjects.commandQueue->ExecuteCommandLists(1, &pGraphicsList);
 	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
-	m_CurrFrameResource->Fence = ++m_D3DValues.fenceValues[m_D3DValues.frameIndex];
+	m_CurrFrameResource->Fence = (UINT)++m_D3DValues.fenceValues[m_D3DValues.frameIndex];
 	m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, m_D3DValues.fenceValues[m_D3DValues.frameIndex]);
 }
 
@@ -2051,7 +2067,7 @@ void Graphics::SubmitCommandList()
 	ID3D12CommandList* pGraphicsList = { m_D3DObjects.commandList };
 	m_D3DObjects.commandQueue->ExecuteCommandLists(1, &pGraphicsList);
 	m_D3DValues.fenceValues[m_D3DValues.frameIndex]++;
-	m_CurrFrameResource->Fence = ++m_D3DValues.fenceValues[m_D3DValues.frameIndex];
+	m_CurrFrameResource->Fence = (UINT)++m_D3DValues.fenceValues[m_D3DValues.frameIndex];
 	m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, m_D3DValues.fenceValues[m_D3DValues.frameIndex]);
 }
 
@@ -2061,7 +2077,7 @@ void Graphics::Present()
 	if (FAILED(hr))
 	{
 		hr = m_D3DObjects.device->GetDeviceRemovedReason();
-		Helpers::Validate(hr, L"Failed to present!");
+		Validate(hr, L"Failed to present!");
 	}
 }
 
@@ -2072,7 +2088,7 @@ void Graphics::MoveToNextFrame()
 	// Schedule a Signal command in the queue
 	const UINT64 currentFenceValue = m_D3DValues.fenceValues[m_D3DValues.frameIndex];
 	HRESULT hr = m_D3DObjects.commandQueue->Signal(m_D3DObjects.fence, currentFenceValue);
-	Helpers::Validate(hr, L"Failed to signal the command queue!");
+	Validate(hr, L"Failed to signal the command queue!");
 
 	// Update the frame index
 	m_D3DValues.frameIndex = m_D3DObjects.swapChain->GetCurrentBackBufferIndex();
@@ -2081,7 +2097,7 @@ void Graphics::MoveToNextFrame()
 	if (m_D3DObjects.fence->GetCompletedValue() < m_D3DValues.fenceValues[m_D3DValues.frameIndex])
 	{
 		hr = m_D3DObjects.fence->SetEventOnCompletion(m_D3DValues.fenceValues[m_D3DValues.frameIndex], m_D3DObjects.fenceEvent);
-		Helpers::Validate(hr, L"Failed to set fence value!");
+		Validate(hr, L"Failed to set fence value!");
 
 		WaitForSingleObjectEx(m_D3DObjects.fenceEvent, INFINITE, FALSE);
 	}

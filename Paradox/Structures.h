@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Graphics/core.h"
 
 using namespace DirectX;
@@ -74,6 +75,8 @@ struct Model
 				m_Indices16[i] = static_cast<uint16_t>(indices[i]);
 			}
 		}
+		
+		return m_Indices16;
 	}
 
 private:

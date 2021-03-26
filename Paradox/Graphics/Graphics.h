@@ -3,7 +3,6 @@
 #include "../Structures.h"
 #include "D3D12Structures.h"
 #include "FrameResource.h"
-#include "../Helpers.h"
 
 class Graphics
 {
@@ -22,7 +21,8 @@ public:
 	void ResetView();
 
 private:
-	void LoadModel(std::string filepath, unique_ptr<MeshGeometry> geometry);
+	void Validate(HRESULT hr, LPWSTR message);
+	void LoadModel(std::string filepath, MeshGeometry* geometry);
 	TextureInfo LoadTexture(std::string filepath);
 	void FormatTexture(TextureInfo& info, UINT8* pixels);
 
@@ -132,7 +132,7 @@ private:
 	std::vector<RenderItem*> m_GBufferPassRenderItems;
 	std::vector<RenderItem*> m_RayTracingPassRenderItems;
 
-	std::unique_ptr<MeshGeometry> m_Geometry;
+	MeshGeometry* m_Geometry;
 	std::unordered_map<std::string, std::unique_ptr<Model>> m_Models;
 	std::unordered_map<std::string, std::unique_ptr<Material>> m_Materials;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;

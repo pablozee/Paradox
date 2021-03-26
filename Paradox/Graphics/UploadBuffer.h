@@ -1,6 +1,5 @@
 #pragma once
 #include "core.h"
-#include "../Helpers.h"
 
 #define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 
@@ -24,11 +23,11 @@ public:
 			nullptr,
 			IID_PPV_ARGS(&uploadBuffer));
 
-		Helpers::Validate(hr, L"Failed to create buffer!");
+		Validate(hr, L"Failed to create buffer!");
 
 		hr = uploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mappedData));
 
-		Helpers::Validate(hr, L"Failed to map buffer!");
+		Validate(hr, L"Failed to map buffer!");
 
 		// We do not need to unmap until we are done with the resource but must not write to the resource while it is being used by the GPU
 		// so we must efficiently synchronize
@@ -54,6 +53,15 @@ public:
 		memcpy(&mappedData[elementIndex * elementByteSize], &data, sizeof(T));
 	}
 
+	void Validate(HRESULT hr, LPWSTR message)
+	{
+		if (FAILED(hr))
+		{
+			MessageBox(NULL, message, L"Error", MB_OK);
+			PostQuitMessage(EXIT_FAILURE);
+		}
+	}
+
 private:
 	ID3D12Resource* uploadBuffer;
 	BYTE* mappedData = nullptr;
@@ -61,3 +69,4 @@ private:
 	UINT elementByteSize = 0;
 	bool isConstantBuffer = false;
 };
+

@@ -1,10 +1,7 @@
 #pragma once
 
-#include "../Graphics/core.h"
-#include <optional>
 #include "Events/Event.h"
 #include "Input.h"
-#include "Structures.h"
 #include "Graphics/Graphics.h"
 
 struct WindowProps
