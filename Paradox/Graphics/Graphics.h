@@ -1,8 +1,9 @@
 #pragma once
-#include <Windows.h>
+#include "core.h"
 #include "../Structures.h"
 #include "D3D12Structures.h"
 #include "FrameResource.h"
+#include "../Helpers.h"
 
 class Graphics
 {
@@ -21,7 +22,9 @@ public:
 	void ResetView();
 
 private:
-	void LoadModel(std::string filepath);
+	void LoadModel(std::string filepath, unique_ptr<MeshGeometry> geometry);
+	TextureInfo LoadTexture(std::string filepath);
+	void FormatTexture(TextureInfo& info, UINT8* pixels);
 
 	void InitializeShaderCompiler();
 	
@@ -44,7 +47,7 @@ private:
 	void CreateBackBufferRTV();
 	
 	void BuildMeshGeometry(std::string geometryName);
-	ID3D12Resource* CreateDefaultBuffer(const void* initData, UINT64 byteSize, ID3D12Resource* uploadBuffer);
+	ID3D12Resource* CreateDefaultBuffer(const void* initData, ID3D12Resource* uploadBuffer, D3D12BufferCreateInfo bufferCreateInfo);
 	void BuildRenderItems();
 	void DrawRenderItems(const std::vector<RenderItem*>& renderItems);
 
@@ -64,7 +67,7 @@ private:
 	void CreateTopLevelAS();
 	void CreateDXROutput();
 
-	void CreateDescriptorHeaps(const Model &model);
+	void CreateDescriptorHeaps();
 
 	void CreateDepthStencilView();
 	void CompileGBufferPassShaders();
@@ -115,6 +118,7 @@ private:
 	XMVECTOR m_Eye = m_EyeInit;
 	XMVECTOR m_Focus = m_FocusInit;
 	XMVECTOR m_Up = m_UpInit;
+	float m_FOV = 65.f * (XM_PI / 180.f);
 	XMFLOAT3 m_RandomVectorSeed0;
 	XMFLOAT3 m_RandomVectorSeed1;
 

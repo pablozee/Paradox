@@ -2,8 +2,6 @@
 #include "Events/ApplicationEvent.h"
 #include "Events/KeyEvent.h"
 #include "Events/MouseEvent.h"
-#include "Graphics/D3D12Structures.h"
-#include "Graphics/Graphics.h"
 
 Window::WindowClass Window::WindowClass::wndClass;
 

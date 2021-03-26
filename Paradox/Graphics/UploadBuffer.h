@@ -1,7 +1,8 @@
 #pragma once
 #include "core.h"
 #include "../Helpers.h"
-#include "D3D12Structures.h"
+
+#define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 
 template<typename T>
 class UploadBuffer
@@ -21,13 +22,13 @@ public:
 			&CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementCount),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
-			IID_PPV_ARGS(uploadBuffer));
+			IID_PPV_ARGS(&uploadBuffer));
 
-		Helpers::Validate(hr, "Failed to create buffer!");
+		Helpers::Validate(hr, L"Failed to create buffer!");
 
 		hr = uploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mappedData));
 
-		Helpers::Validate(hr, "Failed to map buffer!");
+		Helpers::Validate(hr, L"Failed to map buffer!");
 
 		// We do not need to unmap until we are done with the resource but must not write to the resource while it is being used by the GPU
 		// so we must efficiently synchronize

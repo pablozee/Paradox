@@ -1,6 +1,4 @@
 #include "Graphics.h"
-#include "../Helpers.h"
-#include "core.h"
 
 using namespace DirectX;
 
@@ -22,8 +20,8 @@ void Graphics::Init(HWND hwnd)
 	m_Geometry = std::make_unique<MeshGeometry>();
 	m_Geometry->name = "Geometry";
 
-	LoadModel("skull.obj");
-	LoadModel("altar.obj");
+	LoadModel("skull.obj", std::move(m_Geometry));
+	LoadModel("altar.obj", std::move(m_Geometry));
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -63,7 +61,7 @@ void Graphics::Init(HWND hwnd)
 	CreateTopLevelAS();
 	CreateDXROutput();
 
-	CreateDescriptorHeaps(m_Model);
+	CreateDescriptorHeaps();
 	CreateRayGenProgram();
 	CreateMissProgram();
 	CreateClosestHitProgram();
@@ -152,7 +150,20 @@ namespace std
 
 using namespace std;
 
-void Graphics::LoadModel(std::string filename)
+
+#ifndef STB_IMAGE_IMPLEMENTATION
+	#define STB_IMAGE_IMPLEMENTATION
+	#define STBI_ASSERT(x)
+	#include "stb_image.h"
+#endif
+
+#ifndef TINYOBJLOADER_IMPLEMENTATION
+   #define TINYOBJLOADER_IMPLEMENTATION
+   #include "tiny_obj_loader.h"
+#endif
+
+
+void Graphics::LoadModel(std::string filename, unique_ptr<MeshGeometry> geometry)
 {
 	auto model = std::make_unique<Model>();
 	auto material = std::make_unique<Material>();
@@ -220,7 +231,7 @@ void Graphics::LoadModel(std::string filename)
 		};
 	}
 
-	SubmeshGeometry submeshGeometry;
+	SubmeshGeometry submeshGeometry = {};
 	submeshGeometry.baseVertexLocation = m_D3DValues.vertexCount;
 	submeshGeometry.startIndexLocation = m_D3DValues.indicesCount;
 	submeshGeometry.indexCount = model->indices.size();
@@ -228,11 +239,54 @@ void Graphics::LoadModel(std::string filename)
 	m_D3DValues.vertexCount += (UINT)model->vertices.size();
 	m_D3DValues.indicesCount += (UINT)model->indices.size();
 
-	m_Geometry->drawArgs[filepath] = submeshGeometry;
+	geometry->drawArgs[filepath] = submeshGeometry;
+
+	unique_ptr<SubmeshGeometry> submeshGeo = make_unique<SubmeshGeometry>();
+
+	submeshGeo->baseVertexLocation = submeshGeometry.baseVertexLocation;
+	submeshGeo->startIndexLocation = submeshGeometry.baseVertexLocation;
+	submeshGeo->indexCount = submeshGeometry.baseVertexLocation;
+	submeshGeo->baseVertexLocation = submeshGeometry.baseVertexLocation;
 
 	m_Models[filepath] = std::move(model);
 	m_Materials[filepath] = std::move(material);
-	m_Geometries[m_Geometry->name] = std::move(m_Geometry);
+	m_Geometries[geometry->name] = std::move(geometry);
+}
+
+void Graphics::FormatTexture(TextureInfo& info, UINT8* pixels)
+{
+	const UINT numPixels = (info.width * info.height);
+	const UINT oldStride = info.stride;
+	const UINT oldSize = (numPixels * info.stride);
+
+	const UINT newStride = 4;
+	const UINT newSize = (numPixels * newStride);
+	info.pixels.resize(newSize);
+
+	for (UINT i = 0; i < numPixels; ++i)
+	{
+		info.pixels[i * newStride] = pixels[i * oldStride];
+		info.pixels[i * newStride + 1] = pixels[i * oldStride + 1];
+		info.pixels[i * newStride + 2] = pixels[i * oldStride + 2];
+		info.pixels[i * newStride + 3] = 0xFF;
+	}
+
+	info.stride = newStride;
+}
+
+TextureInfo Graphics::LoadTexture(std::string filepath)
+{
+	TextureInfo result = {};
+
+	UINT8* pixels = stbi_load(filepath.c_str(), &result.width, &result.height, &result.stride, STBI_default);
+	if (!pixels)
+	{
+		throw std::runtime_error("Error: failed to load image!");
+	}
+
+	FormatTexture(result, pixels);
+	stbi_image_free(pixels);
+	return result;
 }
 
 void Graphics::InitializeShaderCompiler()
@@ -270,7 +324,7 @@ void Graphics::CreateDevice()
 			continue; 
 		}
 
-		if (SUCCEEDED(D3D12CreateDevice(m_D3DObjects.adapter, D3D_FEATURE_LEVEL_12_1, __uuidof(ID3D12Device5), (void**)&m_D3DObjects.device)))
+		if (SUCCEEDED(D3D12CreateDevice(m_D3DObjects.adapter, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&m_D3DObjects.device))))
 		{
 			D3D12_FEATURE_DATA_D3D12_OPTIONS5 features = {};
 			HRESULT hr = m_D3DObjects.device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &features, sizeof(features));
@@ -753,13 +807,19 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 	Helpers::Validate(hr, L"Failed to create Vertex Buffer Blob!");
 	CopyMemory(m_Geometries[geometryName]->vertexBufferCPU->GetBufferPointer(), vertices.data(), vertexBufferByteSize);
 	
-	HRESULT hr = D3DCreateBlob(indexBufferByteSize, &m_Geometries[geometryName]->indexBufferCPU);
+	hr = D3DCreateBlob(indexBufferByteSize, &m_Geometries[geometryName]->indexBufferCPU);
 	Helpers::Validate(hr, L"Failed to create Index Buffer Blob!");
 	CopyMemory(m_Geometries[geometryName]->indexBufferCPU->GetBufferPointer(), indices.data(), indexBufferByteSize);
 
-	m_Geometries[geometryName]->vertexBufferGPU = CreateDefaultBuffer(vertices.data(), vertexBufferByteSize, m_Geometries[geometryName]->vertexBufferUploader);
+	D3D12BufferCreateInfo vertexBufferCreateInfo = {};
+	vertexBufferCreateInfo.size = vertexBufferByteSize;
 
-	m_Geometries[geometryName]->indexBufferGPU = CreateDefaultBuffer(indices.data(), indexBufferByteSize, m_Geometries[geometryName]->indexBufferUploader);
+	m_Geometries[geometryName]->vertexBufferGPU = CreateDefaultBuffer(vertices.data(), m_Geometries[geometryName]->vertexBufferUploader, vertexBufferCreateInfo);
+
+	D3D12BufferCreateInfo indexBufferCreateInfo = {};
+	indexBufferCreateInfo.size = indexBufferByteSize;
+
+	m_Geometries[geometryName]->indexBufferGPU = CreateDefaultBuffer(indices.data(), m_Geometries[geometryName]->indexBufferUploader, indexBufferCreateInfo);
 
 	m_Geometries[geometryName]->vertexByteStride = sizeof(Vertex);
 	m_Geometries[geometryName]->vertexBufferByteSize = vertexBufferByteSize;
@@ -768,15 +828,15 @@ void Graphics::BuildMeshGeometry(std::string geometryName)
 
 }
 
-ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, UINT64 byteSize, ID3D12Resource* uploadBuffer)
+ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, ID3D12Resource* uploadBuffer, D3D12BufferCreateInfo bufferCreateInfo)
 {
 	ID3D12Resource* defaultBuffer;
 
 	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
-		D3D12_RESOURCE_STATE_COMMON,
+		&CD3DX12_HEAP_PROPERTIES(bufferCreateInfo.defaultBufferHeapType),
+		bufferCreateInfo.defaultBufferHeapFlags,
+		&CD3DX12_RESOURCE_DESC::Buffer(bufferCreateInfo.size),
+		bufferCreateInfo.defaultBufferState,
 		nullptr,
 		IID_PPV_ARGS(&defaultBuffer)
 	);
@@ -784,10 +844,10 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, UINT64 byteS
 	Helpers::Validate(hr, L"Failed to create default buffer!");
 
 	hr = m_D3DObjects.device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
+		&CD3DX12_HEAP_PROPERTIES(bufferCreateInfo.uploadBufferHeapType),
+		bufferCreateInfo.uploadBufferFlags,
+		&CD3DX12_RESOURCE_DESC::Buffer(bufferCreateInfo.size),
+		bufferCreateInfo.uploadBufferState,
 		nullptr,
 		IID_PPV_ARGS(&uploadBuffer)
 	);
@@ -796,12 +856,12 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, UINT64 byteS
 
 	D3D12_SUBRESOURCE_DATA subresourceData = {};
 	subresourceData.pData = initData;
-	subresourceData.RowPitch = byteSize;
+	subresourceData.RowPitch = bufferCreateInfo.size;
 	subresourceData.SlicePitch = subresourceData.RowPitch;
 
 	m_D3DObjects.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
 		defaultBuffer,
-		D3D12_RESOURCE_STATE_COMMON,
+		bufferCreateInfo.defaultBufferState,
 		D3D12_RESOURCE_STATE_COPY_DEST
 	));
 
@@ -810,7 +870,7 @@ ID3D12Resource* Graphics::CreateDefaultBuffer(const void* initData, UINT64 byteS
 	m_D3DObjects.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
 		defaultBuffer,
 		D3D12_RESOURCE_STATE_COPY_DEST,
-		D3D12_RESOURCE_STATE_GENERIC_READ
+		bufferCreateInfo.defaultBufferFinalState
 	));
 
 	return defaultBuffer;
@@ -824,7 +884,7 @@ void Graphics::BuildRenderItems()
 	skull->world = XMMatrixTranspose(XMMatrixRotationY(270.0f) * XMMatrixTranslation(0.0f, 1.0f, 0.0f));
 	skull->objCBIndex = 0;
 	skull->matCBIndex = 0;
-	skull->geometry = m_Geometries["skull.obj"].get();
+	skull->geometry = m_Geometries["Geometry"].get();
 	skull->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	skull->indexCount = skull->geometry->drawArgs["skull.obj"].indexCount;
 	skull->startIndexLocation = skull->geometry->drawArgs["skull.obj"].startIndexLocation;
@@ -837,7 +897,7 @@ void Graphics::BuildRenderItems()
 	altar->world = XMMatrixTranspose(XMMatrixRotationY(270.0f) * XMMatrixTranslation(0.0, -1.0f, 0.0f));
 	altar->objCBIndex = 1;
 	altar->matCBIndex = 1;
-	altar->geometry = m_Geometries["altar.obj"].get();
+	altar->geometry = m_Geometries["Geometry"].get();
 	altar->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	altar->indexCount = altar->geometry->drawArgs["altar.obj"].indexCount;
 	altar->startIndexLocation = altar->geometry->drawArgs["altar.obj"].startIndexLocation;
@@ -955,7 +1015,7 @@ void Graphics::CreateIndexBuffer(Model& model)
 
 void Graphics::CreateTexture(Material& material)
 {
-	TextureInfo texture = Helpers::LoadTexture(material.texturePath);
+	TextureInfo texture = LoadTexture(material.texturePath);
 	material.textureResolution = static_cast<float>(texture.width);
 
 	D3D12_RESOURCE_DESC textureDesc = {};
@@ -1098,13 +1158,12 @@ void Graphics::UpdateMaterialCBs()
 void Graphics::UpdateGBufferPassSceneCB()
 {
 	XMMATRIX gBufferView, proj;
-	float aspect, fov;
+	float aspect;
 
 	aspect = (float)m_D3DParams.width / (float)m_D3DParams.height;
-	fov = 65.f * (XM_PI / 180.f);
 
 	gBufferView = XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
-	proj = XMMatrixPerspectiveFovLH(fov, (float)m_D3DParams.width / (float)m_D3DParams.height, 0.1f, 100.0f);
+	proj = XMMatrixPerspectiveFovLH(m_FOV, (float)m_D3DParams.width / (float)m_D3DParams.height, 0.1f, 100.0f);
 
 	GBufferPassSceneCB gBufferCB;
 	gBufferCB.gBufferView = XMMatrixTranspose(gBufferView);
@@ -1127,7 +1186,7 @@ void Graphics::UpdateRayTracingPassSceneCB()
 	RayTracingPassSceneCB rtPassCB;
 
 	rtPassCB.view = DirectX::XMMatrixTranspose(view);
-	rtPassCB.viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(fov * 0.5f));
+	rtPassCB.viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(m_FOV * 0.5f));
 	rtPassCB.numDirLights = 1;
 	rtPassCB.numPointLights = 0;
 	rtPassCB.resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
@@ -1179,16 +1238,21 @@ void Graphics::CreateBottomLevelAS()
 	ASPreBuildInfo.ScratchDataSizeInBytes = ALIGN(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, ASPreBuildInfo.ScratchDataSizeInBytes);
 	ASPreBuildInfo.ResultDataMaxSizeInBytes = ALIGN(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, ASPreBuildInfo.ResultDataMaxSizeInBytes);
 
-	D3D12BufferCreateInfo bufferInfo(ASPreBuildInfo.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	D3D12BufferCreateInfo bufferInfo = {};
+	bufferInfo.size = ASPreBuildInfo.ScratchDataSizeInBytes;
+	bufferInfo.defaultBufferResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	bufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+
 	bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
-	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pScratch);
+//	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pScratch);
+	CreateDefaultBuffer(nullptr, m_DXRObjects.BLAS.pScratch, bufferInfo);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.BLAS.pScratch->SetName(L"DXR BLAS Scratch");
 #endif
 
 	bufferInfo.size = ASPreBuildInfo.ResultDataMaxSizeInBytes;
-	bufferInfo.state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pResult);
+	bufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+	CreateDefaultBuffer(nullptr, m_DXRObjects.BLAS.pResult, bufferInfo);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.BLAS.pResult->SetName(L"DXR BLAS");
 #endif
@@ -1220,10 +1284,10 @@ void Graphics::CreateTopLevelAS()
 
 	D3D12BufferCreateInfo instanceBufferInfo = {};
 	instanceBufferInfo.size = sizeof(instanceDesc);
-	instanceBufferInfo.heapType = D3D12_HEAP_TYPE_UPLOAD;
-	instanceBufferInfo.flags = D3D12_RESOURCE_FLAG_NONE;
-	instanceBufferInfo.state = D3D12_RESOURCE_STATE_GENERIC_READ;
-	CreateBuffer(instanceBufferInfo, &m_DXRObjects.TLAS.pInstanceDesc);
+	instanceBufferInfo.defaultBufferHeapType = D3D12_HEAP_TYPE_UPLOAD;
+	instanceBufferInfo.defaultBufferResourceFlags = D3D12_RESOURCE_FLAG_NONE;
+	instanceBufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_GENERIC_READ;
+	CreateDefaultBuffer(nullptr, m_DXRObjects.TLAS.pInstanceDesc, instanceBufferInfo);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.TLAS.pInstanceDesc->SetName(L"DXR TLAS Instance Descriptors");
 #endif
@@ -1250,16 +1314,19 @@ void Graphics::CreateTopLevelAS()
 
 	m_DXRObjects.tlasSize = ASPreBuildInfo.ResultDataMaxSizeInBytes;
 
-	D3D12BufferCreateInfo bufferInfo(ASPreBuildInfo.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	D3D12BufferCreateInfo bufferInfo = {};
+	bufferInfo.size = ASPreBuildInfo.ScratchDataSizeInBytes;
+	bufferInfo.defaultBufferResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	bufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 	bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
-	CreateBuffer(bufferInfo, &m_DXRObjects.TLAS.pScratch);
+	CreateDefaultBuffer(nullptr, m_DXRObjects.TLAS.pScratch, bufferInfo);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.TLAS.pScratch->SetName(L"DXR TLAS Scratch");
 #endif
 
 	bufferInfo.size = ASPreBuildInfo.ResultDataMaxSizeInBytes;
-	bufferInfo.state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-	CreateBuffer(bufferInfo, &m_DXRObjects.TLAS.pResult);
+	bufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+	CreateDefaultBuffer(nullptr, m_DXRObjects.TLAS.pResult, bufferInfo);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.TLAS.pScratch->SetName(L"DXR TLAS");
 #endif
@@ -1300,7 +1367,7 @@ void Graphics::CreateDXROutput()
 #endif
 }
 
-void Graphics::CreateDescriptorHeaps(const Model& model)
+void Graphics::CreateDescriptorHeaps()
 {
 	UINT objectCount = m_AllRenderItems.size();
 	UINT materialCount = m_Materials.size();
@@ -1778,8 +1845,11 @@ void Graphics::CreateShaderTable()
 	shaderTableSize = ALIGN(D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT, shaderTableSize);
 
 	// Create the shader table buffer
-	D3D12BufferCreateInfo bufferInfo(shaderTableSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
-	CreateBuffer(bufferInfo, &m_DXRObjects.shaderTable);
+	D3D12BufferCreateInfo bufferInfo = {};
+	bufferInfo.size = shaderTableSize;
+	bufferInfo.defaultBufferHeapType = D3D12_HEAP_TYPE_UPLOAD;
+	bufferInfo.defaultBufferFinalState = D3D12_RESOURCE_STATE_GENERIC_READ;
+	CreateDefaultBuffer(nullptr, m_DXRObjects.shaderTable, bufferInfo);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.shaderTable->SetName(L"DXR Shader Table");
 #endif
@@ -2039,14 +2109,11 @@ void Graphics::DestroyDXRObjects()
 
 void Graphics::DestroyD3D12Resources()
 {
-	if (m_D3DResources.sceneCB) m_D3DResources.sceneCB->Unmap(0, nullptr);
-	if (m_D3DResources.sceneCBStart) m_D3DResources.sceneCBStart = nullptr;
-	if (m_D3DResources.materialCB) m_D3DResources.materialCB->Unmap(0, nullptr);
-	if (m_D3DResources.materialCBStart) m_D3DResources.materialCBStart = nullptr;
-
 	SAFE_RELEASE(m_D3DResources.DXROutputBuffer);
-	SAFE_RELEASE(m_D3DResources.vertexBuffer);
-	SAFE_RELEASE(m_D3DResources.indexBuffer);
+	SAFE_RELEASE(m_Geometries["Geometry"]->vertexBufferGPU);
+	SAFE_RELEASE(m_Geometries["Geometry"]->vertexBufferCPU);
+	SAFE_RELEASE(m_Geometries["Geometry"]->indexBufferGPU);
+	SAFE_RELEASE(m_Geometries["Geometry"]->indexBufferCPU);
 	SAFE_RELEASE(m_D3DResources.sceneCB);
 	SAFE_RELEASE(m_D3DResources.materialCB);
 	SAFE_RELEASE(m_D3DResources.rtvHeap);

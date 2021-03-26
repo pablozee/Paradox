@@ -11,3 +11,6 @@
 #include <string>
 #include <d3dcompiler.h>
 #include "d3dx12.h"
+#include <unordered_map>
+#include <vector>
+#include <stdexcept>

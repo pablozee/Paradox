@@ -1,7 +1,5 @@
 #pragma once
-#include <string>
-#include <vector>
-#include <DirectXMath.h>
+#include "Graphics/core.h"
 
 using namespace DirectX;
 

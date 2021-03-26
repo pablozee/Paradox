@@ -1,5 +1,6 @@
 #pragma once
-#include <Windows.h>
+
+#include "../Graphics/core.h"
 #include <optional>
 #include "Events/Event.h"
 #include "Input.h"
