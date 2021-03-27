@@ -61,8 +61,8 @@ void Graphics::Init(HWND hwnd)
 	CreateBottomLevelAS();
 	CreateTopLevelAS();
 	CreateDXROutput();
-
 	CreateDescriptorHeaps();
+
 	CreateRayGenProgram();
 	CreateMissProgram();
 	CreateClosestHitProgram();
@@ -1406,7 +1406,7 @@ void Graphics::CreateDescriptorHeaps()
 	UINT materialCount = (UINT)m_Materials.size();
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 5u + (objectCount * gNumFrameResources) + (2u * gNumFrameResources) + (materialCount * gNumFrameResources);
+	heapDesc.NumDescriptors = 4u + (objectCount * gNumFrameResources) + (2u * gNumFrameResources) + (materialCount * gNumFrameResources);
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
@@ -1433,7 +1433,7 @@ void Graphics::CreateDescriptorHeaps()
 		for (int i = 0; i < objectCount; i++)
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
-			objCBAddress += i * objectCBByteSize;
+			objCBAddress += (UINT8)i * objectCBByteSize;
 
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
@@ -1449,7 +1449,6 @@ void Graphics::CreateDescriptorHeaps()
 		}
 	}
 
-	handle.ptr -= handleIncrement;
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
@@ -1457,7 +1456,7 @@ void Graphics::CreateDescriptorHeaps()
 		for (int i = 0; i < materialCount; i++)
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress();
-			matCBAddress += i * materialCBByteSize;
+			matCBAddress += (UINT8)i * materialCBByteSize;
 
 			//	heapIndex = (materialCount * frameIndex) + i + (objectCount * frameIndex);
 
@@ -1475,7 +1474,7 @@ void Graphics::CreateDescriptorHeaps()
 		}
 	}
 
-	handle.ptr -= handleIncrement;
+//	handle.ptr -= handleIncrement;
 
 //	int gBufferBaseHeapIndex = matBaseHeapIndex;
 
@@ -1499,7 +1498,7 @@ void Graphics::CreateDescriptorHeaps()
 		*/
 	}
 
-	handle.ptr -= handleIncrement;
+//	handle.ptr -= handleIncrement;
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
@@ -1514,27 +1513,10 @@ void Graphics::CreateDescriptorHeaps()
 
 		m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
 
-		if (frameIndex < gNumFrameResources - 1) handle.ptr += handleIncrement;
+		handle.ptr += handleIncrement;
 
 	//	if (frameIndex < gNumFrameResources - 1) handle.Offset(heapIndex, rayTracingPassCBByteSize);
 	}
-
-	// Create DXR Output Buffer UAV 
-	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-
-	handle.ptr += handleIncrement;
-	m_D3DObjects.device->CreateUnorderedAccessView(m_D3DResources.DXROutputBuffer, nullptr, &uavDesc, handle);
-
-	// Create the DXR Top Level Acceleration Structure SRV
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.RaytracingAccelerationStructure.Location = m_DXRObjects.TLAS.pResult->GetGPUVirtualAddress();
-
-	handle.ptr += handleIncrement;
-	m_D3DObjects.device->CreateShaderResourceView(nullptr, &srvDesc, handle);
 
 	// Create the Index Buffer SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC indexSrvDesc = {};
@@ -1546,8 +1528,8 @@ void Graphics::CreateDescriptorHeaps()
 	indexSrvDesc.Buffer.NumElements = m_D3DValues.indicesCount;
 	indexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-	handle.ptr += handleIncrement;
 	m_D3DObjects.device->CreateShaderResourceView(m_Geometries["Geometry"].get()->indexBufferGPU, &indexSrvDesc, handle);
+	handle.ptr += handleIncrement;
 
 	// Create the Vertex Buffer SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC vertexSrvDesc = {};
@@ -1559,9 +1541,26 @@ void Graphics::CreateDescriptorHeaps()
 	vertexSrvDesc.Buffer.NumElements = m_D3DValues.vertexCount;
 	vertexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-	handle.ptr += handleIncrement;
 	m_D3DObjects.device->CreateShaderResourceView(m_Geometries["Geometry"].get()->vertexBufferGPU, &vertexSrvDesc, handle);
+	handle.ptr += handleIncrement;
 
+	// Create the DXR Top Level Acceleration Structure SRV
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.RaytracingAccelerationStructure.Location = m_DXRObjects.TLAS.pResult->GetGPUVirtualAddress();
+
+	m_D3DObjects.device->CreateShaderResourceView(nullptr, &srvDesc, handle);
+
+	// Create DXR Output Buffer UAV 
+	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+
+	handle.ptr += handleIncrement;
+	m_D3DObjects.device->CreateUnorderedAccessView(m_D3DResources.DXROutputBuffer, nullptr, &uavDesc, handle);
+
+	/*
 	// Create the material texture SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC textureSrvDesc = {};
 	textureSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
@@ -1572,6 +1571,7 @@ void Graphics::CreateDescriptorHeaps()
 
 	handle.ptr += handleIncrement;
 	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.texture, &textureSrvDesc, handle);
+	*/
 }
 
 ID3D12RootSignature* Graphics::CreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& desc)
@@ -2054,7 +2054,7 @@ void Graphics::BuildCommandList()
 	OutputBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 	OutputBarriers[0].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
-	// Transition the DXR Output Buffer to a copy source
+	// Transition the DXR Output Buffer to an unordered access state
 	OutputBarriers[1].Transition.pResource = m_D3DResources.DXROutputBuffer;
 	OutputBarriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
 	OutputBarriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
