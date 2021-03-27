@@ -1671,13 +1671,13 @@ void Graphics::CreateRayGenProgram()
 	ranges[1].NumDescriptors = 3;
 	ranges[1].RegisterSpace = 0;
 	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-	ranges[1].OffsetInDescriptorsFromTableStart = 15;
+	ranges[1].OffsetInDescriptorsFromTableStart = 18;
 
 	ranges[2].BaseShaderRegister = 0;
 	ranges[2].NumDescriptors = 1;
 	ranges[2].RegisterSpace = 0;
 	ranges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	ranges[2].OffsetInDescriptorsFromTableStart = 18;
+	ranges[2].OffsetInDescriptorsFromTableStart = 21;
 
 
 	D3D12_ROOT_PARAMETER param0 = {};
