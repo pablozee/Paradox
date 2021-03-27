@@ -14,7 +14,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 	if (useTex == 1)
 	{
 		int2 coord = floor(vertex.uv * textureResolution.x);
-		colour = albedo.Load(int3(coord, 0)).rgb;
+	//	colour = albedo.Load(int3(coord, 0)).rgb;
 	} 
 	else
 	{

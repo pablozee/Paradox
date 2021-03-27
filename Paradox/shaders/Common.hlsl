@@ -30,7 +30,7 @@ struct PointLight
 
 cbuffer ObjectCB : register(b0)
 {
-	matrix			world;
+	matrix world;
 }
 
 cbuffer MaterialCB : register(b1)
@@ -46,11 +46,18 @@ cbuffer MaterialCB : register(b1)
 	float3			 emission;
 	float			 metallic;
 	float4			 textureResolution;
+	matrix			 materialTransform;
 	float			 sheen;
 	int				 useTex;
 }
 
-cbuffer RayTracingPassSceneCB : register(b2)
+cbuffer GBufferPassSceneCB : register(b2)
+{
+	matrix gBufferView;
+	matrix proj;
+};
+
+cbuffer RayTracingPassSceneCB : register(b3)
 {
 	matrix			 view;
 	float4			 viewOriginAndTanHalfFovY;
@@ -72,7 +79,7 @@ RaytracingAccelerationStructure SceneBVH		: register(t0);
 
 ByteAddressBuffer indices						: register(t1);
 ByteAddressBuffer vertices						: register(t2);
-Texture2D<float4> albedo						: register(t3);
+//Texture2D<float4> albedo						: register(t3);
 
 // Helper Functions
 

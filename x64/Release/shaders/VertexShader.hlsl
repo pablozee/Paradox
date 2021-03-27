@@ -41,7 +41,6 @@ cbuffer GBufferPassSceneCB : register(b2)
 {
 	matrix gBufferView;
 	matrix proj;
-
 };
 
 struct VSInput

@@ -971,7 +971,6 @@ void Graphics::DrawRenderItems(const std::vector<RenderItem*>& renderItems)
 	}
 };
 
-
 void Graphics::CreateBuffer(D3D12BufferInfo& info, ID3D12Resource** ppResource)
 {
 	D3D12_HEAP_PROPERTIES heapDesc = {};
@@ -1051,8 +1050,6 @@ void Graphics::CreateIndexBuffer(std::string geometryName)
 	m_D3DResources.indexBufferView.SizeInBytes = static_cast<UINT>(info.size);
 	*/
 }
-
-
 
 void Graphics::CreateTexture(Material& material)
 {
@@ -1433,7 +1430,8 @@ void Graphics::CreateDescriptorHeaps()
 		for (int i = 0; i < objectCount; i++)
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
-			objCBAddress += (UINT8)i * objectCBByteSize;
+			UINT8 addressMultiplier = (objectCount * frameIndex) + i;
+			objCBAddress += addressMultiplier * (UINT8)objectCBByteSize;
 
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
@@ -1456,7 +1454,8 @@ void Graphics::CreateDescriptorHeaps()
 		for (int i = 0; i < materialCount; i++)
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress();
-			matCBAddress += (UINT8)i * materialCBByteSize;
+			UINT8 addressMultiplier = (materialCount * frameIndex) + i;
+			matCBAddress += addressMultiplier * (UINT8)materialCBByteSize;
 
 			//	heapIndex = (materialCount * frameIndex) + i + (objectCount * frameIndex);
 
@@ -1483,7 +1482,7 @@ void Graphics::CreateDescriptorHeaps()
 		auto gBufferPassCB = m_FrameResources[frameIndex]->gBufferPassSceneCB->Resource();
 
 		D3D12_GPU_VIRTUAL_ADDRESS gBufferPassCBAddress = gBufferPassCB->GetGPUVirtualAddress();
-
+		gBufferPassCBAddress += frameIndex * gBufferPassCBByteSize;
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
 		constantBufferViewDesc.BufferLocation = gBufferPassCBAddress;
@@ -1505,6 +1504,7 @@ void Graphics::CreateDescriptorHeaps()
 		auto rayTracingPassCB = m_FrameResources[frameIndex]->rayTracingPassSceneCB->Resource();
 		heapIndex = heapIndex + frameIndex;
 		D3D12_GPU_VIRTUAL_ADDRESS rayTracingPassCBAddress = rayTracingPassCB->GetGPUVirtualAddress();
+		rayTracingPassCBAddress += frameIndex * rayTracingPassCBByteSize;
 
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
@@ -1662,22 +1662,23 @@ void Graphics::CreateRayGenProgram()
 	D3D12_DESCRIPTOR_RANGE ranges[3];
 
 	ranges[0].BaseShaderRegister = 0;
-	ranges[0].NumDescriptors = 3;
+	ranges[0].NumDescriptors = 18;
 	ranges[0].RegisterSpace = 0;
 	ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 	ranges[0].OffsetInDescriptorsFromTableStart = 0;
 
 	ranges[1].BaseShaderRegister = 0;
-	ranges[1].NumDescriptors = 1;
+	ranges[1].NumDescriptors = 3;
 	ranges[1].RegisterSpace = 0;
-	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	ranges[1].OffsetInDescriptorsFromTableStart = 3;
+	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	ranges[1].OffsetInDescriptorsFromTableStart = 15;
 
 	ranges[2].BaseShaderRegister = 0;
-	ranges[2].NumDescriptors = 4;
+	ranges[2].NumDescriptors = 1;
 	ranges[2].RegisterSpace = 0;
-	ranges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-	ranges[2].OffsetInDescriptorsFromTableStart = 4;
+	ranges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+	ranges[2].OffsetInDescriptorsFromTableStart = 18;
+
 
 	D3D12_ROOT_PARAMETER param0 = {};
 	param0.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
