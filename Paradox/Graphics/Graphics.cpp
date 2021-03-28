@@ -1248,13 +1248,13 @@ void Graphics::CreateBottomLevelAS(RenderItem* renderItem, UINT blasIndex)
 	geometryDesc.Triangles.VertexBuffer.StrideInBytes = vertexBufferStrideInBytes;
 	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(renderItem->vertexCount);
 	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-	geometryDesc.Triangles.IndexBuffer = renderItem->startIndexLocation * sizeof(uint32_t) + indexBufferStartAddress;
+	geometryDesc.Triangles.IndexBuffer = indexBufferStartAddress;
 	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(renderItem->indexCount);
 	geometryDesc.Triangles.IndexFormat = m_Geometries["Geometry"].get()->indexBufferFormat;
-	geometryDesc.Triangles.Transform3x4 = objectCBAddress + (objectCBByteSize * renderItem->objCBIndex);
+	geometryDesc.Triangles.Transform3x4 = 0.0f;
 	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
 
-	m_VertexBufferOffset += sizeof(UINT32) * 3 * renderItem->vertexCount;
+	m_VertexBufferOffset += sizeof(Vertex) * renderItem->vertexCount;
 	m_IndexBufferOffset += sizeof(uint32_t) * renderItem->indexCount;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
@@ -1312,8 +1312,8 @@ void Graphics::CreateTopLevelAS()
 	instanceDesc0.InstanceID = 0;
 	instanceDesc0.InstanceContributionToHitGroupIndex = 0;
 	instanceDesc0.InstanceMask = 0xFF;
-//	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc0.Transform), XMMatrixInverse(NULL, XMMatrixTranspose(m_RayTracingPassRenderItems[0]->world)));
-	instanceDesc0.Transform[0][0] = instanceDesc0.Transform[1][1] = instanceDesc0.Transform[2][2] = 1;
+	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc0.Transform), m_RayTracingPassRenderItems[0]->world);
+//	instanceDesc0.Transform[0][0] = instanceDesc0.Transform[1][1] = instanceDesc0.Transform[2][2] = 1;
 	instanceDesc0.AccelerationStructure = m_DXRObjects.BLAS[0].pResult->GetGPUVirtualAddress();
 	instanceDesc0.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
 
@@ -1321,8 +1321,8 @@ void Graphics::CreateTopLevelAS()
 	instanceDesc1.InstanceID = 1;
 	instanceDesc1.InstanceContributionToHitGroupIndex = 0;
 	instanceDesc1.InstanceMask = 0xFF;
-//	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc1.Transform), XMMatrixInverse(NULL, XMMatrixTranspose(m_RayTracingPassRenderItems[1]->world)));
-	instanceDesc1.Transform[0][0] = instanceDesc1.Transform[1][1] = instanceDesc1.Transform[2][2] = 1;
+	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc1.Transform), m_RayTracingPassRenderItems[1]->world);
+//	instanceDesc1.Transform[0][0] = instanceDesc1.Transform[1][1] = instanceDesc1.Transform[2][2] = 1;
 	instanceDesc1.AccelerationStructure = m_DXRObjects.BLAS[1].pResult->GetGPUVirtualAddress();
 	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
 
