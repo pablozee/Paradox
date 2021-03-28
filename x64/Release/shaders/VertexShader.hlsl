@@ -16,8 +16,9 @@ struct PointLight
 
 cbuffer ObjectCB : register(b0)
 {
-	matrix world;
 	float3x4 world3x4;
+	float objPadding;
+	matrix world;
 }
 
 cbuffer MaterialCB : register(b1)

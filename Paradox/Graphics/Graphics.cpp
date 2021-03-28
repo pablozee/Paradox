@@ -1129,8 +1129,9 @@ void Graphics::UpdateObjectCBs()
 		if (renderItem->numFramesDirty > 0)
 		{
 			ObjectCB objectCB;
-			objectCB.world = XMMatrixTranspose(renderItem->world);
 			objectCB.world3x4 = renderItem->world3x4;
+			objectCB.objPadding = 0;
+			objectCB.world = XMMatrixTranspose(renderItem->world);
 
 			currentObjectCB->CopyData(renderItem->objCBIndex, objectCB);
 
@@ -1230,14 +1231,14 @@ void Graphics::UpdateRayTracingPassSceneCB()
 
 void Graphics::CreateBottomLevelAS()
 {
-	UINT objectCBAddress = m_FrameResources[m_CurrFrameResourceIndex]->objectCB->Resource()->GetGPUVirtualAddress();
-	UINT objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
+	UINT64 objectCBAddress = m_FrameResources[m_CurrFrameResourceIndex]->objectCB->Resource()->GetGPUVirtualAddress();
+	UINT64 objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
 
-	UINT vertexBufferStartAddress = m_Geometries["Geometry"].get()->vertexBufferGPU->GetGPUVirtualAddress();
-	UINT indexBufferStartAddress = m_Geometries["Geometry"].get()->indexBufferGPU->GetGPUVirtualAddress();
+	UINT64 vertexBufferStartAddress = m_Geometries["Geometry"].get()->vertexBufferGPU->GetGPUVirtualAddress();
+	UINT64 indexBufferStartAddress = m_Geometries["Geometry"].get()->indexBufferGPU->GetGPUVirtualAddress();
 
-	UINT vertexBufferOffset = 0;
-	UINT indexBufferOffset = 0;
+	UINT64 vertexBufferOffset = 0;
+	UINT64 indexBufferOffset = 0;
 
 	const size_t rtPassRenderItemsCount = m_RayTracingPassRenderItems.size();
 
@@ -1248,17 +1249,17 @@ void Graphics::CreateBottomLevelAS()
 
 		D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
 		geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-		geometryDesc.Triangles.VertexBuffer.StartAddress = vertexBufferStartAddress + vertexBufferOffset;
+		geometryDesc.Triangles.VertexBuffer.StartAddress = (vertexBufferStartAddress + vertexBufferOffset);
 		geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_Geometries["Geometry"].get()->vertexByteStride;
 		geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_RayTracingPassRenderItems[i]->vertexCount);
 		geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 		geometryDesc.Triangles.IndexBuffer = indexBufferStartAddress + indexBufferOffset;
 		geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_RayTracingPassRenderItems[i]->indexCount);
 		geometryDesc.Triangles.IndexFormat = m_Geometries["Geometry"].get()->indexBufferFormat;
-		geometryDesc.Triangles.Transform3x4 = objectCBAddress * (m_RayTracingPassRenderItems[i]->objCBIndex * objectCBByteSize) + sizeof(XMMATRIX);
+		geometryDesc.Triangles.Transform3x4 = objectCBAddress * m_RayTracingPassRenderItems[i]->objCBIndex;
 		geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
 
-		vertexBufferOffset += sizeof(Vertex) * m_RayTracingPassRenderItems[i]->vertexCount;
+		vertexBufferOffset += sizeof(UINT32) * 3 * m_RayTracingPassRenderItems[i]->vertexCount;
 		indexBufferOffset += sizeof(uint32_t) * m_RayTracingPassRenderItems[i]->indexCount;
 
 		ppGeometryDesc[i] = geometryDesc;
@@ -1428,10 +1429,10 @@ void Graphics::CreateDescriptorHeaps()
 	m_D3DResources.descriptorHeap->SetName(L"DXR Descriptor Heap");
 #endif
 
-	UINT objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
-	UINT materialCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(MaterialCB));
-	UINT gBufferPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(GBufferPassSceneCB));
-	UINT rayTracingPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(RayTracingPassSceneCB));
+	UINT8 objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
+	UINT8 materialCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(MaterialCB));
+	UINT8 gBufferPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(GBufferPassSceneCB));
+	UINT8 rayTracingPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(RayTracingPassSceneCB));
 
 	int heapIndex = 0;
 
@@ -1462,11 +1463,11 @@ void Graphics::CreateDescriptorHeaps()
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
 		auto materialCB = m_FrameResources[frameIndex]->materialCB->Resource();
-		for (int i = 0; i < materialCount; i++)
+		for (UINT8 i = 0; i < materialCount; i++)
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress();
-			UINT8 addressMultiplier = (materialCount * frameIndex) + i;
-			matCBAddress += addressMultiplier * (UINT8)materialCBByteSize;
+			UINT8 addressMultiplier = ((UINT8)materialCount * (UINT8)frameIndex) + i;
+			matCBAddress += (UINT8)addressMultiplier * (UINT8)materialCBByteSize;
 
 			//	heapIndex = (materialCount * frameIndex) + i + (objectCount * frameIndex);
 
@@ -1488,7 +1489,7 @@ void Graphics::CreateDescriptorHeaps()
 
 //	int gBufferBaseHeapIndex = matBaseHeapIndex;
 
-	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
+	for (UINT8 frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
 		auto gBufferPassCB = m_FrameResources[frameIndex]->gBufferPassSceneCB->Resource();
 

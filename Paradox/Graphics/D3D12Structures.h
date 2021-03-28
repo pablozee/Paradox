@@ -96,8 +96,9 @@ struct RenderItem
 
 struct ObjectCB
 {
-	XMMATRIX world = XMMatrixIdentity();
 	XMFLOAT3X4 world3x4 = XMFLOAT3X4(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	float objPadding = 0;
+	XMMATRIX world = XMMatrixIdentity();
 };
 
 struct GBufferPassSceneCB
