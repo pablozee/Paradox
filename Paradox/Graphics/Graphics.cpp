@@ -1322,10 +1322,12 @@ void Graphics::CreateTopLevelAS()
 	instanceDesc1.AccelerationStructure = m_DXRObjects.BLAS[1].pResult->GetGPUVirtualAddress();
 	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
 
-	D3D12_RAYTRACING_INSTANCE_DESC* descs[2] = { &instanceDesc0, &instanceDesc1 };
+	D3D12_RAYTRACING_INSTANCE_DESC descs[2] = { instanceDesc0, instanceDesc1 };
+
+	UINT64 instanceDescSize = ALIGN(D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT, sizeof(descs));
 
 	D3D12BufferInfo instanceBufferInfo = {};
-	instanceBufferInfo.size = sizeof(descs);
+	instanceBufferInfo.size = instanceDescSize;
 	instanceBufferInfo.heapType = D3D12_HEAP_TYPE_UPLOAD;
 	instanceBufferInfo.flags = D3D12_RESOURCE_FLAG_NONE;
 	instanceBufferInfo.state = D3D12_RESOURCE_STATE_GENERIC_READ;
