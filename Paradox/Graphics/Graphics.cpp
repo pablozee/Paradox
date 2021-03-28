@@ -59,7 +59,7 @@ void Graphics::Init(HWND hwnd)
 	//	CreateTexture(m_Material);
 
 	CreateBottomLevelAS(m_RayTracingPassRenderItems[0], 0u);
-	CreateBottomLevelAS(m_RayTracingPassRenderItems[0], 1u);
+	CreateBottomLevelAS(m_RayTracingPassRenderItems[1], 1u);
 	CreateTopLevelAS();
 	CreateDXROutput();
 	CreateDescriptorHeaps();
@@ -1232,18 +1232,20 @@ void Graphics::UpdateRayTracingPassSceneCB()
 
 void Graphics::CreateBottomLevelAS(RenderItem* renderItem, UINT blasIndex)
 {
-	UINT64 objectCBAddress = m_FrameResources[m_CurrFrameResourceIndex]->objectCB->Resource()->GetGPUVirtualAddress();
+	UINT64 objectCBAddress = m_FrameResources[m_CurrFrameResourceIndex]->objectCB.get()->Resource()->GetGPUVirtualAddress();
 	UINT64 objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
 
 	UINT64 vertexBufferStartAddress = m_Geometries["Geometry"].get()->vertexBufferGPU->GetGPUVirtualAddress();
 	UINT64 indexBufferStartAddress = m_Geometries["Geometry"].get()->indexBufferGPU->GetGPUVirtualAddress();
+	UINT64 vertexBufferStrideInBytes = m_Geometries["Geometry"].get()->VertexBufferView().StrideInBytes;
+
 
 	const size_t rtPassRenderItemsCount = m_RayTracingPassRenderItems.size();
 	
 	D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
 	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 	geometryDesc.Triangles.VertexBuffer.StartAddress = (vertexBufferStartAddress + m_VertexBufferOffset);
-	geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_Geometries["Geometry"].get()->vertexByteStride;
+	geometryDesc.Triangles.VertexBuffer.StrideInBytes = vertexBufferStrideInBytes;
 	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(renderItem->vertexCount);
 	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 	geometryDesc.Triangles.IndexBuffer = renderItem->startIndexLocation * sizeof(uint32_t) + indexBufferStartAddress;
@@ -1310,6 +1312,7 @@ void Graphics::CreateTopLevelAS()
 	instanceDesc0.InstanceID = 0;
 	instanceDesc0.InstanceContributionToHitGroupIndex = 0;
 	instanceDesc0.InstanceMask = 0xFF;
+//	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc0.Transform), XMMatrixInverse(NULL, XMMatrixTranspose(m_RayTracingPassRenderItems[0]->world)));
 	instanceDesc0.Transform[0][0] = instanceDesc0.Transform[1][1] = instanceDesc0.Transform[2][2] = 1;
 	instanceDesc0.AccelerationStructure = m_DXRObjects.BLAS[0].pResult->GetGPUVirtualAddress();
 	instanceDesc0.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
@@ -1318,6 +1321,7 @@ void Graphics::CreateTopLevelAS()
 	instanceDesc1.InstanceID = 1;
 	instanceDesc1.InstanceContributionToHitGroupIndex = 0;
 	instanceDesc1.InstanceMask = 0xFF;
+//	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc1.Transform), XMMatrixInverse(NULL, XMMatrixTranspose(m_RayTracingPassRenderItems[1]->world)));
 	instanceDesc1.Transform[0][0] = instanceDesc1.Transform[1][1] = instanceDesc1.Transform[2][2] = 1;
 	instanceDesc1.AccelerationStructure = m_DXRObjects.BLAS[1].pResult->GetGPUVirtualAddress();
 	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
@@ -1541,7 +1545,7 @@ void Graphics::CreateDescriptorHeaps()
 	indexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	indexSrvDesc.Buffer.StructureByteStride = 0;
 	indexSrvDesc.Buffer.FirstElement = 0;
-	indexSrvDesc.Buffer.NumElements = m_D3DValues.indicesCount;
+	indexSrvDesc.Buffer.NumElements = static_cast<UINT>(m_D3DValues.indicesCount * sizeof(uint32_t) / sizeof(float));
 	indexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	m_D3DObjects.device->CreateShaderResourceView(m_Geometries["Geometry"].get()->indexBufferGPU, &indexSrvDesc, handle);
@@ -1554,7 +1558,7 @@ void Graphics::CreateDescriptorHeaps()
 	vertexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	vertexSrvDesc.Buffer.StructureByteStride = 0;
 	vertexSrvDesc.Buffer.FirstElement = 0;
-	vertexSrvDesc.Buffer.NumElements = m_D3DValues.vertexCount;
+	vertexSrvDesc.Buffer.NumElements = static_cast<UINT>(m_D3DValues.vertexCount * sizeof(Vertex) / sizeof(float));
 	vertexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	m_D3DObjects.device->CreateShaderResourceView(m_Geometries["Geometry"].get()->vertexBufferGPU, &vertexSrvDesc, handle);
@@ -1682,13 +1686,13 @@ void Graphics::CreateRayGenProgram()
 	ranges[0].RegisterSpace = 0;
 	ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 	ranges[0].OffsetInDescriptorsFromTableStart = 0;
-
+		  	 
 	ranges[1].BaseShaderRegister = 0;
 	ranges[1].NumDescriptors = 3;
 	ranges[1].RegisterSpace = 0;
 	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	ranges[1].OffsetInDescriptorsFromTableStart = 18;
-
+		  	 
 	ranges[2].BaseShaderRegister = 0;
 	ranges[2].NumDescriptors = 1;
 	ranges[2].RegisterSpace = 0;
@@ -1700,7 +1704,7 @@ void Graphics::CreateRayGenProgram()
 	param0.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	param0.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 	param0.DescriptorTable.NumDescriptorRanges = _countof(ranges);
-	param0.DescriptorTable.pDescriptorRanges = ranges;
+	param0.DescriptorTable.pDescriptorRanges = &ranges[0];
 
 	D3D12_ROOT_PARAMETER rootParams[1] = { param0 };
 
