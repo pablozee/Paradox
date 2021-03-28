@@ -239,36 +239,20 @@ void Graphics::LoadModel(std::string filename, std::string geometryName, INT mat
 		};
 	}
 
-	SubmeshGeometry submeshGeometry = {};
-	submeshGeometry.baseVertexLocation = m_D3DValues.vertexCount;
-	submeshGeometry.startIndexLocation = m_D3DValues.indicesCount;
-	submeshGeometry.indexCount = model->indices.size();
+	unique_ptr<SubmeshGeometry> submeshGeo = make_unique<SubmeshGeometry>();
+
+	submeshGeo->indexCount = model->indices.size();
+	submeshGeo->startIndexLocation = m_D3DValues.indicesCount;
+	submeshGeo->vertexCount = (UINT)model->vertices.size();
+	submeshGeo->baseVertexLocation = m_D3DValues.vertexCount;
 
 	m_D3DValues.vertexCount += (UINT)model->vertices.size();
 	m_D3DValues.indicesCount += (UINT)model->indices.size();
-
-	/*
-
-	geometry->drawArgs[filename].baseVertexLocation = submeshGeometry.baseVertexLocation;
-	geometry->drawArgs[filename].startIndexLocation = submeshGeometry.startIndexLocation;
-	geometry->drawArgs[filename].indexCount = submeshGeometry.indexCount;
-	*/
-
-	unique_ptr<SubmeshGeometry> submeshGeo = make_unique<SubmeshGeometry>();
-
-	submeshGeo->baseVertexLocation = submeshGeometry.baseVertexLocation;
-	submeshGeo->startIndexLocation = submeshGeometry.startIndexLocation;
-	submeshGeo->indexCount = submeshGeometry.indexCount;
 
 	m_Models[filename] = std::move(model);
 	m_Materials[filename] = std::move(material);
 	
 	m_Geometries[geometryName]->drawArgs[filename] = std::move(submeshGeo);
-	/*
-	m_Geometries[geometry->name]->drawArgs[filename].baseVertexLocation = meshGeo->drawArgs[filename].baseVertexLocation;
-	m_Geometries[geometry->name]->drawArgs[filename].startIndexLocation = meshGeo->drawArgs[filename].startIndexLocation;
-	m_Geometries[geometry->name]->drawArgs[filename].indexCount = meshGeo->drawArgs[filename].indexCount;
-	*/
 }
 
 void Graphics::FormatTexture(TextureInfo& info, UINT8* pixels)
@@ -904,11 +888,13 @@ void Graphics::BuildRenderItems()
 	auto altar = std::make_unique<RenderItem>();
 
 	skull->world = XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0f, 4.0f, 0.0f);
+	XMStoreFloat3x4(&skull->world3x4, XMMatrixTranspose(skull->world));
 	skull->objCBIndex = 0;
 	skull->matCBIndex = 0;
 	skull->geometry = m_Geometries["Geometry"].get();
 	skull->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	skull->indexCount = skull->geometry->drawArgs["models/skull.obj"].get()->indexCount;
+	skull->vertexCount = skull->geometry->drawArgs["models/skull.obj"].get()->vertexCount;
 	skull->startIndexLocation = skull->geometry->drawArgs["models/skull.obj"].get()->startIndexLocation;
 	skull->baseVertexLocation = skull->geometry->drawArgs["models/skull.obj"].get()->baseVertexLocation;
 
@@ -917,11 +903,13 @@ void Graphics::BuildRenderItems()
 	m_AllRenderItems.push_back(std::move(skull));
 
 	altar->world = XMMatrixScaling(3.3f, 3.3f, 3.3f) * XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, -7.6f, 0.0f);
+	XMStoreFloat3x4(&altar->world3x4, XMMatrixTranspose(altar->world));
 	altar->objCBIndex = 1;
 	altar->matCBIndex = 1;
 	altar->geometry = m_Geometries["Geometry"].get();
 	altar->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	altar->indexCount = altar->geometry->drawArgs["models/altar.obj"].get()->indexCount;
+	altar->vertexCount = altar->geometry->drawArgs["models/altar.obj"].get()->vertexCount;
 	altar->startIndexLocation = altar->geometry->drawArgs["models/altar.obj"].get()->startIndexLocation;
 	altar->baseVertexLocation = altar->geometry->drawArgs["models/altar.obj"].get()->baseVertexLocation;
 
@@ -1142,6 +1130,7 @@ void Graphics::UpdateObjectCBs()
 		{
 			ObjectCB objectCB;
 			objectCB.world = XMMatrixTranspose(renderItem->world);
+			objectCB.world3x4 = renderItem->world3x4;
 
 			currentObjectCB->CopyData(renderItem->objCBIndex, objectCB);
 
@@ -1241,25 +1230,47 @@ void Graphics::UpdateRayTracingPassSceneCB()
 
 void Graphics::CreateBottomLevelAS()
 {
-	D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
-	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-	geometryDesc.Triangles.VertexBuffer.StartAddress = m_Geometries["Geometry"].get()->vertexBufferGPU->GetGPUVirtualAddress();
-	geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_Geometries["Geometry"].get()->vertexByteStride;
-	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_D3DValues.vertexCount);
-	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-	geometryDesc.Triangles.IndexBuffer = m_Geometries["Geometry"].get()->indexBufferGPU->GetGPUVirtualAddress();
-	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_D3DValues.indicesCount);
-	geometryDesc.Triangles.IndexFormat = m_Geometries["Geometry"].get()->indexBufferFormat;
-	geometryDesc.Triangles.Transform3x4 = 0;
-	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+	UINT objectCBAddress = m_FrameResources[m_CurrFrameResourceIndex]->objectCB->Resource()->GetGPUVirtualAddress();
+	UINT objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
+
+	UINT vertexBufferStartAddress = m_Geometries["Geometry"].get()->vertexBufferGPU->GetGPUVirtualAddress();
+	UINT indexBufferStartAddress = m_Geometries["Geometry"].get()->indexBufferGPU->GetGPUVirtualAddress();
+
+	UINT vertexBufferOffset = 0;
+	UINT indexBufferOffset = 0;
+
+	const size_t rtPassRenderItemsCount = m_RayTracingPassRenderItems.size();
+
+	D3D12_RAYTRACING_GEOMETRY_DESC ppGeometryDesc[2];
+
+	for (int i = 0; i < m_RayTracingPassRenderItems.size(); i++)
+	{
+
+		D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
+		geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+		geometryDesc.Triangles.VertexBuffer.StartAddress = vertexBufferStartAddress + vertexBufferOffset;
+		geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_Geometries["Geometry"].get()->vertexByteStride;
+		geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_RayTracingPassRenderItems[i]->vertexCount);
+		geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+		geometryDesc.Triangles.IndexBuffer = indexBufferStartAddress + indexBufferOffset;
+		geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_RayTracingPassRenderItems[i]->indexCount);
+		geometryDesc.Triangles.IndexFormat = m_Geometries["Geometry"].get()->indexBufferFormat;
+		geometryDesc.Triangles.Transform3x4 = objectCBAddress * (m_RayTracingPassRenderItems[i]->objCBIndex * objectCBByteSize) + sizeof(XMMATRIX);
+		geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+
+		vertexBufferOffset += sizeof(Vertex) * m_RayTracingPassRenderItems[i]->vertexCount;
+		indexBufferOffset += sizeof(uint32_t) * m_RayTracingPassRenderItems[i]->indexCount;
+
+		ppGeometryDesc[i] = geometryDesc;
+	}
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS ASInputs = {};
 	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
 	ASInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-	ASInputs.pGeometryDescs = &geometryDesc;
-	ASInputs.NumDescs = 1;
+	ASInputs.pGeometryDescs = ppGeometryDesc;
+	ASInputs.NumDescs = rtPassRenderItemsCount;
 	ASInputs.Flags = buildFlags;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO ASPreBuildInfo = {};

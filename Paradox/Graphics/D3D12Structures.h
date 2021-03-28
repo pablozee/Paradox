@@ -11,6 +11,7 @@ struct SubmeshGeometry
 {
 	UINT indexCount = 0;
 	UINT startIndexLocation = 0;
+	UINT vertexCount = 0;
 	UINT baseVertexLocation = 0;
 
 	BoundingBox bounds;
@@ -74,6 +75,7 @@ struct RenderItem
 	RenderItem(const RenderItem& rhs) = delete;
 
 	XMMATRIX world = XMMatrixIdentity();
+	XMFLOAT3X4 world3x4 = XMFLOAT3X4(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
 	int numFramesDirty = gNumFrameResources;
 
@@ -87,6 +89,7 @@ struct RenderItem
 	D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	UINT indexCount = 0;
+	UINT vertexCount = 0;
 	UINT startIndexLocation = 0;
 	int baseVertexLocation = 0;
 };
@@ -94,6 +97,7 @@ struct RenderItem
 struct ObjectCB
 {
 	XMMATRIX world = XMMatrixIdentity();
+	XMFLOAT3X4 world3x4 = XMFLOAT3X4(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 };
 
 struct GBufferPassSceneCB
