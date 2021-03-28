@@ -58,7 +58,8 @@ void Graphics::Init(HWND hwnd)
 	BuildFrameResources();
 	//	CreateTexture(m_Material);
 
-	CreateBottomLevelAS();
+	CreateBottomLevelAS(m_RayTracingPassRenderItems[0], 0u);
+	CreateBottomLevelAS(m_RayTracingPassRenderItems[0], 1u);
 	CreateTopLevelAS();
 	CreateDXROutput();
 	CreateDescriptorHeaps();
@@ -1229,7 +1230,7 @@ void Graphics::UpdateRayTracingPassSceneCB()
 	currentRTPassCB->CopyData(0, rtPassCB);
 }
 
-void Graphics::CreateBottomLevelAS()
+void Graphics::CreateBottomLevelAS(RenderItem* renderItem, UINT blasIndex)
 {
 	UINT64 objectCBAddress = m_FrameResources[m_CurrFrameResourceIndex]->objectCB->Resource()->GetGPUVirtualAddress();
 	UINT64 objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
@@ -1237,41 +1238,30 @@ void Graphics::CreateBottomLevelAS()
 	UINT64 vertexBufferStartAddress = m_Geometries["Geometry"].get()->vertexBufferGPU->GetGPUVirtualAddress();
 	UINT64 indexBufferStartAddress = m_Geometries["Geometry"].get()->indexBufferGPU->GetGPUVirtualAddress();
 
-	UINT64 vertexBufferOffset = 0;
-	UINT64 indexBufferOffset = 0;
-
 	const size_t rtPassRenderItemsCount = m_RayTracingPassRenderItems.size();
+	
+	D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
+	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+	geometryDesc.Triangles.VertexBuffer.StartAddress = (vertexBufferStartAddress + m_VertexBufferOffset);
+	geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_Geometries["Geometry"].get()->vertexByteStride;
+	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(renderItem->vertexCount);
+	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+	geometryDesc.Triangles.IndexBuffer = renderItem->startIndexLocation * sizeof(uint32_t) + indexBufferStartAddress;
+	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(renderItem->indexCount);
+	geometryDesc.Triangles.IndexFormat = m_Geometries["Geometry"].get()->indexBufferFormat;
+	geometryDesc.Triangles.Transform3x4 = objectCBAddress + (objectCBByteSize * renderItem->objCBIndex);
+	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
 
-	D3D12_RAYTRACING_GEOMETRY_DESC ppGeometryDesc[2];
-
-	for (int i = 0; i < m_RayTracingPassRenderItems.size(); i++)
-	{
-
-		D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
-		geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-		geometryDesc.Triangles.VertexBuffer.StartAddress = (vertexBufferStartAddress + vertexBufferOffset);
-		geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_Geometries["Geometry"].get()->vertexByteStride;
-		geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_RayTracingPassRenderItems[i]->vertexCount);
-		geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-		geometryDesc.Triangles.IndexBuffer = indexBufferStartAddress + indexBufferOffset;
-		geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_RayTracingPassRenderItems[i]->indexCount);
-		geometryDesc.Triangles.IndexFormat = m_Geometries["Geometry"].get()->indexBufferFormat;
-		geometryDesc.Triangles.Transform3x4 = objectCBAddress * m_RayTracingPassRenderItems[i]->objCBIndex;
-		geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
-
-		vertexBufferOffset += sizeof(UINT32) * 3 * m_RayTracingPassRenderItems[i]->vertexCount;
-		indexBufferOffset += sizeof(uint32_t) * m_RayTracingPassRenderItems[i]->indexCount;
-
-		ppGeometryDesc[i] = geometryDesc;
-	}
+	m_VertexBufferOffset += sizeof(UINT32) * 3 * renderItem->vertexCount;
+	m_IndexBufferOffset += sizeof(uint32_t) * renderItem->indexCount;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS ASInputs = {};
 	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
 	ASInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-	ASInputs.pGeometryDescs = ppGeometryDesc;
-	ASInputs.NumDescs = rtPassRenderItemsCount;
+	ASInputs.pGeometryDescs = &geometryDesc;
+	ASInputs.NumDescs = 1;
 	ASInputs.Flags = buildFlags;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO ASPreBuildInfo = {};
@@ -1286,7 +1276,7 @@ void Graphics::CreateBottomLevelAS()
 	bufferInfo.flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
 	bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
-	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pScratch);
+	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS[blasIndex].pScratch);
 	//	CreateDefaultBuffer(nullptr, m_DXRObjects.BLAS.pScratch, bufferInfo);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.BLAS.pScratch->SetName(L"DXR BLAS Scratch");
@@ -1294,21 +1284,21 @@ void Graphics::CreateBottomLevelAS()
 
 	bufferInfo.size = ASPreBuildInfo.ResultDataMaxSizeInBytes;
 	bufferInfo.state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS.pResult);
+	CreateBuffer(bufferInfo, &m_DXRObjects.BLAS[blasIndex].pResult);
 #if NAME_D3D_RESOURCES
 	m_DXRObjects.BLAS.pResult->SetName(L"DXR BLAS");
 #endif
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
 	buildDesc.Inputs = ASInputs;
-	buildDesc.ScratchAccelerationStructureData = m_DXRObjects.BLAS.pScratch->GetGPUVirtualAddress();
-	buildDesc.DestAccelerationStructureData = m_DXRObjects.BLAS.pResult->GetGPUVirtualAddress();
+	buildDesc.ScratchAccelerationStructureData = m_DXRObjects.BLAS[blasIndex].pScratch->GetGPUVirtualAddress();
+	buildDesc.DestAccelerationStructureData = m_DXRObjects.BLAS[blasIndex].pResult->GetGPUVirtualAddress();
 
 	m_D3DObjects.commandList->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
 
 	D3D12_RESOURCE_BARRIER uavBarrier;
 	uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	uavBarrier.UAV.pResource = m_DXRObjects.BLAS.pResult;
+	uavBarrier.UAV.pResource = m_DXRObjects.BLAS[blasIndex].pResult;
 	uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 
 	m_D3DObjects.commandList->ResourceBarrier(1, &uavBarrier);
@@ -1316,16 +1306,26 @@ void Graphics::CreateBottomLevelAS()
 
 void Graphics::CreateTopLevelAS()
 {
-	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc = {};
-	instanceDesc.InstanceID = 0;
-	instanceDesc.InstanceContributionToHitGroupIndex = 0;
-	instanceDesc.InstanceMask = 0xFF;
-	instanceDesc.Transform[0][0] = instanceDesc.Transform[1][1] = instanceDesc.Transform[2][2] = 1;
-	instanceDesc.AccelerationStructure = m_DXRObjects.BLAS.pResult->GetGPUVirtualAddress();
-	instanceDesc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
+	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc0 = {};
+	instanceDesc0.InstanceID = 0;
+	instanceDesc0.InstanceContributionToHitGroupIndex = 0;
+	instanceDesc0.InstanceMask = 0xFF;
+	instanceDesc0.Transform[0][0] = instanceDesc0.Transform[1][1] = instanceDesc0.Transform[2][2] = 1;
+	instanceDesc0.AccelerationStructure = m_DXRObjects.BLAS[0].pResult->GetGPUVirtualAddress();
+	instanceDesc0.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
+
+	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc1 = {};
+	instanceDesc1.InstanceID = 1;
+	instanceDesc1.InstanceContributionToHitGroupIndex = 0;
+	instanceDesc1.InstanceMask = 0xFF;
+	instanceDesc1.Transform[0][0] = instanceDesc1.Transform[1][1] = instanceDesc1.Transform[2][2] = 1;
+	instanceDesc1.AccelerationStructure = m_DXRObjects.BLAS[1].pResult->GetGPUVirtualAddress();
+	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
+
+	D3D12_RAYTRACING_INSTANCE_DESC* descs[2] = { &instanceDesc0, &instanceDesc1 };
 
 	D3D12BufferInfo instanceBufferInfo = {};
-	instanceBufferInfo.size = sizeof(instanceDesc);
+	instanceBufferInfo.size = sizeof(descs);
 	instanceBufferInfo.heapType = D3D12_HEAP_TYPE_UPLOAD;
 	instanceBufferInfo.flags = D3D12_RESOURCE_FLAG_NONE;
 	instanceBufferInfo.state = D3D12_RESOURCE_STATE_GENERIC_READ;
@@ -1336,7 +1336,7 @@ void Graphics::CreateTopLevelAS()
 
 	UINT8* pData;
 	m_DXRObjects.TLAS.pInstanceDesc->Map(0, nullptr, reinterpret_cast<void**>(&pData));
-	memcpy(pData, &instanceDesc, sizeof(instanceDesc));
+	memcpy(pData, &descs, sizeof(descs));
 	m_DXRObjects.TLAS.pInstanceDesc->Unmap(0, nullptr);
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
@@ -1345,10 +1345,11 @@ void Graphics::CreateTopLevelAS()
 	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 	ASInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	ASInputs.InstanceDescs = m_DXRObjects.TLAS.pInstanceDesc->GetGPUVirtualAddress();
-	ASInputs.NumDescs = 1;
+	ASInputs.NumDescs = 2;
 	ASInputs.Flags = buildFlags;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO ASPreBuildInfo = {};
+
 	m_D3DObjects.device->GetRaytracingAccelerationStructurePrebuildInfo(&ASInputs, &ASPreBuildInfo);
 
 	ASPreBuildInfo.ResultDataMaxSizeInBytes = ALIGN(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, ASPreBuildInfo.ResultDataMaxSizeInBytes);
@@ -1370,11 +1371,12 @@ void Graphics::CreateTopLevelAS()
 	bufferInfo.state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 	CreateBuffer(bufferInfo, &m_DXRObjects.TLAS.pResult);
 #if NAME_D3D_RESOURCES
-	m_DXRObjects.TLAS.pScratch->SetName(L"DXR TLAS");
+	m_DXRObjects.TLAS.pResult->SetName(L"DXR TLAS RESULT");
 #endif
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
 	buildDesc.Inputs = ASInputs;
+	buildDesc.Inputs.InstanceDescs = m_DXRObjects.TLAS.pInstanceDesc->GetGPUVirtualAddress();
 	buildDesc.ScratchAccelerationStructureData = m_DXRObjects.TLAS.pScratch->GetGPUVirtualAddress();
 	buildDesc.DestAccelerationStructureData = m_DXRObjects.TLAS.pResult->GetGPUVirtualAddress();
 
@@ -2174,9 +2176,12 @@ void Graphics::DestroyDXRObjects()
 	SAFE_RELEASE(m_DXRObjects.TLAS.pScratch);
 	SAFE_RELEASE(m_DXRObjects.TLAS.pResult);
 	SAFE_RELEASE(m_DXRObjects.TLAS.pInstanceDesc);
-	SAFE_RELEASE(m_DXRObjects.BLAS.pScratch);
-	SAFE_RELEASE(m_DXRObjects.BLAS.pResult);
-	SAFE_RELEASE(m_DXRObjects.BLAS.pInstanceDesc);
+	SAFE_RELEASE(m_DXRObjects.BLAS[0].pScratch);
+	SAFE_RELEASE(m_DXRObjects.BLAS[0].pResult);
+	SAFE_RELEASE(m_DXRObjects.BLAS[0].pInstanceDesc);
+	SAFE_RELEASE(m_DXRObjects.BLAS[1].pScratch);
+	SAFE_RELEASE(m_DXRObjects.BLAS[1].pResult);
+	SAFE_RELEASE(m_DXRObjects.BLAS[1].pInstanceDesc);
 	SAFE_RELEASE(m_DXRObjects.shaderTable);
 	SAFE_RELEASE(m_DXRObjects.rgs.blob);
 	SAFE_RELEASE(m_DXRObjects.rgs.pRootSignature);

@@ -67,7 +67,7 @@ private:
 
 	void SeedRandomVector(XMFLOAT3 seed);
 
-	void CreateBottomLevelAS();
+	void CreateBottomLevelAS(RenderItem* renderItem, UINT blasIndex);
 	void CreateTopLevelAS();
 	void CreateDXROutput();
 
@@ -127,6 +127,8 @@ private:
 	float m_FOV = 65.f * (XM_PI / 180.f);
 	XMFLOAT3 m_RandomVectorSeed0;
 	XMFLOAT3 m_RandomVectorSeed1;
+	UINT64 m_VertexBufferOffset = 0;
+	UINT64 m_IndexBufferOffset = 0;
 
 	std::vector<std::unique_ptr<FrameResource>> m_FrameResources;
 	FrameResource* m_CurrFrameResource = nullptr;

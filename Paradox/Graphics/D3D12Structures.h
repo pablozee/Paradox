@@ -339,7 +339,7 @@ struct HitProgram
 struct DXRObjects
 {
 	AccelerationStructureBuffer		TLAS;
-	AccelerationStructureBuffer		BLAS;
+	AccelerationStructureBuffer		BLAS[2];
 	uint64_t						tlasSize;
 
 	ID3D12Resource*					shaderTable = nullptr;
