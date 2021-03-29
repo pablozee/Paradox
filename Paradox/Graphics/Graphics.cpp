@@ -644,8 +644,6 @@ void Graphics::CreateGBufferPassRTVResources()
 
 	for (int i = 0; i < 2; i++)
 	{
-
-
 		HRESULT hr = m_D3DObjects.device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
@@ -749,7 +747,10 @@ void Graphics::CreateGBufferPassRTVs()
 
 		m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferSpecular[i], nullptr, gBufRTVHandle);
 
-		gBufRTVHandle.ptr += m_D3DValues.rtvDescSize;
+		if (i < 1)
+		{
+			gBufRTVHandle.ptr += m_D3DValues.rtvDescSize;
+		}
 
 	}
 
@@ -2207,15 +2208,13 @@ void Graphics::BuildCommandList()
 	// Wait for transitions to complete
 	m_D3DObjects.commandList->ResourceBarrier(1, &OutputBarriers[0]);
 	
-	/*
-	D3D12_RESOURCE_BARRIER outputSRVBarriers[4] = {};
-	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufSRVWorldPos[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufSRVNormal[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufSRVDiffuse[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufSRVSpecular[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
 
-	m_D3DObjects.commandList->ResourceBarrier(4, outputSRVBarriers);
-	*/
+	m_D3DObjects.commandList->ResourceBarrier(4, pBarriers);
+	
 
 	// Submit the command list and wait for the GPU to idle
 	SubmitCommandList();
