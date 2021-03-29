@@ -4,7 +4,8 @@
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	Config config;
-	Application* app = new Application(config);
+	Application* app = (Application*)malloc(sizeof(Application));
+	app = new Application(config);
 	app->Run();
 	delete app;
 }
