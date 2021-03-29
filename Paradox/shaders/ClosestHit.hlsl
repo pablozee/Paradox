@@ -3,6 +3,7 @@
 [shader("closesthit")]
 void ClosestHit(inout HitInfo payload, Attributes attrib)
 {
+	/*	
 	uint triangleIndex = PrimitiveIndex();
 	float3 barycentrics = float3((1.0f - attrib.uv.x - attrib.uv.y), attrib.uv.x, attrib.uv.y);
 	VertexAttributes vertex = GetVertexAttributes(triangleIndex, barycentrics);
@@ -28,8 +29,9 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 			colour += CalculatePointLightColour(pointLights[i], barycentrics, normalizedNormal, eyePos, viewDir);
 		}
 	}
-	
 	float3 finalColour = ambient + colour + emission;
+	*/
+	
 
-	payload.shadedColourAndHitT = float4(finalColour, RayTCurrent());
+	payload.shadedColourAndHitT = float4(0.f, 0.f, 0.f, RayTCurrent());
 }

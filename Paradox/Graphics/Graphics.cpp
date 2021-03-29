@@ -1268,7 +1268,7 @@ void Graphics::UpdateRayTracingPassSceneCB()
 	XMFLOAT3 floatFocus;
 	XMStoreFloat3(&floatFocus, m_Focus);
 
-	rtPassCB.directionalLights[0].direction = XMFLOAT3(0.f, 0.f, floatFocus.z + 3.f);
+	rtPassCB.directionalLights[0].direction = XMFLOAT3(0.f, 8.f, 0.f);
 	rtPassCB.directionalLights[0].dirLightPadding = 1.f;
 	rtPassCB.directionalLights[0].colour = XMFLOAT3(1.f, 1.f, 0.f);
 	rtPassCB.directionalLights[0].dirLightPadding1 = 1.f;
