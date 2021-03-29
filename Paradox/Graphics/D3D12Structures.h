@@ -230,6 +230,7 @@ struct D3D12Resources
 {
 	ID3D12DescriptorHeap*		rtvHeap;
 	ID3D12DescriptorHeap*		gBufferPassRTVHeap;
+	ID3D12DescriptorHeap*		rayTracingGBufferSRVHeap;
 	ID3D12DescriptorHeap*		dsvDescriptorHeap = nullptr;
 
 	ID3D12Resource*				depthStencilView = nullptr;
@@ -259,7 +260,12 @@ struct D3D12Resources
 	ID3D12Resource*				gBufferNormal[2];
 	ID3D12Resource*				gBufferDiffuse[2];
 	ID3D12Resource*				gBufferSpecular[2];
-	ID3D12Resource*				gBufferReflectivity[2];
+
+	ID3D12Resource*				gBufSRVWorldPos[2];
+	ID3D12Resource*				gBufSRVNormal[2];
+	ID3D12Resource*				gBufSRVDiffuse[2];
+	ID3D12Resource*				gBufSRVSpecular[2];
+
 };
 
 struct AccelerationStructureBuffer
