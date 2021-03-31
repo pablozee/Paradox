@@ -19,6 +19,7 @@ cbuffer ObjectCB : register(b0)
 	float3x4 world3x4;
 	float objPadding;
 	matrix world;
+	matrix invWorld;
 }
 
 cbuffer MaterialCB : register(b1)
@@ -67,8 +68,7 @@ VSOutput main(VSInput vsInput)
 	float4 homogPosW = mul(float4(vsInput.Pos, 1.0f), world);
 	vso.PosW = homogPosW.xyz / homogPosW.w;
 
-	float4 homogNormalW = mul(float4(vsInput.Normal, 1.0f), world);
-	vso.NormalW = homogNormalW.xyz / homogNormalW.w;
+	vso.NormalW = -vsInput.Normal;
 
 	vso.TexCOut = vsInput.TexC;
 

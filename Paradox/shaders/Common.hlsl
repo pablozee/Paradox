@@ -31,6 +31,7 @@ cbuffer ObjectCB : register(b0)
 	float3x4 world3x4;
 	float objPadding;
 	matrix world;
+	matrix invWorld;
 }
 
 cbuffer MaterialCB : register(b1)
@@ -162,7 +163,7 @@ float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight,
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
 	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
 	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour.xyz;
-	return lambert;
+	return lambert + phong;
 
 		//lambert
 		//+ phong;

@@ -16,7 +16,10 @@ struct PointLight
 
 cbuffer ObjectCB : register(b0)
 {
-	matrix			world;
+	float3x4 world3x4;
+	float objPadding;
+	matrix world;
+	matrix invWorld;
 }
 
 cbuffer MaterialCB : register(b1)
@@ -63,12 +66,21 @@ struct GBuffer
 GBuffer main(PSInput psInput)
 {
 	GBuffer gBuffer;
-	if (diffuse.x != 0.f && diffuse.y != 0.f && diffuse.z != 0.f)
+	if (shininess != 0.f)
 	{
 	//	GBuffer gBuffer;
 		gBuffer.gBufferWorldPos.xyz = psInput.PosW;
 		gBuffer.gBufferWorldPos.w = ior;
-		gBuffer.gBufferWorldNormal.xyz = psInput.NormalW;
+		float4x4 worldView = mul(invWorld, view);
+//		float4x4 worldView = invWorld;
+		float3x3 worldView3x3 = float3x3(worldView[0][0], worldView[0][1], worldView[0][2], worldView[1][0], worldView[1][1], worldView[1][2], worldView[2][0], worldView[2][1], worldView[2][2]);
+		float3 worldNormalInvert = mul(psInput.NormalW, worldView3x3);
+		worldNormalInvert = normalize(worldNormalInvert);
+		worldView = mul(invWorld, view);
+		float4 homogNormalW = mul(float4(psInput.NormalW, 1.0f), invWorld);
+		float3 deHomogNormalW = homogNormalW.xyz / homogNormalW.w;
+		deHomogNormalW = normalize(deHomogNormalW);
+		gBuffer.gBufferWorldNormal.xyz = worldNormalInvert;
 		gBuffer.gBufferWorldNormal.w = shininess;
 		gBuffer.gBufferDiffuse.xyz = diffuse;
 		gBuffer.gBufferDiffuse.w = 1.0f;

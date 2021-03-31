@@ -507,7 +507,7 @@ void Graphics::CreateDepthStencilView()
 	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
 	depthOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
-	depthOptimizedClearValue.DepthStencil.Stencil = 0;
+	depthOptimizedClearValue.DepthStencil.Stencil = 0.f;
 
 	D3D12_HEAP_PROPERTIES heapProps = {};
 	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -595,7 +595,7 @@ void Graphics::CreateGBufferPassPSO()
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 8;
+	psoDesc.NumRenderTargets = 4;
 	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[1] = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -1183,6 +1183,10 @@ void Graphics::UpdateObjectCBs()
 			objectCB.world3x4 = renderItem->world3x4;
 			objectCB.objPadding = 0;
 			objectCB.world = XMMatrixTranspose(renderItem->world);
+			XMMATRIX view = DirectX::XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
+
+			XMMATRIX invViewWorld = XMMatrixTranspose(XMMatrixInverse(NULL, (view * renderItem->world)));
+			objectCB.invWorld = invViewWorld;
 
 			currentObjectCB->CopyData(renderItem->objCBIndex, objectCB);
 
@@ -1277,7 +1281,7 @@ void Graphics::UpdateLightsSceneCB()
 */
 
 	LightsSceneCB lightsCB;
-	lightsCB.dirLight.direction = XMFLOAT4{ 0.f, -13.f, 0.f, 0.f };
+	lightsCB.dirLight.direction = XMFLOAT4{ 0.f, 13.f, 8.f, 0.f };
 	lightsCB.dirLight.colour = XMFLOAT4{ 0.0f, 0.2f, 0.f, 0.f };
 
 	auto currentLightsSceneCB = m_CurrFrameResource->lightsSceneCB.get();
@@ -2126,7 +2130,7 @@ void Graphics::BuildGBufferCommandList()
 	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 1.f, 0, nullptr);
 
 	m_D3DObjects.viewport.Height = (float)m_D3DParams.height;
 	m_D3DObjects.viewport.Width = (float)m_D3DParams.width;

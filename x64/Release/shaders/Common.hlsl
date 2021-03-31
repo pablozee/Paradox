@@ -31,6 +31,7 @@ cbuffer ObjectCB : register(b0)
 	float3x4 world3x4;
 	float objPadding;
 	matrix world;
+	matrix invWorld;
 }
 
 cbuffer MaterialCB : register(b1)
@@ -156,13 +157,13 @@ float3 CalculatePointLightColour(PointLight pointLight, float3 barycentrics, flo
 float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight, float3 eyePos, float3 viewDir, 
 											  float3 gBufNormalizedNormal, float  gBufShininess, float3 gBufDiffuse, float3 gBufSpecular)
 {
-	float3 normalizedLightDirection = normalize(directionalLight.directionalLightDirection.xyz);
+	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection.xyz);
 	float3 halfVec = normalize(normalizedLightDirection + viewDir);
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
 	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
 	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour.xyz;
-	return lambert;
+	return lambert + phong;
 
 		//lambert
 		//+ phong;
