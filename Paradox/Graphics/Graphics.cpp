@@ -101,6 +101,7 @@ void Graphics::Update()
 	UpdateMaterialCBs();
 	UpdateGBufferPassSceneCB();
 	UpdateRayTracingPassSceneCB();
+	UpdateLightsSceneCB();
 }
 
 void Graphics::Render()
@@ -1253,29 +1254,34 @@ void Graphics::UpdateRayTracingPassSceneCB()
 
 	RayTracingPassSceneCB rtPassCB;
 
-	rtPassCB.view = DirectX::XMMatrixTranspose(view);
+	XMStoreFloat4x4(&rtPassCB.view, DirectX::XMMatrixTranspose(view));
 	rtPassCB.viewOriginAndTanHalfFovY = XMFLOAT4(floatEye.x, floatEye.y, floatEye.z, tanf(m_FOV * 0.5f));
-	rtPassCB.numDirLights = 1;
-	rtPassCB.numPointLights = 0;
 	rtPassCB.resolution = XMFLOAT2((float)m_D3DParams.width, (float)m_D3DParams.height);
-	rtPassCB.randomSeedVector0 = m_RandomVectorSeed0;
-	rtPassCB.padding = 0.f;
-	rtPassCB.randomSeedVector1 = m_RandomVectorSeed1;
-
-	// TODO Remove this padding if unnecessary
-	rtPassCB.padding1 = 0.f;
-
 	XMFLOAT3 floatFocus;
 	XMStoreFloat3(&floatFocus, m_Focus);
 
-	rtPassCB.directionalLights[0].direction = XMFLOAT3(0.f, 8.f, 0.f);
-	rtPassCB.directionalLights[0].dirLightPadding = 1.f;
-	rtPassCB.directionalLights[0].colour = XMFLOAT3(1.f, 1.f, 0.f);
-	rtPassCB.directionalLights[0].dirLightPadding1 = 1.f;
+//	rtPassCB.directionalLights.direction = XMFLOAT4(0.f, -15.f, 0.f, 0.f);
+//	rtPassCB.directionalLights.colour = XMFLOAT4(0.44f, 0.66f, 0.f, 0.f);
 
 	auto currentRTPassCB = m_CurrFrameResource->rayTracingPassSceneCB.get();
 	currentRTPassCB->CopyData(0, rtPassCB);
 }
+
+void Graphics::UpdateLightsSceneCB()
+{
+/*
+	rtPassCB.numDirLights = 1;
+	rtPassCB.numPointLights = 0;
+*/
+
+	LightsSceneCB lightsCB;
+	lightsCB.dirLight.direction = XMFLOAT4{ 0.f, -13.f, 0.f, 0.f };
+	lightsCB.dirLight.colour = XMFLOAT4{ 0.2f, 0.2f, 0.f, 0.f };
+
+	auto currentLightsSceneCB = m_CurrFrameResource->lightsSceneCB.get();
+	currentLightsSceneCB->CopyData(0, lightsCB);
+}
+
 
 void Graphics::CreateBottomLevelAS(RenderItem* renderItem, UINT blasIndex)
 {
@@ -1470,7 +1476,7 @@ void Graphics::CreateDescriptorHeaps()
 	UINT materialCount = (UINT)m_Materials.size();
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 4u + 8u + (objectCount * gNumFrameResources) + (2u * gNumFrameResources) + (materialCount * gNumFrameResources);
+	heapDesc.NumDescriptors = 4u + 8u + (objectCount * gNumFrameResources) + (3u * gNumFrameResources) + (materialCount * gNumFrameResources);
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
@@ -1483,22 +1489,23 @@ void Graphics::CreateDescriptorHeaps()
 #if NAME_D3D_RESOURCES
 	m_D3DResources.descriptorHeap->SetName(L"DXR Descriptor Heap");
 #endif
-
+	
 	UINT8 objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
 	UINT8 materialCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(MaterialCB));
 	UINT8 gBufferPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(GBufferPassSceneCB));
 	UINT8 rayTracingPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(RayTracingPassSceneCB));
+	UINT8 lightsCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(LightsSceneCB));
 
 	int heapIndex = 0;
-
+	UINT8 addressMultiplier = 0;
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
 		auto objectCB = m_FrameResources[m_CurrFrameResourceIndex]->objectCB->Resource();
 		for (int i = 0; i < objectCount; i++)
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
-			UINT8 addressMultiplier = (objectCount * frameIndex) + i;
-			objCBAddress += addressMultiplier * (UINT8)objectCBByteSize;
+			// UINT8 addressMultiplier = (objectCount * frameIndex) + i;
+		//	objCBAddress = addressMultiplier * (UINT8)objectCBByteSize;
 
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
@@ -1508,9 +1515,12 @@ void Graphics::CreateDescriptorHeaps()
 			m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
 
 			handle.ptr += handleIncrement;
+			objCBAddress += addressMultiplier * (UINT8)objectCBByteSize;
+			addressMultiplier++;
 		}
 	}
 
+	addressMultiplier = 0;
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
@@ -1518,8 +1528,8 @@ void Graphics::CreateDescriptorHeaps()
 		for (UINT8 i = 0; i < materialCount; i++)
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress();
-			UINT8 addressMultiplier = ((UINT8)materialCount * (UINT8)frameIndex) + i;
-			matCBAddress += (UINT8)addressMultiplier * (UINT8)materialCBByteSize;
+//			UINT8 addressMultiplier = ((UINT8)materialCount * (UINT8)frameIndex) + i;
+//			matCBAddress += addressMultiplier * (UINT8)materialCBByteSize;
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
 			constantBufferViewDesc.BufferLocation = matCBAddress;
@@ -1528,15 +1538,19 @@ void Graphics::CreateDescriptorHeaps()
 			m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
 
 			handle.ptr += handleIncrement;
+			matCBAddress += addressMultiplier * (UINT8)materialCBByteSize;
+			addressMultiplier++;
+
 		}
 	}
+	addressMultiplier = 0;
 
 	for (UINT8 frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
 		auto gBufferPassCB = m_FrameResources[frameIndex]->gBufferPassSceneCB->Resource();
 
 		D3D12_GPU_VIRTUAL_ADDRESS gBufferPassCBAddress = gBufferPassCB->GetGPUVirtualAddress();
-		gBufferPassCBAddress += frameIndex * gBufferPassCBByteSize;
+//		gBufferPassCBAddress += frameIndex * (UINT8)gBufferPassCBByteSize;
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
 		constantBufferViewDesc.BufferLocation = gBufferPassCBAddress;
@@ -1545,14 +1559,18 @@ void Graphics::CreateDescriptorHeaps()
 		m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
 		
 		handle.ptr += handleIncrement;
+		gBufferPassCBAddress += addressMultiplier * (UINT8)gBufferPassCBByteSize;
+		addressMultiplier++;
+
 	}
+	addressMultiplier = 0;
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
 		auto rayTracingPassCB = m_FrameResources[frameIndex]->rayTracingPassSceneCB->Resource();
 		heapIndex = heapIndex + frameIndex;
 		D3D12_GPU_VIRTUAL_ADDRESS rayTracingPassCBAddress = rayTracingPassCB->GetGPUVirtualAddress();
-		rayTracingPassCBAddress += frameIndex * rayTracingPassCBByteSize;
+//		rayTracingPassCBAddress += frameIndex * (UINT8)rayTracingPassCBByteSize;
 
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
@@ -1562,8 +1580,50 @@ void Graphics::CreateDescriptorHeaps()
 		m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
 
 		handle.ptr += handleIncrement;
+		rayTracingPassCBAddress += addressMultiplier * (UINT8)rayTracingPassCBByteSize;
+		addressMultiplier++;
 	}
 
+	addressMultiplier = 0;
+
+	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
+	{
+		auto lightsCB = m_FrameResources[frameIndex]->rayTracingPassSceneCB->Resource();
+		heapIndex = heapIndex + frameIndex;
+		D3D12_GPU_VIRTUAL_ADDRESS lightsCBAddress = lightsCB->GetGPUVirtualAddress();
+		//		rayTracingPassCBAddress += frameIndex * (UINT8)rayTracingPassCBByteSize;
+
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
+		constantBufferViewDesc.BufferLocation = lightsCBAddress;
+		constantBufferViewDesc.SizeInBytes = lightsCBByteSize;
+
+		m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
+
+		handle.ptr += handleIncrement;
+		lightsCBAddress += addressMultiplier * (UINT8)lightsCBByteSize;
+		addressMultiplier++;
+	}
+/*
+	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
+	{
+		auto rayTracingPassCB = m_FrameResources[frameIndex]->rayTracingPassSceneCB->Resource();
+		heapIndex = heapIndex + frameIndex;
+		D3D12_GPU_VIRTUAL_ADDRESS rayTracingPassCBAddress = rayTracingPassCB->GetGPUVirtualAddress();
+		rayTracingPassCBAddress += frameIndex * (UINT8)rayTracingPassCBByteSize;
+
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
+		constantBufferViewDesc.BufferLocation = rayTracingPassCBAddress;
+		constantBufferViewDesc.SizeInBytes = rayTracingPassCBByteSize;
+
+		m_D3DObjects.device->CreateConstantBufferView(&constantBufferViewDesc, handle);
+
+		handle.ptr += handleIncrement;
+		rayTracingPassCBAddress += addressMultiplier * (UINT8)rayTracingPassCBByteSize;
+		addressMultiplier++;
+	}
+*/
 	// Create the Index Buffer SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC indexSrvDesc = {};
 	indexSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
@@ -1755,7 +1815,7 @@ void Graphics::CreateRayGenProgram()
 	D3D12_DESCRIPTOR_RANGE ranges[3];
 
 	ranges[0].BaseShaderRegister = 0;
-	ranges[0].NumDescriptors = 18;
+	ranges[0].NumDescriptors = 21;
 	ranges[0].RegisterSpace = 0;
 	ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 	ranges[0].OffsetInDescriptorsFromTableStart = 0;
@@ -1764,13 +1824,13 @@ void Graphics::CreateRayGenProgram()
 	ranges[1].NumDescriptors = 11;
 	ranges[1].RegisterSpace = 0;
 	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-	ranges[1].OffsetInDescriptorsFromTableStart = 18;
+	ranges[1].OffsetInDescriptorsFromTableStart = 21;
 		  	 
 	ranges[2].BaseShaderRegister = 0;
 	ranges[2].NumDescriptors = 1;
 	ranges[2].RegisterSpace = 0;
 	ranges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	ranges[2].OffsetInDescriptorsFromTableStart = 29;
+	ranges[2].OffsetInDescriptorsFromTableStart = 32;
 
 
 	D3D12_ROOT_PARAMETER param0 = {};

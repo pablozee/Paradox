@@ -17,6 +17,7 @@ public:
 	std::unique_ptr<UploadBuffer<MaterialCB>> materialCB = nullptr;
 	std::unique_ptr<UploadBuffer<GBufferPassSceneCB>> gBufferPassSceneCB = nullptr;
 	std::unique_ptr<UploadBuffer<RayTracingPassSceneCB>> rayTracingPassSceneCB = nullptr;
+	std::unique_ptr<UploadBuffer<LightsSceneCB>> lightsSceneCB = nullptr;
 
 	// Fence value allows us to check if frame resource is in use by GPU
 	UINT Fence = 0;

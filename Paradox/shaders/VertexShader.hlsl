@@ -67,7 +67,8 @@ VSOutput main(VSInput vsInput)
 	float4 homogPosW = mul(float4(vsInput.Pos, 1.0f), world);
 	vso.PosW = homogPosW.xyz / homogPosW.w;
 
-	vso.NormalW = vsInput.Normal;
+	float4 homogNormalW = mul(float4(vsInput.Normal, 1.0f), world);
+	vso.NormalW = homogNormalW.xyz / homogNormalW.w;
 
 	vso.TexCOut = vsInput.TexC;
 

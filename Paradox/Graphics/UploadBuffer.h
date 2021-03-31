@@ -13,8 +13,8 @@ public:
 	{
 		elementByteSize = sizeof(T);
 
-	//	if (isConstantBuffer) elementByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(T));
-		if (isConstantBuffer) elementByteSize = CalcConstantBufferByteSize(sizeof(T));
+		if (isConstantBuffer) elementByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(T));
+	//	if (isConstantBuffer) elementByteSize = CalcConstantBufferByteSize(sizeof(T));
 
 		HRESULT hr = device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),

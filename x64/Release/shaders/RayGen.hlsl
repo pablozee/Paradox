@@ -21,7 +21,8 @@ void RayGen()
 	float3 eyePos = viewOriginAndTanHalfFovY.xyz;
 	float3 viewDir = normalize(eyePos - gBufWorldPos);
 
-	/*	*/
+	/*	
+
 
 	for (int i = 0; i < numDirLights; i++)
 	{
@@ -56,26 +57,38 @@ void RayGen()
 		colour += payload.shadedColourAndHitT.x * CalculatePointLightColourGBuffer(pointLights[x], eyePos, viewDir, gBufWorldPos, gBufNormalizedNormal,
 												   gBufShininess, gBufDiffuse.xyz, gBufSpecular);
 	}
-	/*
-		*/
+	
 	RayDesc ray;
 	ray.Origin = viewOriginAndTanHalfFovY.xyz;
-	ray.Direction = normalize(-directionalLights[0].directionalLightDirection);
+	ray.Direction = normalize(directionalLight.directionalLightDirection);
 	ray.TMin = 0.1f;
-	ray.TMax = length(-directionalLights[0].directionalLightDirection);
+	ray.TMax = length(directionalLight.directionalLightDirection);
 
 	HitInfo payload;
 	payload.shadedColourAndHitT = float4(0.f, 0.f, 0.f, 0.f);
 
-	TraceRay(SceneBVH, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFF, 0, 0, 0, ray, payload);
+		*/
+//	TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
 
 
-	colour = payload.shadedColourAndHitT.x * CalculateDirectionalLightColourGBuffer(directionalLights[0], eyePos, viewDir, gBufNormalizedNormal,
+	colour =  CalculateDirectionalLightColourGBuffer(directionalLight, eyePos, viewDir, gBufNormalizedNormal,
 		gBufShininess, gBufDiffuse.xyz, gBufSpecular);
-	
+	/*
+	float3 normalizedLightDirection = normalize(directionalLight.directionalLightDirection.xyz);
+	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
+	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
+	colour = lambert;
+	*/
+
+
+
 	if (gBufDiffuse.w == 0.0f)
 	{
 		colour = float3(0.2f, 0.2f, 0.2f);
+	}
+	else
+	{
+	//	colour = float3(1.f, 1.f, 0.f);
 	}
 
 	RTOutput[LaunchIndex.xy] = float4(colour, 1.f);

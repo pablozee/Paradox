@@ -12,10 +12,8 @@ struct Attributes
 
 struct DirectionalLight
 {
-	float3			 directionalLightDirection;
-	float			 directionalLightPadding;
-	float3			 directionalLightColour;
-	float			 directionalLightPadding1;
+	float4			 directionalLightDirection;
+	float4			 directionalLightColour;
 };
 
 struct PointLight
@@ -61,19 +59,19 @@ cbuffer GBufferPassSceneCB : register(b2)
 
 cbuffer RayTracingPassSceneCB : register(b3)
 {
-	matrix			 view;
+	float4x4		 view;
 	float4			 viewOriginAndTanHalfFovY;
 	float2			 resolution;
 	float			 numDirLights;
 	float			 numPointLights;
-	float3			 randomSeedVector0;
-	float			 padding;
-	float3			 randomSeedVector1;
-	float			 padding1;
-	DirectionalLight directionalLights[10];
-	PointLight		 pointLights[10];
+//	DirectionalLight	directionalLight;
 }
-
+/*
+*/
+cbuffer LightsBufferCB : register(b4)
+{
+	DirectionalLight	directionalLight;
+}
 // Resources
 
 RWTexture2D<float4> RTOutput					: register(u0);
@@ -132,11 +130,11 @@ VertexAttributes GetVertexAttributes(uint triangleIndex, float3 barycentrics)
 }
 
 
+/*
 float RandomFloat()
 {
 	return frac(sin(dot(normalize(randomSeedVector0), normalize(randomSeedVector1)))) * 46146.1461f;
 }
-
 float3 CalculateDirectionalLightColour(DirectionalLight directionalLight, float3 barycentrics, float3 normalizedNormal, float3 eyePos, float3 viewDir)
 {
 	float3 normalizedLightDirection = normalize(directionalLight.directionalLightDirection);
@@ -158,17 +156,21 @@ float3 CalculatePointLightColour(PointLight pointLight, float3 barycentrics, flo
 	float3 phong = specular * pow(max(nDotH, 0), shininess) * pointLight.pointLightColour;
 	return lambert + phong;
 }
-
+*/
 float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight, float3 eyePos, float3 viewDir, 
 											  float3 gBufNormalizedNormal, float  gBufShininess, float3 gBufDiffuse, float3 gBufSpecular)
 {
-	float3 normalizedLightDirection = normalize(directionalLight.directionalLightDirection);
+	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection.xyz);
 	float3 halfVec = normalize(normalizedLightDirection + viewDir);
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
-	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour;
-	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour;
+	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
+	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour.xyz;
 	return lambert + phong;
+
+		//lambert
+		//+ phong;
+		// float3(1.f, 1.f, 0.f) + * max(nDotL, 0)lambert + phong;
 }
 
 float3 CalculatePointLightColourGBuffer(PointLight pointLight, float3 eyePos, float3 viewDir, float3 gBufWorldPos,

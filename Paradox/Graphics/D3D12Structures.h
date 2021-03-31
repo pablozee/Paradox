@@ -109,17 +109,19 @@ struct GBufferPassSceneCB
 
 struct RayTracingPassSceneCB
 {
-	XMMATRIX view = XMMatrixIdentity();
+	XMFLOAT4X4 view = XMFLOAT4X4(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 	XMFLOAT4 viewOriginAndTanHalfFovY = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	XMFLOAT2 resolution = XMFLOAT2(1280, 960);
+/*
 	float numDirLights;
 	float numPointLights;
-	XMFLOAT3 randomSeedVector0;
-	float padding;
-	XMFLOAT3 randomSeedVector1;
-	float padding1;
-	DirectionalLight directionalLights[10];
-	PointLight pointLights[10];
+	DirectionalLight directionalLights;
+*/
+};
+
+struct LightsSceneCB
+{
+	DirectionalLight dirLight;
 };
 
 struct MaterialCB
