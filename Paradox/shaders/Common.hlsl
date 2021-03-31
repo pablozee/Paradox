@@ -166,7 +166,7 @@ float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight,
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
 	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
 	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour.xyz;
-	return lambert + phong;
+	return gBufDiffuse * max(nDotL, 0);
 
 		//lambert
 		//+ phong;
@@ -184,3 +184,5 @@ float3 CalculatePointLightColourGBuffer(PointLight pointLight, float3 eyePos, fl
 	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * pointLight.pointLightColour;
 	return lambert + phong;
 }
+
+

@@ -499,13 +499,13 @@ void Graphics::CreateGBufferPassRootSignature()
 void Graphics::CreateDepthStencilView()
 {
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 	dsvDesc.Texture2D.MipSlice = 0;
 
 	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
-	depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	depthOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
 	depthOptimizedClearValue.DepthStencil.Stencil = 0;
 
@@ -519,7 +519,7 @@ void Graphics::CreateDepthStencilView()
 	D3D12_RESOURCE_DESC dsvResDesc = {};
 	dsvResDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	dsvResDesc.DepthOrArraySize = 1;
-	dsvResDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsvResDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	dsvResDesc.Width = m_D3DParams.width;
 	dsvResDesc.Height = m_D3DParams.height;
 	dsvResDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
@@ -530,7 +530,7 @@ void Graphics::CreateDepthStencilView()
 	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(
 		&heapProps,
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_D3DParams.width, m_D3DParams.height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D24_UNORM_S8_UINT, m_D3DParams.width, m_D3DParams.height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,
 		&depthOptimizedClearValue,
 		IID_PPV_ARGS(&m_D3DResources.depthStencilView)
@@ -1276,7 +1276,7 @@ void Graphics::UpdateLightsSceneCB()
 
 	LightsSceneCB lightsCB;
 	lightsCB.dirLight.direction = XMFLOAT4{ 0.f, -13.f, 0.f, 0.f };
-	lightsCB.dirLight.colour = XMFLOAT4{ 0.2f, 0.2f, 0.f, 0.f };
+	lightsCB.dirLight.colour = XMFLOAT4{ 0.0f, 0.2f, 0.f, 0.f };
 
 	auto currentLightsSceneCB = m_CurrFrameResource->lightsSceneCB.get();
 	currentLightsSceneCB->CopyData(0, lightsCB);

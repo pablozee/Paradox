@@ -78,10 +78,10 @@ void RayGen()
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
 	colour = lambert;
+
+
+
 	*/
-
-
-
 	if (gBufDiffuse.w == 0.0f)
 	{
 		colour = float3(0.2f, 0.2f, 0.2f);
