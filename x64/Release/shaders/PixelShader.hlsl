@@ -63,14 +63,25 @@ struct GBuffer
 GBuffer main(PSInput psInput)
 {
 	GBuffer gBuffer;
-	gBuffer.gBufferWorldPos.xyz = psInput.PosW;
-	gBuffer.gBufferWorldPos.w = ior;
-	gBuffer.gBufferWorldNormal.xyz = psInput.NormalW;
-	gBuffer.gBufferWorldNormal.w = shininess;
-	gBuffer.gBufferDiffuse.xyz = diffuse;
-	gBuffer.gBufferDiffuse.w = 1.0f;
-	gBuffer.gBufferSpecular.xyz = specular;
-	gBuffer.gBufferSpecular.w = 1.0f;
+	if (diffuse.x != 0.f && diffuse.y != 0.f && diffuse.z != 0.f)
+	{
+	//	GBuffer gBuffer;
+		gBuffer.gBufferWorldPos.xyz = psInput.PosW;
+		gBuffer.gBufferWorldPos.w = ior;
+		gBuffer.gBufferWorldNormal.xyz = psInput.NormalW;
+		gBuffer.gBufferWorldNormal.w = shininess;
+		gBuffer.gBufferDiffuse.xyz = diffuse;
+		gBuffer.gBufferDiffuse.w = 1.0f;
+		gBuffer.gBufferSpecular.xyz = specular;
+		gBuffer.gBufferSpecular.w = 1.0f;
+	}
+	else
+	{
+		gBuffer.gBufferWorldPos = float4(0.f, 0.f, 0.f, 0.f);
+		gBuffer.gBufferWorldNormal = float4(0.f, 0.f, 0.f, 0.f);
+		gBuffer.gBufferDiffuse = float4(0.f, 0.f, 0.f, 0.f);
+		gBuffer.gBufferSpecular = float4(0.f, 0.f, 0.f, 0.f);
+	}
 
 	return gBuffer;
 }

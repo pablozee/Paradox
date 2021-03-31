@@ -12,7 +12,7 @@ void RayGen()
 
 	float3 gBufWorldPos = gBufferWorldPos[LaunchIndex].xyz;
 	float  gBufIOR = gBufferWorldPos[LaunchIndex].w;
-	float3 gBufNormalizedNormal = normalize(gBufferNormal[LaunchIndex].xyz);
+	float3 gBufNormalizedNormal = gBufferNormal[LaunchIndex].xyz;
 	float  gBufShininess = gBufferNormal[LaunchIndex].w;
 	float4 gBufDiffuse = gBufferDiffuse[LaunchIndex];
 	float3 gBufSpecular = gBufferSpecular[LaunchIndex].xyz;
@@ -70,9 +70,16 @@ void RayGen()
 	TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
 
 		*/
+	if (gBufDiffuse.w != 1.0f)
+	{
+		colour = float3(0.2f, 0.2f, 0.2f);
 
-	colour = CalculateDirectionalLightColourGBuffer(directionalLight, eyePos, viewDir, gBufNormalizedNormal,
-		gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+	}
+	else
+	{
+		colour = CalculateDirectionalLightColourGBuffer(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+	}
+
 	/*
 	float3 normalizedLightDirection = normalize(directionalLight.directionalLightDirection.xyz);
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
@@ -82,14 +89,6 @@ void RayGen()
 
 
 	*/
-	if (gBufDiffuse.w == 0.0f)
-	{
-		colour = float3(0.2f, 0.2f, 0.2f);
-	}
-	else
-	{
-	//	colour = float3(1.f, 1.f, 0.f);
-	}
 
 	RTOutput[LaunchIndex.xy] = float4(colour, 1.f);
 }

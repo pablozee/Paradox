@@ -83,10 +83,6 @@ Texture2D<float4> gBufferWorldPos				: register(t3);
 Texture2D<float4> gBufferNormal					: register(t4);
 Texture2D<float4> gBufferDiffuse				: register(t5);
 Texture2D<float4> gBufferSpecular				: register(t6);
-Texture2D<float4> gBufferWorldPos1				: register(t7);
-Texture2D<float4> gBufferNormal1				: register(t8);
-Texture2D<float4> gBufferDiffuse1				: register(t9);
-Texture2D<float4> gBufferSpecular1				: register(t10);
 //Texture2D<float4> albedo						: register(t3);
 
 // Helper Functions
@@ -160,13 +156,13 @@ float3 CalculatePointLightColour(PointLight pointLight, float3 barycentrics, flo
 float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight, float3 eyePos, float3 viewDir, 
 											  float3 gBufNormalizedNormal, float  gBufShininess, float3 gBufDiffuse, float3 gBufSpecular)
 {
-	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection.xyz);
+	float3 normalizedLightDirection = normalize(directionalLight.directionalLightDirection.xyz);
 	float3 halfVec = normalize(normalizedLightDirection + viewDir);
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
 	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
 	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour.xyz;
-	return gBufDiffuse * max(nDotL, 0);
+	return lambert;
 
 		//lambert
 		//+ phong;

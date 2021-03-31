@@ -257,10 +257,10 @@ struct D3D12Resources
 
 	ID3D12DescriptorHeap*		gBufferDescHeap = nullptr;
 
-	ID3D12Resource*				gBufferWorldPos[2];
-	ID3D12Resource*				gBufferNormal[2];
-	ID3D12Resource*				gBufferDiffuse[2];
-	ID3D12Resource*				gBufferSpecular[2];
+	ID3D12Resource*				gBufferWorldPos;
+	ID3D12Resource*				gBufferNormal;
+	ID3D12Resource*				gBufferDiffuse;
+	ID3D12Resource*				gBufferSpecular;
 
 	ID3D12Resource*				gBufSRVWorldPos[2];
 	ID3D12Resource*				gBufSRVNormal[2];

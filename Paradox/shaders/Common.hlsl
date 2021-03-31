@@ -83,10 +83,6 @@ Texture2D<float4> gBufferWorldPos				: register(t3);
 Texture2D<float4> gBufferNormal					: register(t4);
 Texture2D<float4> gBufferDiffuse				: register(t5);
 Texture2D<float4> gBufferSpecular				: register(t6);
-Texture2D<float4> gBufferWorldPos1				: register(t7);
-Texture2D<float4> gBufferNormal1				: register(t8);
-Texture2D<float4> gBufferDiffuse1				: register(t9);
-Texture2D<float4> gBufferSpecular1				: register(t10);
 //Texture2D<float4> albedo						: register(t3);
 
 // Helper Functions
@@ -166,7 +162,7 @@ float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight,
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
 	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
 	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour.xyz;
-	return gBufDiffuse * max(nDotL, 0);
+	return lambert;
 
 		//lambert
 		//+ phong;

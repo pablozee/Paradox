@@ -596,15 +596,17 @@ void Graphics::CreateGBufferPassPSO()
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 8;
-	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[1] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[3] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	/*
 	psoDesc.RTVFormats[4] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[5] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[6] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[7] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	*/
 	psoDesc.SampleDesc.Count = 1;
 
 	HRESULT hr = m_D3DObjects.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_D3DObjects.gBufferPassPipelineState));
@@ -614,7 +616,7 @@ void Graphics::CreateGBufferPassPSO()
 void Graphics::CreateGBufferPassRTVDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC gBufRTVHeapDesc = {};
-	gBufRTVHeapDesc.NumDescriptors = 8;
+	gBufRTVHeapDesc.NumDescriptors = 4;
 	gBufRTVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 
 	HRESULT hr = m_D3DObjects.device->CreateDescriptorHeap(&gBufRTVHeapDesc, IID_PPV_ARGS(&m_D3DResources.gBufferPassRTVHeap));
@@ -643,7 +645,7 @@ void Graphics::CreateGBufferPassRTVResources()
 	rtvClearCol.Color[3] = colour[3];
 	rtvClearCol.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		HRESULT hr = m_D3DObjects.device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -651,7 +653,7 @@ void Graphics::CreateGBufferPassRTVResources()
 			&rtvDesc,
 			D3D12_RESOURCE_STATE_PRESENT,
 			&rtvClearCol,
-			IID_PPV_ARGS(&m_D3DResources.gBufferWorldPos[i]));
+			IID_PPV_ARGS(&m_D3DResources.gBufferWorldPos));
 
 		hr = m_D3DObjects.device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -659,7 +661,7 @@ void Graphics::CreateGBufferPassRTVResources()
 			&rtvDesc,
 			D3D12_RESOURCE_STATE_PRESENT,
 			&rtvClearCol,
-			IID_PPV_ARGS(&m_D3DResources.gBufferNormal[i]));
+			IID_PPV_ARGS(&m_D3DResources.gBufferNormal));
 
 		hr = m_D3DObjects.device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -667,7 +669,7 @@ void Graphics::CreateGBufferPassRTVResources()
 			&rtvDesc,
 			D3D12_RESOURCE_STATE_PRESENT,
 			&rtvClearCol,
-			IID_PPV_ARGS(&m_D3DResources.gBufferDiffuse[i]));
+			IID_PPV_ARGS(&m_D3DResources.gBufferDiffuse));
 
 		hr = m_D3DObjects.device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -675,7 +677,7 @@ void Graphics::CreateGBufferPassRTVResources()
 			&rtvDesc,
 			D3D12_RESOURCE_STATE_PRESENT,
 			&rtvClearCol,
-			IID_PPV_ARGS(&m_D3DResources.gBufferSpecular[i]));
+			IID_PPV_ARGS(&m_D3DResources.gBufferSpecular));
 	}
 
 	/*
@@ -732,21 +734,21 @@ void Graphics::CreateGBufferPassRTVs()
 	HRESULT hr;
 	D3D12_CPU_DESCRIPTOR_HANDLE gBufRTVHandle = m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart();
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 1; i++)
 	{
-		m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferWorldPos[i], nullptr, gBufRTVHandle);
+		m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferWorldPos, nullptr, gBufRTVHandle);
 
 		gBufRTVHandle.ptr += m_D3DValues.rtvDescSize;
 
-		m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferNormal[i], nullptr, gBufRTVHandle);
+		m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferNormal, nullptr, gBufRTVHandle);
 
 		gBufRTVHandle.ptr += m_D3DValues.rtvDescSize;
 
-		m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferDiffuse[i], nullptr, gBufRTVHandle);
+		m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferDiffuse, nullptr, gBufRTVHandle);
 
 		gBufRTVHandle.ptr += m_D3DValues.rtvDescSize;
 
-		m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferSpecular[i], nullptr, gBufRTVHandle);
+		m_D3DObjects.device->CreateRenderTargetView(m_D3DResources.gBufferSpecular, nullptr, gBufRTVHandle);
 
 		if (i < 1)
 		{
@@ -1659,7 +1661,7 @@ void Graphics::CreateDescriptorHeaps()
 
 	m_D3DObjects.device->CreateShaderResourceView(nullptr, &srvDesc, handle);
 
-	for (int i = 0; i < m_D3DValues.swapChainBufferCount; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC gBufferWorldPosSrvDesc = {};
 		gBufferWorldPosSrvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -1669,7 +1671,7 @@ void Graphics::CreateDescriptorHeaps()
 		gBufferWorldPosSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 		handle.ptr += handleIncrement;
-		m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.gBufferWorldPos[i], &gBufferWorldPosSrvDesc, handle);
+		m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.gBufferWorldPos, &gBufferWorldPosSrvDesc, handle);
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC gBufferNormalSrvDesc = {};
 		gBufferNormalSrvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -1679,7 +1681,7 @@ void Graphics::CreateDescriptorHeaps()
 		gBufferNormalSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 		handle.ptr += handleIncrement;
-		m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.gBufferNormal[i], &gBufferNormalSrvDesc, handle);
+		m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.gBufferNormal, &gBufferNormalSrvDesc, handle);
 
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC gBufferDiffuseSrvDesc = {};
@@ -1690,7 +1692,7 @@ void Graphics::CreateDescriptorHeaps()
 		gBufferDiffuseSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 		handle.ptr += handleIncrement;
-		m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.gBufferDiffuse[i], &gBufferDiffuseSrvDesc, handle);
+		m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.gBufferDiffuse, &gBufferDiffuseSrvDesc, handle);
 
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC gBufferSpecularSrvDesc = {};
@@ -1701,7 +1703,7 @@ void Graphics::CreateDescriptorHeaps()
 		gBufferSpecularSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 		handle.ptr += handleIncrement;
-		m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.gBufferSpecular[i], &gBufferSpecularSrvDesc, handle);
+		m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.gBufferSpecular, &gBufferSpecularSrvDesc, handle);
 	}
 
 
@@ -1821,7 +1823,7 @@ void Graphics::CreateRayGenProgram()
 	ranges[0].OffsetInDescriptorsFromTableStart = 0;
 		  	 
 	ranges[1].BaseShaderRegister = 0;
-	ranges[1].NumDescriptors = 11;
+	ranges[1].NumDescriptors = 7;
 	ranges[1].RegisterSpace = 0;
 	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	ranges[1].OffsetInDescriptorsFromTableStart = 21;
@@ -1830,7 +1832,7 @@ void Graphics::CreateRayGenProgram()
 	ranges[2].NumDescriptors = 1;
 	ranges[2].RegisterSpace = 0;
 	ranges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-	ranges[2].OffsetInDescriptorsFromTableStart = 32;
+	ranges[2].OffsetInDescriptorsFromTableStart = 28;
 
 
 	D3D12_ROOT_PARAMETER param0 = {};
@@ -2143,14 +2145,14 @@ void Graphics::BuildGBufferCommandList()
 
 	D3D12_RESOURCE_BARRIER pBarriers[4] = {};
 
-	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	m_D3DObjects.gBufferPassCommandList->ResourceBarrier(4, pBarriers);
 
-	rtvHandle.ptr = rtvHandle.ptr + ((rtvDescSize * 4) * m_D3DValues.frameIndex);
+//	rtvHandle.ptr = rtvHandle.ptr + (rtvDescSize * 4);
 
 	m_D3DObjects.gBufferPassCommandList->OMSetRenderTargets(4, &rtvHandle, TRUE, &dsvHandle);
 
@@ -2165,10 +2167,10 @@ void Graphics::BuildGBufferCommandList()
 
 	DrawRenderItems(m_GBufferPassRenderItems);
 
-	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
 	m_D3DObjects.gBufferPassCommandList->ResourceBarrier(4, pBarriers);
 
@@ -2191,10 +2193,10 @@ void Graphics::BuildCommandList()
 {
 	
 	D3D12_RESOURCE_BARRIER pBarriers[4] = {};
-	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	m_D3DObjects.commandList->ResourceBarrier(4, pBarriers);
 
@@ -2268,10 +2270,10 @@ void Graphics::BuildCommandList()
 	// Wait for transitions to complete
 	m_D3DObjects.commandList->ResourceBarrier(1, &OutputBarriers[0]);
 	
-	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
-	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
-	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
-	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular[m_D3DValues.frameIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferWorldPos, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferNormal, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[2] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferDiffuse, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
+	pBarriers[3] = CD3DX12_RESOURCE_BARRIER::Transition(m_D3DResources.gBufferSpecular, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
 
 	m_D3DObjects.commandList->ResourceBarrier(4, pBarriers);
 	

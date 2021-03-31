@@ -12,7 +12,7 @@ void RayGen()
 
 	float3 gBufWorldPos = gBufferWorldPos[LaunchIndex].xyz;
 	float  gBufIOR = gBufferWorldPos[LaunchIndex].w;
-	float3 gBufNormalizedNormal = normalize(gBufferNormal[LaunchIndex].xyz);
+	float3 gBufNormalizedNormal = gBufferNormal[LaunchIndex].xyz;
 	float  gBufShininess = gBufferNormal[LaunchIndex].w;
 	float4 gBufDiffuse = gBufferDiffuse[LaunchIndex];
 	float3 gBufSpecular = gBufferSpecular[LaunchIndex].xyz;
