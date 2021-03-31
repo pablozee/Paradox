@@ -1282,7 +1282,7 @@ void Graphics::UpdateLightsSceneCB()
 
 	LightsSceneCB lightsCB;
 	lightsCB.dirLight.direction = XMFLOAT4{ 0.f, 13.f, 8.f, 0.f };
-	lightsCB.dirLight.colour = XMFLOAT4{ 0.0f, 0.2f, 0.f, 0.f };
+	lightsCB.dirLight.colour = XMFLOAT4{ 0.0f, 0.0f, 0.2f, 0.f };
 
 	auto currentLightsSceneCB = m_CurrFrameResource->lightsSceneCB.get();
 	currentLightsSceneCB->CopyData(0, lightsCB);
@@ -2130,7 +2130,7 @@ void Graphics::BuildGBufferCommandList()
 	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 1.f, 0, nullptr);
+	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0.f, 0, nullptr);
 
 	m_D3DObjects.viewport.Height = (float)m_D3DParams.height;
 	m_D3DObjects.viewport.Width = (float)m_D3DParams.width;

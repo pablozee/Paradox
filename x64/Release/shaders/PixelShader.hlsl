@@ -42,7 +42,6 @@ cbuffer MaterialCB : register(b1)
 
 cbuffer GBufferPassSceneCB : register(b2)
 {
-	matrix			 view;
 	matrix			 gBufferView;
 	matrix			 proj;
 }
@@ -71,12 +70,12 @@ GBuffer main(PSInput psInput)
 	//	GBuffer gBuffer;
 		gBuffer.gBufferWorldPos.xyz = psInput.PosW;
 		gBuffer.gBufferWorldPos.w = ior;
-		float4x4 worldView = mul(invWorld, view);
-//		float4x4 worldView = invWorld;
+//		float4x4 worldView = mul(invWorld, gBufferView);
+		float4x4 worldView = invWorld;
 		float3x3 worldView3x3 = float3x3(worldView[0][0], worldView[0][1], worldView[0][2], worldView[1][0], worldView[1][1], worldView[1][2], worldView[2][0], worldView[2][1], worldView[2][2]);
-		float3 worldNormalInvert = mul(-psInput.NormalW, worldView3x3);
+		float3 worldNormalInvert = mul(psInput.NormalW, worldView3x3);
 		worldNormalInvert = normalize(worldNormalInvert);
-		worldView = mul(invWorld, view);
+		worldView = mul(invWorld, gBufferView);
 		float4 homogNormalW = mul(float4(psInput.NormalW, 1.0f), invWorld);
 		float3 deHomogNormalW = homogNormalW.xyz / homogNormalW.w;
 		deHomogNormalW = normalize(deHomogNormalW);

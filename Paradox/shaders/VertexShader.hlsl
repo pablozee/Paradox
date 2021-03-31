@@ -68,10 +68,11 @@ VSOutput main(VSInput vsInput)
 	float4 homogPosW = mul(float4(vsInput.Pos, 1.0f), world);
 	vso.PosW = homogPosW.xyz / homogPosW.w;
 
-	vso.NormalW = -vsInput.Normal;
+	vso.NormalW = vsInput.Normal;
 
 	vso.TexCOut = vsInput.TexC;
 
+//	matrix worldView = mul(world, gBufferView);
 	matrix viewProj = mul(gBufferView, proj);
 
 	vso.PosH = mul(float4(vso.PosW, 1.0f), viewProj);
