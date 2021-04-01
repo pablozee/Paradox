@@ -176,7 +176,10 @@ void Graphics::Validate(HRESULT hr, LPWSTR message)
 
 void Graphics::LoadModel(std::string filename, std::string geometryName, INT matCBIndex)
 {
-	auto model = std::make_unique<Model>();
+	auto memory = malloc(sizeof(unique_ptr<Model>));
+
+	auto model = new (memory) unique_ptr<Model>();
+	*model = std::make_unique<Model>();
 	auto material = std::make_unique<Material>();
 
 	using namespace tinyobj;
@@ -233,25 +236,25 @@ void Graphics::LoadModel(std::string filename, std::string geometryName, INT mat
 
 			if (uniqueVertices.count(vertex) == 0)
 			{
-				uniqueVertices[vertex] = static_cast<uint32_t>(model->vertices.size());
-				model->vertices.push_back(vertex);
+				uniqueVertices[vertex] = static_cast<uint32_t>(model->get()->vertices.size());
+				model->get()->vertices.push_back(vertex);
 			}
 
-			model->indices.push_back(uniqueVertices[vertex]);
+			model->get()->indices.push_back(uniqueVertices[vertex]);
 		};
 	}
 
 	unique_ptr<SubmeshGeometry> submeshGeo = make_unique<SubmeshGeometry>();
 
-	submeshGeo->indexCount = model->indices.size();
+	submeshGeo->indexCount = model->get()->indices.size();
 	submeshGeo->startIndexLocation = m_D3DValues.indicesCount;
-	submeshGeo->vertexCount = (UINT)model->vertices.size();
+	submeshGeo->vertexCount = (UINT)model->get()->vertices.size();
 	submeshGeo->baseVertexLocation = m_D3DValues.vertexCount;
 
-	m_D3DValues.vertexCount += (UINT)model->vertices.size();
-	m_D3DValues.indicesCount += (UINT)model->indices.size();
+	m_D3DValues.vertexCount += (UINT)model->get()->vertices.size();
+	m_D3DValues.indicesCount += (UINT)model->get()->indices.size();
 
-	m_Models[filename] = std::move(model);
+	m_Models[filename] = std::move(*model);
 	m_Materials[filename] = std::move(material);
 	
 	m_Geometries[geometryName]->drawArgs[filename] = std::move(submeshGeo);
@@ -499,13 +502,13 @@ void Graphics::CreateGBufferPassRootSignature()
 void Graphics::CreateDepthStencilView()
 {
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 	dsvDesc.Texture2D.MipSlice = 0;
 
 	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
-	depthOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
 	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
 	depthOptimizedClearValue.DepthStencil.Stencil = 0.f;
 
@@ -519,7 +522,7 @@ void Graphics::CreateDepthStencilView()
 	D3D12_RESOURCE_DESC dsvResDesc = {};
 	dsvResDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	dsvResDesc.DepthOrArraySize = 1;
-	dsvResDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	dsvResDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	dsvResDesc.Width = m_D3DParams.width;
 	dsvResDesc.Height = m_D3DParams.height;
 	dsvResDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
@@ -530,7 +533,7 @@ void Graphics::CreateDepthStencilView()
 	HRESULT hr = m_D3DObjects.device->CreateCommittedResource(
 		&heapProps,
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D24_UNORM_S8_UINT, m_D3DParams.width, m_D3DParams.height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_D3DParams.width, m_D3DParams.height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,
 		&depthOptimizedClearValue,
 		IID_PPV_ARGS(&m_D3DResources.depthStencilView)
@@ -581,33 +584,41 @@ void Graphics::CreateGBufferPassPSO()
 		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
+
+	D3D12_DEPTH_STENCIL_DESC desc;
+	desc.DepthEnable = TRUE;
+	desc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	desc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	desc.StencilEnable = FALSE;
+	desc.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+	desc.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+	
+
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 	psoDesc.InputLayout = { ieDesc, _countof(ieDesc) };
 	psoDesc.pRootSignature = m_D3DObjects.gBufferPassRootSignature;
 
 	psoDesc.VS = { reinterpret_cast<UINT8*>(m_D3DObjects.vsBlob->GetBufferPointer()), m_D3DObjects.vsBlob->GetBufferSize() };
 	psoDesc.PS = { reinterpret_cast<UINT8*>(m_D3DObjects.psBlob->GetBufferPointer()), m_D3DObjects.psBlob->GetBufferSize() };
-	//	psoDesc.VS = CD3DX12_SHADER_BYTECODE(m_D3DObjects.vsBlob);
-	//	psoDesc.PS = CD3DX12_SHADER_BYTECODE(m_D3DObjects.psBlob);
 
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC1(D3D12_DEFAULT);
+	psoDesc.DepthStencilState = desc;
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 4;
-	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[1] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[3] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.SampleDesc.Count = 1;
 	/*
 	psoDesc.RTVFormats[4] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[5] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[6] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.RTVFormats[7] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	*/
-	psoDesc.SampleDesc.Count = 1;
 
 	HRESULT hr = m_D3DObjects.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_D3DObjects.gBufferPassPipelineState));
 	Validate(hr, L"Failed to create G Buffer Pipeline State!");
@@ -1232,7 +1243,7 @@ void Graphics::UpdateMaterialCBs()
 
 void Graphics::UpdateGBufferPassSceneCB()
 {
-	XMMATRIX gBufferView, proj;
+	XMMATRIX gBufferView, proj, invGBufView, invProj;
 	float aspect;
 
 	aspect = (float)m_D3DParams.width / (float)m_D3DParams.height;
@@ -1240,9 +1251,14 @@ void Graphics::UpdateGBufferPassSceneCB()
 	gBufferView = XMMatrixLookAtLH(m_Eye, m_Focus, m_Up);
 	proj = XMMatrixPerspectiveFovLH(m_FOV, (float)m_D3DParams.width / (float)m_D3DParams.height, 0.1f, 100.0f);
 
+	invGBufView = XMMatrixInverse(NULL, gBufferView);
+	invProj = XMMatrixInverse(NULL, proj);
+
 	GBufferPassSceneCB gBufferCB;
 	gBufferCB.gBufferView = XMMatrixTranspose(gBufferView);
 	gBufferCB.proj = XMMatrixTranspose(proj);
+	gBufferCB.invGBufView = XMMatrixTranspose(invGBufView);
+	gBufferCB.invProj = XMMatrixTranspose(invProj);
 
 	auto currentGBufferPassCB = m_CurrFrameResource->gBufferPassSceneCB.get();
 	currentGBufferPassCB->CopyData(0, gBufferCB);
@@ -1281,7 +1297,7 @@ void Graphics::UpdateLightsSceneCB()
 */
 
 	LightsSceneCB lightsCB;
-	lightsCB.dirLight.direction = XMFLOAT4{ 0.f, 13.f, 8.f, 0.f };
+	lightsCB.dirLight.direction = XMFLOAT4{ 0.f, 13.f, -8.f, 0.f };
 	lightsCB.dirLight.colour = XMFLOAT4{ 0.0f, 0.0f, 0.2f, 0.f };
 
 	auto currentLightsSceneCB = m_CurrFrameResource->lightsSceneCB.get();
@@ -2130,7 +2146,7 @@ void Graphics::BuildGBufferCommandList()
 	UINT rtvDescSize = m_D3DObjects.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3DResources.gBufferPassRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_D3DResources.dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0.f, 0, nullptr);
+	m_D3DObjects.gBufferPassCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.f, 0.f, 0, nullptr);
 
 	m_D3DObjects.viewport.Height = (float)m_D3DParams.height;
 	m_D3DObjects.viewport.Width = (float)m_D3DParams.width;

@@ -78,8 +78,8 @@ void Window::Init(const WindowProps& props, Config config)
 	HCURSOR cursor = LoadCursor(0, IDC_ARROW);
 	SetCursor(cursor);
 
-	m_Graphics = (Graphics*)malloc(sizeof(Graphics));
-	m_Graphics = new Graphics(config);
+	auto memory = (Graphics*)malloc(sizeof(Graphics));
+	m_Graphics = new (memory) Graphics(config);
 	m_Graphics->Init(m_Hwnd);
 
 	SetVSync(true);

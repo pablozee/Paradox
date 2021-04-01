@@ -106,6 +106,8 @@ struct GBufferPassSceneCB
 {
 	XMMATRIX gBufferView = XMMatrixIdentity();
 	XMMATRIX proj = XMMatrixIdentity();
+	XMMATRIX invGBufView = XMMatrixIdentity();
+	XMMATRIX invProj = XMMatrixIdentity();
 };
 
 struct RayTracingPassSceneCB

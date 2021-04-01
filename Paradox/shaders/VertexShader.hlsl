@@ -44,6 +44,8 @@ cbuffer GBufferPassSceneCB : register(b2)
 {
 	matrix gBufferView;
 	matrix proj;
+	matrix			 invGBufView;
+	matrix			 invProj;
 };
 
 struct VSInput
@@ -56,7 +58,7 @@ struct VSInput
 struct VSOutput
 {
 	float4 PosH  : SV_POSITION;
-	float3 PosW : POSITION;
+	float3 PosW :  POSITION;
 	float2 TexCOut : TEXCOORD;
 	float3 NormalW : NORMAL;
 };
@@ -65,14 +67,16 @@ VSOutput main(VSInput vsInput)
 {
 	VSOutput vso;
 
+	matrix worldView = mul(world, gBufferView);
 	float4 homogPosW = mul(float4(vsInput.Pos, 1.0f), world);
-	vso.PosW = homogPosW.xyz / homogPosW.w;
+//	float4 homogPosW = mul(float4(vsInput.Pos, 1.0f), worldView);
+//	vso.PosW = homogPosW.xyz / homogPosW.w;
+	vso.PosW = homogPosW;
 
 	vso.NormalW = vsInput.Normal;
 
 	vso.TexCOut = vsInput.TexC;
 
-//	matrix worldView = mul(world, gBufferView);
 	matrix viewProj = mul(gBufferView, proj);
 
 	vso.PosH = mul(float4(vso.PosW, 1.0f), viewProj);

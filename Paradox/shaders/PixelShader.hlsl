@@ -44,6 +44,8 @@ cbuffer GBufferPassSceneCB : register(b2)
 {
 	matrix			 gBufferView;
 	matrix			 proj;
+	matrix			 invGBufView;
+	matrix			 invProj;
 }
 
 struct PSInput
@@ -66,8 +68,9 @@ GBuffer main(PSInput psInput)
 {
 	GBuffer gBuffer;
 	if (shininess != 0.f)
-	{
+	{																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																									
 	//	GBuffer gBuffer;
+	//	gBuffer.gBufferWorldPos.xyz = psInput.PosH.xyz / psInput.PosH.w;
 		gBuffer.gBufferWorldPos.xyz = psInput.PosW;
 		gBuffer.gBufferWorldPos.w = ior;
 //		float4x4 worldView = mul(invWorld, gBufferView);

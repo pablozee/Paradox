@@ -56,6 +56,8 @@ cbuffer GBufferPassSceneCB : register(b2)
 {
 	matrix gBufferView;
 	matrix proj;
+	matrix			 invGBufView;
+	matrix			 invProj;
 };
 
 cbuffer RayTracingPassSceneCB : register(b3)
