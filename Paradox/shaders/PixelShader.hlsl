@@ -69,19 +69,25 @@ GBuffer main(PSInput psInput)
 	GBuffer gBuffer;
 	if (shininess != 0.f)
 	{																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																									
-	//	GBuffer gBuffer;
 	//	gBuffer.gBufferWorldPos.xyz = psInput.PosH.xyz / psInput.PosH.w;
-		gBuffer.gBufferWorldPos.xyz = psInput.PosW;
+		float4 invProjPosH = mul(psInput.PosH, invProj);
+	//	invProjPosH = mul(invProjPosH, invGBufView);
+		gBuffer.gBufferWorldPos.xyz = invProjPosH.xyz / invProjPosH.w;
 		gBuffer.gBufferWorldPos.w = ior;
-//		float4x4 worldView = mul(invWorld, gBufferView);
-		float4x4 worldView = invWorld;
-		float3x3 worldView3x3 = float3x3(worldView[0][0], worldView[0][1], worldView[0][2], worldView[1][0], worldView[1][1], worldView[1][2], worldView[2][0], worldView[2][1], worldView[2][2]);
-		float3 worldNormalInvert = mul(psInput.NormalW, worldView3x3);
-		worldNormalInvert = normalize(worldNormalInvert);
-		worldView = mul(invWorld, gBufferView);
+
+		/*
 		float4 homogNormalW = mul(float4(psInput.NormalW, 1.0f), invWorld);
 		float3 deHomogNormalW = homogNormalW.xyz / homogNormalW.w;
 		deHomogNormalW = normalize(deHomogNormalW);
+		*/
+
+		float4x4 worldView = invWorld;
+//		worldView = mul(invWorld, gBufferView);
+
+		float3x3 worldView3x3 = float3x3(worldView[0][0], worldView[0][1], worldView[0][2], worldView[1][0], worldView[1][1], worldView[1][2], worldView[2][0], worldView[2][1], worldView[2][2]);
+		float3 worldNormalInvert = mul(psInput.NormalW, worldView3x3);
+		worldNormalInvert = normalize(worldNormalInvert);
+
 		gBuffer.gBufferWorldNormal.xyz = worldNormalInvert;
 		gBuffer.gBufferWorldNormal.w = shininess;
 		gBuffer.gBufferDiffuse.xyz = diffuse;
