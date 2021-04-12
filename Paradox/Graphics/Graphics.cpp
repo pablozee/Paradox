@@ -1285,9 +1285,6 @@ void Graphics::UpdateRayTracingPassSceneCB()
 	XMFLOAT3 floatFocus;
 	XMStoreFloat3(&floatFocus, m_Focus);
 
-//	rtPassCB.directionalLights.direction = XMFLOAT4(0.f, -15.f, 0.f, 0.f);
-//	rtPassCB.directionalLights.colour = XMFLOAT4(0.44f, 0.66f, 0.f, 0.f);
-
 	auto currentRTPassCB = m_CurrFrameResource->rayTracingPassSceneCB.get();
 	currentRTPassCB->CopyData(0, rtPassCB);
 }
@@ -1301,7 +1298,9 @@ void Graphics::UpdateLightsSceneCB()
 
 	LightsSceneCB lightsCB;
 	lightsCB.dirLight.direction = XMFLOAT3{ 0.f, 5.f, 0.f };
-	lightsCB.dirLight.colour = XMFLOAT3{ 0.1f, 0.1f, 0.9f };
+	lightsCB.dirLight.padding = 0.1f;
+	lightsCB.dirLight.colour = XMFLOAT3{ 0.1f, 0.1f, 0.1f };
+	lightsCB.dirLight.padding1 = 0.1f;
 
 	auto currentLightsSceneCB = m_CurrFrameResource->lightsSceneCB.get();
 	currentLightsSceneCB->CopyData(0, lightsCB);

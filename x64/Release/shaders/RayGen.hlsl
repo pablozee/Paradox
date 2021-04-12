@@ -77,7 +77,8 @@ void RayGen()
 	}
 	else
 	{
-		colour = CalculateDirectionalLightColourGBuffer(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+	//	colour = CalculateDirectionalLightColourGBuffer(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+		colour = CalculateShadedColour(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular, 0.1f, 0.1f);
 	}
 
 	/*

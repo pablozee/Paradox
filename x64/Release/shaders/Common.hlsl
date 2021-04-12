@@ -12,8 +12,10 @@ struct Attributes
 
 struct DirectionalLight
 {
-	float4			 directionalLightDirection;
-	float4			 directionalLightColour;
+	float3			 directionalLightDirection;
+	float			 padding;
+	float3			 directionalLightColour;
+	float			 padding1;
 };
 
 struct PointLight
@@ -168,9 +170,6 @@ float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight,
 	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour.xyz;
 	return lambert + phong;
 
-		//lambert
-		//+ phong;
-		// float3(1.f, 1.f, 0.f) + * max(nDotL, 0)lambert + phong;
 }
 
 float3 CalculatePointLightColourGBuffer(PointLight pointLight, float3 eyePos, float3 viewDir, float3 gBufWorldPos,
@@ -183,6 +182,103 @@ float3 CalculatePointLightColourGBuffer(PointLight pointLight, float3 eyePos, fl
 	float3 lambert = gBufDiffuse * max(nDotL, 0) * pointLight.pointLightColour;
 	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * pointLight.pointLightColour;
 	return lambert + phong;
+}
+
+float3 Fresnel(float3 f0, float cos_thetai)
+{
+	return f0 + (1 - f0) * pow(1 - cos_thetai, 5);
+}
+
+float3 CalculateGGXFValue(DirectionalLight directionalLight, float3 eyePos, float3 viewDir,
+	float3 gBufNormalizedNormal, float gBufShininess, float3 gBufDiffuse, float3 gBufSpecular, float fresnel, float roughness)
+{
+	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection);
+	float3 halfVec = directionalLight.directionalLightDirection + viewDir;
+	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
+	float  nDotH = dot(gBufNormalizedNormal, halfVec);
+
+	float3 BRDF = 0;
+
+	if (nDotL > 0 && nDotH > 0 && all(halfVec))
+	{
+		halfVec = normalize(halfVec);
+		float matRoughness = roughness;
+		float3 microfacetNormal = halfVec;
+
+		float nDotM = saturate(dot(gBufNormalizedNormal, microfacetNormal));
+		float hDotL = saturate(dot(halfVec, normalizedLightDirection));
+
+		float denominator = 1 + nDotM * nDotM * (matRoughness * matRoughness - 1);
+		float D = matRoughness * matRoughness / (denominator * denominator);
+
+		float3 F = Fresnel(fresnel, hDotL);
+
+		float G = 0.5 / lerp(2 * nDotL * nDotH, nDotL + nDotH, matRoughness);
+
+		BRDF = F * G * D;
+	}
+
+	return BRDF;
+}
+
+float3 CalculateHammonFValue(float3 gBufDiffuse, float roughness, float3 gBufNormalizedNormal, float3 viewDir, DirectionalLight directionalLight, float fresnel)
+{
+	float3 diffuse = 0;
+
+	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection);
+
+
+	float3 halfVec = directionalLight.directionalLightDirection + viewDir;
+	halfVec = normalize(halfVec);
+
+	float nDotH = dot(gBufNormalizedNormal, halfVec);
+
+	if (nDotH > 0)
+	{
+		float a = roughness * roughness;
+
+		float nDotV = saturate(dot(gBufNormalizedNormal, viewDir));
+		float nDotL = saturate(dot(gBufNormalizedNormal, normalizedLightDirection));
+		float lDotV = saturate(dot(normalizedLightDirection, viewDir));
+
+		float facing = 0.5 + 0.5 * lDotV;
+		float rough = facing * (0.9 - 0.4 * facing) * ((0.5 + nDotH) / nDotH);
+		float smooth = 1.0f * (1.0f - pow(1 - nDotL, 5)) * (1 - pow(1 - nDotV, 5));
+
+		float3 single = lerp(smooth, rough, a);
+
+		float multi = 0.3641 * a;
+
+		diffuse = gBufDiffuse * (single + gBufDiffuse * multi);
+	}
+
+	return diffuse;
+
+}
+
+float3 CalculateShadedColour(DirectionalLight directionalLight, float3 eyePos, float3 viewDir,
+	float3 gBufNormalizedNormal, float gBufShininess, float3 gBufDiffuse, float3 gBufSpecular, float fresnel, float roughness)
+{
+	float3 directLighting = 0;
+
+	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection);
+	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
+
+	if (nDotL > 0)
+	{
+		float3 directDiffuse = 0;
+
+		directDiffuse = CalculateHammonFValue(gBufDiffuse, roughness, gBufNormalizedNormal, viewDir, directionalLight, fresnel);
+
+		float3 directSpecular = 0;
+
+		directSpecular = CalculateGGXFValue(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse, gBufSpecular, fresnel, roughness);
+		
+		directLighting = nDotL * directionalLight.directionalLightColour * (directDiffuse * directSpecular);
+		directLighting =  directDiffuse;
+	}
+
+	return directLighting;
 }
 
 
