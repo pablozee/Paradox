@@ -1291,11 +1291,6 @@ void Graphics::UpdateRayTracingPassSceneCB()
 
 void Graphics::UpdateLightsSceneCB()
 {
-/*
-	rtPassCB.numDirLights = 1;
-	rtPassCB.numPointLights = 0;
-*/
-
 	LightsSceneCB lightsCB;
 	lightsCB.dirLight.direction = XMFLOAT3{ 0.f, 13.f, 10.f };
 	lightsCB.dirLight.padding = 0.1f;

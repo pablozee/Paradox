@@ -69,10 +69,8 @@ cbuffer RayTracingPassSceneCB : register(b3)
 	float2			 resolution;
 	float			 numDirLights;
 	float			 numPointLights;
-//	DirectionalLight	directionalLight;
 }
-/*
-*/
+
 cbuffer LightsBufferCB : register(b4)
 {
 	DirectionalLight	directionalLight;
@@ -166,7 +164,6 @@ float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight,
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
 	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
-//	float3 lambert = gBufDiffuse * max(nDotL, 0) * float3(0.1f, 0.1f, 0.9f);
 	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour.xyz;
 	return lambert + phong;
 
@@ -193,7 +190,7 @@ float3 CalculateGGXFValue(DirectionalLight directionalLight, float3 eyePos, floa
 	float3 gBufNormalizedNormal, float gBufShininess, float3 gBufDiffuse, float3 gBufSpecular, float fresnel, float roughness)
 {
 	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection);
-	float3 halfVec = directionalLight.directionalLightDirection + viewDir;
+	float3 halfVec = normalizedLightDirection + viewDir;
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
 
