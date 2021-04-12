@@ -35,9 +35,9 @@ cbuffer MaterialCB : register(b1)
 	float3			 emission;
 	float			 metallic;
 	float4			 textureResolution;
-	matrix			 materialTransform;
 	float			 sheen;
 	int				 useTex;
+	matrix			 materialTransform;
 }
 
 cbuffer GBufferPassSceneCB : register(b2)
@@ -70,9 +70,10 @@ GBuffer main(PSInput psInput)
 	if (shininess != 0.f)
 	{																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																									
 	//	gBuffer.gBufferWorldPos.xyz = psInput.PosH.xyz / psInput.PosH.w;
-		float4 invProjPosH = mul(psInput.PosH, invProj);
+	// UNCOMMENT	float4 invProjPosH = mul(float4(psInput.PosW, 1.0f), invProj);
 	//	invProjPosH = mul(invProjPosH, invGBufView);
-		gBuffer.gBufferWorldPos.xyz = invProjPosH.xyz / invProjPosH.w;
+	//	UNCOMMENT gBuffer.gBufferWorldPos.xyz = invProjPosH.xyz / invProjPosH.w;
+		gBuffer.gBufferWorldPos.xyz = psInput.PosW;
 		gBuffer.gBufferWorldPos.w = ior;
 
 		/*

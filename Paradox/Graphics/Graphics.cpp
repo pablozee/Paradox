@@ -97,11 +97,11 @@ void Graphics::Update()
 		CloseHandle(eventHandle);
 	}
 
+	UpdateLightsSceneCB();
 	UpdateObjectCBs();
 	UpdateMaterialCBs();
 	UpdateGBufferPassSceneCB();
 	UpdateRayTracingPassSceneCB();
-	UpdateLightsSceneCB();
 }
 
 void Graphics::Render()
@@ -1300,8 +1300,8 @@ void Graphics::UpdateLightsSceneCB()
 */
 
 	LightsSceneCB lightsCB;
-	lightsCB.dirLight.direction = XMFLOAT4{ 0.f, 13.f, -8.f, 0.f };
-	lightsCB.dirLight.colour = XMFLOAT4{ 0.0f, 0.0f, 0.2f, 0.f };
+	lightsCB.dirLight.direction = XMFLOAT3{ 0.f, 5.f, 0.f };
+	lightsCB.dirLight.colour = XMFLOAT3{ 0.1f, 0.1f, 0.9f };
 
 	auto currentLightsSceneCB = m_CurrFrameResource->lightsSceneCB.get();
 	currentLightsSceneCB->CopyData(0, lightsCB);
@@ -1613,7 +1613,7 @@ void Graphics::CreateDescriptorHeaps()
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; frameIndex++)
 	{
-		auto lightsCB = m_FrameResources[frameIndex]->rayTracingPassSceneCB->Resource();
+		auto lightsCB = m_FrameResources[frameIndex]->lightsSceneCB->Resource();
 		heapIndex = heapIndex + frameIndex;
 		D3D12_GPU_VIRTUAL_ADDRESS lightsCBAddress = lightsCB->GetGPUVirtualAddress();
 		//		rayTracingPassCBAddress += frameIndex * (UINT8)rayTracingPassCBByteSize;

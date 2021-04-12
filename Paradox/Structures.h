@@ -114,8 +114,10 @@ struct TextureInfo
 
 struct DirectionalLight
 {
-	XMFLOAT4 direction;
-	XMFLOAT4 colour;
+	XMFLOAT3 direction;
+	float padding;
+	XMFLOAT3 colour;
+	float padding1;
 };
 
 struct PointLight

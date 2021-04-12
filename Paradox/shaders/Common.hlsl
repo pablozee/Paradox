@@ -54,8 +54,8 @@ cbuffer MaterialCB : register(b1)
 
 cbuffer GBufferPassSceneCB : register(b2)
 {
-	matrix gBufferView;
-	matrix proj;
+	matrix			 gBufferView;
+	matrix			 proj;
 	matrix			 invGBufView;
 	matrix			 invProj;
 };
@@ -164,6 +164,7 @@ float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight,
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
 	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
+//	float3 lambert = gBufDiffuse * max(nDotL, 0) * float3(0.1f, 0.1f, 0.9f);
 	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour.xyz;
 	return lambert + phong;
 

@@ -140,9 +140,9 @@ struct MaterialCB
 	XMFLOAT3 emission;
 	float metallic;
 	XMFLOAT4 resolution;
-	XMMATRIX materialTransform;
 	float sheen;
 	int useTex;
+	XMMATRIX materialTransform;
 };
 
 struct D3D12Params
