@@ -77,6 +77,13 @@ void RayGen()
 	}
 	else
 	{
+		DirectionalLight dirLight;
+		dirLight.directionalLightDirection = float3(0.0f, -15.0f, -10.0f);
+		dirLight.padding = 0.1f;
+		dirLight.directionalLightColour = float3(0.33f, 0.33f, 0.33f);
+		dirLight.padding1 = 0.1f;
+
+
 	//	colour = CalculateDirectionalLightColourGBuffer(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
 		colour = CalculateShadedColour(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular, 0.1f, 0.1f);
 	}

@@ -228,7 +228,7 @@ float3 CalculateHammonFValue(float3 gBufDiffuse, float roughness, float3 gBufNor
 	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection);
 
 
-	float3 halfVec = directionalLight.directionalLightDirection + viewDir;
+	float3 halfVec = normalizedLightDirection + viewDir;
 	halfVec = normalize(halfVec);
 
 	float nDotH = dot(gBufNormalizedNormal, halfVec);
@@ -274,8 +274,8 @@ float3 CalculateShadedColour(DirectionalLight directionalLight, float3 eyePos, f
 
 		directSpecular = CalculateGGXFValue(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse, gBufSpecular, fresnel, roughness);
 		
-		directLighting = nDotL * directionalLight.directionalLightColour * (directDiffuse * directSpecular);
-		directLighting =  directDiffuse;
+		directLighting = nDotL * directionalLight.directionalLightColour * (directDiffuse + directSpecular);
+	//	directLighting = nDotL * float3(1.0f, 0.0f, 0.0f) * (directDiffuse + directSpecular);
 	}
 
 	return directLighting;

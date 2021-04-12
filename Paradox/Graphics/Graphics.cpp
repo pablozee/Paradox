@@ -1297,7 +1297,7 @@ void Graphics::UpdateLightsSceneCB()
 */
 
 	LightsSceneCB lightsCB;
-	lightsCB.dirLight.direction = XMFLOAT3{ 0.f, 5.f, 0.f };
+	lightsCB.dirLight.direction = XMFLOAT3{ 0.f, 13.f, 10.f };
 	lightsCB.dirLight.padding = 0.1f;
 	lightsCB.dirLight.colour = XMFLOAT3{ 0.1f, 0.1f, 0.1f };
 	lightsCB.dirLight.padding1 = 0.1f;
