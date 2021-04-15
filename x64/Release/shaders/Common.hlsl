@@ -258,7 +258,7 @@ float3 CalculateShadedColour(DirectionalLight directionalLight, float3 eyePos, f
 {
 	float3 directLighting = 0;
 
-	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection);
+	float3 normalizedLightDirection = normalize(directionalLight.directionalLightDirection);
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 
 	if (nDotL > 0)

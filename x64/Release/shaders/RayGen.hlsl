@@ -29,13 +29,13 @@ void RayGen()
 	else
 	{
 		DirectionalLight dirLight;
-		dirLight.directionalLightDirection = float3(0.0f, -15.0f, -15.0f);
+		dirLight.directionalLightDirection = float3(0.0f, 10.0f, 7.0f);
 		dirLight.padding = 0.1f;
 		dirLight.directionalLightColour = float3(0.0f, 0.9f, 0.33f);
 		dirLight.padding1 = 0.1f;
 
-	//	colour = CalculateDirectionalLightColourGBuffer(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
-		colour = CalculateShadedColour(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular.xyz, 0.2f, 0.7f);
+		colour = CalculateDirectionalLightColourGBuffer(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+	//	colour = CalculateShadedColour(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular.xyz, 0.2f, 0.7f);
 	}
 
 	RTOutput[LaunchIndex.xy] = float4(colour, 1.f);

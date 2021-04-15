@@ -34,8 +34,8 @@ void RayGen()
 		dirLight.directionalLightColour = float3(0.0f, 0.9f, 0.33f);
 		dirLight.padding1 = 0.1f;
 
-	//	colour = CalculateDirectionalLightColourGBuffer(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
-		colour = CalculateShadedColour(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular.xyz, 0.2f, 0.7f);
+		colour = CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+	//	colour = CalculateShadedColour(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular.xyz, 0.2f, 0.7f);
 	}
 
 	RTOutput[LaunchIndex.xy] = float4(colour, 1.f);
