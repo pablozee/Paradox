@@ -31,7 +31,7 @@ void RayGen()
 		DirectionalLight dirLight;
 		dirLight.directionalLightDirection = float3(0.0f, -15.0f, -15.0f);
 		dirLight.padding = 0.1f;
-		dirLight.directionalLightColour = float3(0.0f, 0.66f, 0.33f);
+		dirLight.directionalLightColour = float3(0.0f, 0.66f, 0.0f);
 		dirLight.padding1 = 0.1f;
 
 

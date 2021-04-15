@@ -156,16 +156,17 @@ float3 CalculatePointLightColour(PointLight pointLight, float3 barycentrics, flo
 	return lambert + phong;
 }
 */
-float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight, float3 eyePos, float3 viewDir, 
+float3 CalculateDirectionalLightColourGBuffer(DirectionalLight light, float3 eyePos, float3 viewDir, 
 											  float3 gBufNormalizedNormal, float  gBufShininess, float3 gBufDiffuse, float3 gBufSpecular)
 {
-	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection.xyz);
+	float3 normalizedLightDirection = normalize(-light.directionalLightDirection.xyz);
 	float3 halfVec = normalize(-normalizedLightDirection + viewDir);
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
-	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
-	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * directionalLight.directionalLightColour.xyz;
-	return lambert + phong;
+	float3 lambert = gBufDiffuse * max(nDotL, 0) * light.directionalLightColour.xyz;
+//	float3 lambert = float3(0.7f, 0.0f, 0.2f) * max(nDotL, 0) * light.directionalLightColour.xyz;
+	float3 phong = gBufSpecular * pow(max(nDotH, 0), gBufShininess) * light.directionalLightColour.xyz;
+	return lambert;
 
 }
 
