@@ -29,12 +29,19 @@ void RayGen()
 	else
 	{
 		DirectionalLight dirLight;
-		dirLight.directionalLightDirection = float3(0.0f, 10.0f, 7.0f);
+		dirLight.directionalLightDirection = float3(0.0f, 15.0f, -15.0f);
 		dirLight.padding = 0.1f;
-		dirLight.directionalLightColour = float3(0.0f, 0.9f, 0.33f);
+		dirLight.directionalLightColour = float3(0.0f, 0.33f, 0.33f);
 		dirLight.padding1 = 0.1f;
 
-		colour = CalculateDirectionalLightColourGBuffer(directionalLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+
+		float4x4 modelview = 
+		dirLight.directionalLightDirection = mul(dirLight.directionalLightDirection, float3x3()
+
+		colour = CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+		colour.x = saturate(colour.x);
+		colour.y = saturate(colour.y);
+		colour.z = saturate(colour.z);
 	//	colour = CalculateShadedColour(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular.xyz, 0.2f, 0.7f);
 	}
 

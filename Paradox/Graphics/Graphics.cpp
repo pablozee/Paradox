@@ -1292,7 +1292,7 @@ void Graphics::UpdateRayTracingPassSceneCB()
 void Graphics::UpdateLightsSceneCB()
 {
 	LightsSceneCB lightsCB;
-	lightsCB.dirLight.direction = XMFLOAT3{ 0.f, 13.f, 10.f };
+	lightsCB.dirLight.direction = XMFLOAT3{ 0.f, 15.f, -15.f };
 	lightsCB.dirLight.padding = 0.1f;
 	lightsCB.dirLight.colour = XMFLOAT3{ 0.1f, 0.1f, 0.1f };
 	lightsCB.dirLight.padding1 = 0.1f;
@@ -1495,7 +1495,7 @@ void Graphics::CreateDescriptorHeaps()
 	UINT materialCount = (UINT)m_Materials.size();
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 4u + 8u + (objectCount * gNumFrameResources) + (3u * gNumFrameResources) + (materialCount * gNumFrameResources);
+	heapDesc.NumDescriptors = 4u + 4u + (objectCount * gNumFrameResources) + (3u * gNumFrameResources) + (materialCount * gNumFrameResources);
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 

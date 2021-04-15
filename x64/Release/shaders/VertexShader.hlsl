@@ -42,8 +42,8 @@ cbuffer MaterialCB : register(b1)
 
 cbuffer GBufferPassSceneCB : register(b2)
 {
-	matrix gBufferView;
-	matrix proj;
+	matrix			 gBufferView;
+	matrix			 proj;
 	matrix			 invGBufView;
 	matrix			 invProj;
 };

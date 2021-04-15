@@ -160,7 +160,7 @@ float3 CalculateDirectionalLightColourGBuffer(DirectionalLight directionalLight,
 											  float3 gBufNormalizedNormal, float  gBufShininess, float3 gBufDiffuse, float3 gBufSpecular)
 {
 	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection.xyz);
-	float3 halfVec = normalize(normalizedLightDirection + viewDir);
+	float3 halfVec = normalize(-normalizedLightDirection + viewDir);
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);
 	float3 lambert = gBufDiffuse * max(nDotL, 0) * directionalLight.directionalLightColour.xyz;
@@ -222,7 +222,7 @@ float3 CalculateHammonFValue(float3 gBufDiffuse, float roughness, float3 gBufNor
 {
 	float3 diffuse = 0;
 
-	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection);
+	float3 normalizedLightDirection = normalize(directionalLight.directionalLightDirection);
 
 
 	float3 halfVec = normalizedLightDirection + viewDir;
@@ -258,7 +258,7 @@ float3 CalculateShadedColour(DirectionalLight directionalLight, float3 eyePos, f
 {
 	float3 directLighting = 0;
 
-	float3 normalizedLightDirection = normalize(directionalLight.directionalLightDirection);
+	float3 normalizedLightDirection = normalize(-directionalLight.directionalLightDirection);
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 
 	if (nDotL > 0)
