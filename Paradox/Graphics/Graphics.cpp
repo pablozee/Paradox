@@ -67,6 +67,7 @@ void Graphics::Init(HWND hwnd)
 	CreateRayGenProgram();
 	CreateMissProgram();
 	CreateClosestHitProgram();
+	CreateShadowHitProgram();
 	CreatePipelineStateObject();
 	CreateShaderTable();
 
@@ -1885,6 +1886,19 @@ void Graphics::CreateClosestHitProgram()
 	CompileShader(m_DXRObjects.hit.chs);
 }
 
+void Graphics::CreateShadowHitProgram()
+{
+	m_DXRObjects.shadowHit = HitProgram(L"ShadowHit");
+	m_DXRObjects.shadowHit.chs = RtProgram(D3D12ShaderInfo(L"shaders\\ShadowRayHit.hlsl", L"", L"lib_6_3"));
+	CompileShader(m_DXRObjects.shadowHit.chs);
+}
+
+void Graphics::CreateShadowMissProgram()
+{
+	m_DXRObjects.shadowMiss = RtProgram(D3D12ShaderInfo(L"shaders\\ShadowRayMiss.hlsl", L"", L"lib_6_3"));
+	CompileShader(m_DXRObjects.shadowMiss);
+}
+
 void Graphics::CreatePipelineStateObject()
 {
 	// Need 10 subobjects:
@@ -1899,7 +1913,7 @@ void Graphics::CreatePipelineStateObject()
 
 	UINT index = 0;
 	vector<D3D12_STATE_SUBOBJECT> subobjects;
-	subobjects.resize(10);
+	subobjects.resize(12);
 
 	// Add state subobject for the RGS
 	D3D12_EXPORT_DESC rgsExportDesc = {};
@@ -1925,6 +1939,14 @@ void Graphics::CreatePipelineStateObject()
 	missExportDesc.ExportToRename = L"Miss";
 	missExportDesc.Flags = D3D12_EXPORT_FLAG_NONE;
 
+	/*
+	D3D12_EXPORT_DESC shadowMissExportDesc = {};
+	shadowMissExportDesc.Name = L"Miss_6";
+	shadowMissExportDesc.ExportToRename = L"ShadowRayMiss";
+	shadowMissExportDesc.Flags = D3D12_EXPORT_FLAG_NONE;
+
+	D3D12_EXPORT_DESC pMissExportDescs[2] = { missExportDesc, shadowMissExportDesc };
+	*/
 	D3D12_DXIL_LIBRARY_DESC msLibDesc = {};
 	msLibDesc.DXILLibrary.BytecodeLength = m_DXRObjects.miss.blob->GetBufferSize();
 	msLibDesc.DXILLibrary.pShaderBytecode = m_DXRObjects.miss.blob->GetBufferPointer();
@@ -1966,6 +1988,35 @@ void Graphics::CreatePipelineStateObject()
 
 	subobjects[index++] = hitGroup;
 
+	// Add state subobject for the Closest Hit shader
+	D3D12_EXPORT_DESC shadowChsExportDesc = {};
+	shadowChsExportDesc.Name = L"ClosestHit_76";
+	shadowChsExportDesc.ExportToRename = L"ShadowRayClosestHit";
+	shadowChsExportDesc.Flags = D3D12_EXPORT_FLAG_NONE;
+
+	D3D12_DXIL_LIBRARY_DESC shadowChsLibDesc = {};
+	shadowChsLibDesc.DXILLibrary.BytecodeLength = m_DXRObjects.shadowHit.chs.blob->GetBufferSize();
+	shadowChsLibDesc.DXILLibrary.pShaderBytecode = m_DXRObjects.shadowHit.chs.blob->GetBufferPointer();
+	shadowChsLibDesc.NumExports = 1;
+	shadowChsLibDesc.pExports = &shadowChsExportDesc;
+
+	D3D12_STATE_SUBOBJECT shadowChs = {};
+	shadowChs.Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
+	shadowChs.pDesc = &shadowChsLibDesc;
+
+	subobjects[index++] = shadowChs;
+
+	// Add state subobject for the hit group
+	D3D12_HIT_GROUP_DESC shadowHitGroupDesc = {};
+	shadowHitGroupDesc.ClosestHitShaderImport = L"ClosestHit_76";
+	shadowHitGroupDesc.HitGroupExport = L"ShadowHitGroup";
+
+	D3D12_STATE_SUBOBJECT shadowHitGroup = {};
+	shadowHitGroup.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
+	shadowHitGroup.pDesc = &shadowHitGroupDesc;
+
+	subobjects[index++] = shadowHitGroup;
+
 	// Add a state subobject for the shader payload configuration
 	D3D12_RAYTRACING_SHADER_CONFIG shaderDesc = {};
 	shaderDesc.MaxPayloadSizeInBytes = sizeof(XMFLOAT4); // RGB and hitT
@@ -1978,7 +2029,7 @@ void Graphics::CreatePipelineStateObject()
 	subobjects[index++] = shaderConfigObject;
 
 	// Create a list of the shader export names that use the payload
-	const WCHAR* shaderExports[] = { L"RayGen_12", L"Miss_5", L"HitGroup" };
+	const WCHAR* shaderExports[] = { L"RayGen_12", L"Miss_5", L"HitGroup", L"ShadowHitGroup" };
 
 	// Add a state subobject for the association between shaders and the payload
 	D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION shaderPayloadAssociation = {};
@@ -2000,7 +2051,7 @@ void Graphics::CreatePipelineStateObject()
 	subobjects[index++] = rayGenRootSigObject;
 
 	// Create a list of the shader export names that use the root signature
-	const WCHAR* rootSigExports[] = { L"RayGen_12", L"HitGroup", L"Miss_5" };
+	const WCHAR* rootSigExports[] = { L"RayGen_12", L"HitGroup", L"Miss_5", L"ShadowHitGroup" };
 
 	// Add a state subobject for the association between the RayGen shader and the local root signature
 	D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION rayGenShaderRootSigAssociation = {};
@@ -2055,6 +2106,7 @@ void Graphics::CreateShaderTable()
 		Entry 0 - Ray Generation shader
 		Entry 1 - Miss shader
 		Entry 2 - Closest Hit shader
+		Entry 3 - Shadow Closest Hit shader
 	All shader records in the Shader Table must have the same size, so we set shader record size based on the largest required entry.
 	The ray generation program requires the largest entry:
 		32 bytes - D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES
@@ -2101,6 +2153,11 @@ void Graphics::CreateShaderTable()
 	// Shader Record 2 - Closest Hit program and local root parameter data (descriptor table with constant buffer and index buffer / vertex buffer pointers)
 	pData += m_DXRObjects.shaderTableRecordSize;
 	memcpy(pData, m_DXRObjects.rtpsoInfo->GetShaderIdentifier(L"HitGroup"), shaderIdSize);
+
+	// Shader Record 2 - Closest Hit program and local root parameter data (descriptor table with constant buffer and index buffer / vertex buffer pointers)
+	pData += m_DXRObjects.shaderTableRecordSize;
+	memcpy(pData, m_DXRObjects.rtpsoInfo->GetShaderIdentifier(L"ShadowHitGroup"), shaderIdSize);
+
 
 	// Set the root parameter data. Point to start to descriptor heap.
 	*reinterpret_cast<D3D12_GPU_DESCRIPTOR_HANDLE*>(pData + shaderIdSize) = m_D3DResources.descriptorHeap->GetGPUDescriptorHandleForHeapStart();

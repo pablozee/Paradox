@@ -89,6 +89,9 @@ private:
 	void CreateRayGenProgram();
 	void CreateMissProgram();
 	void CreateClosestHitProgram();
+	void CreateShadowHitProgram();
+	void CreateShadowMissProgram();
+
 	
 	void CreatePipelineStateObject();
 	void CreateShaderTable();
