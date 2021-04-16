@@ -27,10 +27,12 @@ void RayGen()
 	else
 	{
 		DirectionalLight dirLight;
-		dirLight.directionalLightDirection = float3(0.0f, -15.0f, -15.0f);
+		dirLight.directionalLightDirection = float3(0.0f, 15.0f, 0.0f);
 		dirLight.padding = 0.1f;
 		dirLight.directionalLightColour = float3(1.0f, 1.0f, 1.0f);
 		dirLight.padding1 = 0.1f;
+
+	//	dirLight.directionalLightDirection = mul(dirLight.directionalLightDirection, (float3x3)view);
 
 		RayDesc ray;
 		ray.Origin = gBufWorldPos;
@@ -39,10 +41,14 @@ void RayGen()
 		ray.TMax = 1000.f;
 
 		ShadowRayHitInfo shadowRayPayload;
-		
-		TraceRay(SceneBVH, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFF, 1, 0, 0, ray, shadowRayPayload);
+		shadowRayPayload.isInShadow = false;
+		TraceRay(SceneBVH, RAY_FLAG_NONE, 0, 0, 0, 0, ray, shadowRayPayload);
 
-		colour = (shadowRayPayload.isInShadow ? 0.05f : 1.0f) * CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+	//	colour = (shadowRayPayload.isInShadow ? 0.05f : 1.0f) * CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+		if (shadowRayPayload.isInShadow == false)
+		{
+			colour = CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+		}
 	}
 
 	RTOutput[LaunchIndex.xy] = float4(colour, 1.f);

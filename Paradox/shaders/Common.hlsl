@@ -164,7 +164,7 @@ float3 CalculatePointLightColour(PointLight pointLight, float3 barycentrics, flo
 float3 CalculateDirectionalLightColourGBuffer(DirectionalLight light, float3 eyePos, float3 viewDir, 
 											  float3 gBufNormalizedNormal, float  gBufShininess, float3 gBufDiffuse, float3 gBufSpecular)
 {
-	float3 normalizedLightDirection = normalize(-light.directionalLightDirection.xyz);
+	float3 normalizedLightDirection = normalize(light.directionalLightDirection.xyz);
 	float3 halfVec = normalize(-normalizedLightDirection + viewDir);
 	float  nDotL = dot(gBufNormalizedNormal, normalizedLightDirection);
 	float  nDotH = dot(gBufNormalizedNormal, halfVec);

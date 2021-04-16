@@ -968,7 +968,7 @@ void Graphics::BuildRenderItems()
 	m_RayTracingPassRenderItems.push_back(skull.get());
 	m_AllRenderItems.push_back(std::move(skull));
 
-	altar->world = XMMatrixScaling(3.3f, 3.3f, 3.3f) * XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, -7.6f, 0.0f);
+	altar->world = XMMatrixScaling(6.3f, 6.3f, 6.3f) * XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, -7.6f, 0.0f);
 	XMStoreFloat3x4(&altar->world3x4, XMMatrixTranspose(altar->world));
 	altar->objCBIndex = 1;
 	altar->matCBIndex = 1;
@@ -1913,7 +1913,7 @@ void Graphics::CreatePipelineStateObject()
 
 	UINT index = 0;
 	vector<D3D12_STATE_SUBOBJECT> subobjects;
-	subobjects.resize(12);
+	subobjects.resize(14);
 
 	// Add state subobject for the RGS
 	D3D12_EXPORT_DESC rgsExportDesc = {};
@@ -1936,7 +1936,7 @@ void Graphics::CreatePipelineStateObject()
 	// Add state subobject for the Miss shader
 	D3D12_EXPORT_DESC missExportDesc = {};
 	missExportDesc.Name = L"Miss_5";
-	missExportDesc.ExportToRename = L"Miss";
+	missExportDesc.ExportToRename = L"ShadowRayMiss";
 	missExportDesc.Flags = D3D12_EXPORT_FLAG_NONE;
 
 	/*
@@ -2029,7 +2029,7 @@ void Graphics::CreatePipelineStateObject()
 	subobjects[index++] = shaderConfigObject;
 
 	// Create a list of the shader export names that use the payload
-	const WCHAR* shaderExports[] = { L"RayGen_12", L"Miss_5", L"HitGroup" };
+	const WCHAR* shaderExports[] = { L"RayGen_12", L"Miss_5", L"HitGroup", L"ShadowHitGroup" };
 
 	// Add a state subobject for the association between shaders and the payload
 	D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION shaderPayloadAssociation = {};
@@ -2042,6 +2042,33 @@ void Graphics::CreatePipelineStateObject()
 	shaderPayloadAssociationObject.pDesc = &shaderPayloadAssociation;
 
 	subobjects[index++] = shaderPayloadAssociationObject;
+	
+	// Add a state subobject for the shader payload configuration
+	D3D12_RAYTRACING_SHADER_CONFIG shadowPayloadDesc = {};
+	shadowPayloadDesc.MaxPayloadSizeInBytes = sizeof(XMFLOAT4); // RGB and hitT
+	shadowPayloadDesc.MaxAttributeSizeInBytes = D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES;
+
+	D3D12_STATE_SUBOBJECT shaderShadowConfigObject = {};
+	shaderShadowConfigObject.Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG;
+	shaderShadowConfigObject.pDesc = &shadowPayloadDesc;
+
+	subobjects[index++] = shaderShadowConfigObject;
+
+	// Create a list of the shader export names that use the payload
+	const WCHAR* shaderShadowExports[] = { L"Miss_5", L"HitGroup", L"ShadowHitGroup" };
+
+	// Add a state subobject for the association between shaders and the payload
+	D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION shaderShadowPayloadAssociation = {};
+	shaderShadowPayloadAssociation.NumExports = _countof(shaderShadowExports);
+	shaderShadowPayloadAssociation.pExports = shaderShadowExports;
+	shaderShadowPayloadAssociation.pSubobjectToAssociate = &subobjects[(index - 1)];
+
+	D3D12_STATE_SUBOBJECT shaderShadowPayloadAssociationObject = {};
+	shaderShadowPayloadAssociationObject.Type = D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
+	shaderShadowPayloadAssociationObject.pDesc = &shaderShadowPayloadAssociation;
+
+	subobjects[index++] = shaderShadowPayloadAssociationObject;
+
 
 	// Add a state subobject for the shared root signature
 	D3D12_STATE_SUBOBJECT rayGenRootSigObject = {};
@@ -2122,7 +2149,7 @@ void Graphics::CreateShaderTable()
 	m_DXRObjects.shaderTableRecordSize += 8;
 	m_DXRObjects.shaderTableRecordSize = ALIGN(D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT, m_DXRObjects.shaderTableRecordSize);
 
-	shaderTableSize = (m_DXRObjects.shaderTableRecordSize * 3);
+	shaderTableSize = (m_DXRObjects.shaderTableRecordSize * 4);
 	shaderTableSize = ALIGN(D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT, shaderTableSize);
 
 	// Create the shader table buffer
@@ -2154,7 +2181,7 @@ void Graphics::CreateShaderTable()
 	pData += m_DXRObjects.shaderTableRecordSize;
 	memcpy(pData, m_DXRObjects.rtpsoInfo->GetShaderIdentifier(L"HitGroup"), shaderIdSize);
 
-	// Shader Record 2 - Closest Hit program and local root parameter data (descriptor table with constant buffer and index buffer / vertex buffer pointers)
+	// Shader Record 3 - Closest Hit program and local root parameter data (descriptor table with constant buffer and index buffer / vertex buffer pointers)
 	pData += m_DXRObjects.shaderTableRecordSize;
 	memcpy(pData, m_DXRObjects.rtpsoInfo->GetShaderIdentifier(L"ShadowHitGroup"), shaderIdSize);
 
