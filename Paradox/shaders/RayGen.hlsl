@@ -1,8 +1,6 @@
-
 #include "Common.hlsl"
 
 [shader("raygeneration")]
-
 void RayGen()
 {
 	uint2 LaunchIndex = DispatchRaysIndex().xy;
@@ -23,7 +21,7 @@ void RayGen()
 
 	if (gBufDiffuse.w != 1.0f)
 	{
-		colour = float3(0.2f, 0.2f, 0.2f);
+		colour = float3(0.33f, 0.66f, 0.33f);
 
 	}
 	else
@@ -34,7 +32,17 @@ void RayGen()
 		dirLight.directionalLightColour = float3(1.0f, 1.0f, 1.0f);
 		dirLight.padding1 = 0.1f;
 
-		colour = CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+		RayDesc ray;
+		ray.Origin = gBufWorldPos;
+		ray.Direction = -dirLight.directionalLightDirection;
+		ray.TMin = 0.1f;
+		ray.TMax = 1000.f;
+
+		ShadowRayHitInfo shadowRayPayload;
+		
+		TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, shadowRayPayload);
+
+		colour = (shadowRayPayload.isInShadow ? 0.05f : 1.0f) * CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
 	}
 
 	RTOutput[LaunchIndex.xy] = float4(colour, 1.f);
