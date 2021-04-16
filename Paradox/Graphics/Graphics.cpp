@@ -1990,7 +1990,7 @@ void Graphics::CreatePipelineStateObject()
 
 	// Add state subobject for the Closest Hit shader
 	D3D12_EXPORT_DESC shadowChsExportDesc = {};
-	shadowChsExportDesc.Name = L"ClosestHit_76";
+	shadowChsExportDesc.Name = L"ClosestHit_7";
 	shadowChsExportDesc.ExportToRename = L"ShadowRayClosestHit";
 	shadowChsExportDesc.Flags = D3D12_EXPORT_FLAG_NONE;
 
@@ -2008,7 +2008,7 @@ void Graphics::CreatePipelineStateObject()
 
 	// Add state subobject for the hit group
 	D3D12_HIT_GROUP_DESC shadowHitGroupDesc = {};
-	shadowHitGroupDesc.ClosestHitShaderImport = L"ClosestHit_76";
+	shadowHitGroupDesc.ClosestHitShaderImport = L"ClosestHit_7";
 	shadowHitGroupDesc.HitGroupExport = L"ShadowHitGroup";
 
 	D3D12_STATE_SUBOBJECT shadowHitGroup = {};
@@ -2029,7 +2029,7 @@ void Graphics::CreatePipelineStateObject()
 	subobjects[index++] = shaderConfigObject;
 
 	// Create a list of the shader export names that use the payload
-	const WCHAR* shaderExports[] = { L"RayGen_12", L"Miss_5", L"HitGroup", L"ShadowHitGroup" };
+	const WCHAR* shaderExports[] = { L"RayGen_12", L"Miss_5", L"HitGroup" };
 
 	// Add a state subobject for the association between shaders and the payload
 	D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION shaderPayloadAssociation = {};
