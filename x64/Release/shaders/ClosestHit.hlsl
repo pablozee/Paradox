@@ -35,5 +35,5 @@ void ClosestHit(inout HitInfo hitInfo, Attributes attrib)
 
 	//payload.shadedColourAndHitT = float4(0.f, 0.f, 0.f, RayTCurrent());
 
-	hitInfo.shadedColourAndHitT = float4(1.f, 0.f, 0.f, RayTCurrent());
+	hitInfo.shadedColourAndHitT = float4(1.f, 0.f, 0.f, 0.f);
 }

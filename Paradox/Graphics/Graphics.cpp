@@ -1388,16 +1388,16 @@ void Graphics::CreateTopLevelAS()
 	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc0.Transform), m_RayTracingPassRenderItems[0]->world);
 //	instanceDesc0.Transform[0][0] = instanceDesc0.Transform[1][1] = instanceDesc0.Transform[2][2] = 1;
 	instanceDesc0.AccelerationStructure = m_DXRObjects.BLAS[0].pResult->GetGPUVirtualAddress();
-	instanceDesc0.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
+	instanceDesc0.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 
 	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc1 = {};
 	instanceDesc1.InstanceID = 1;
 	instanceDesc1.InstanceContributionToHitGroupIndex = 1;
-	instanceDesc1.InstanceMask = 2;
+	instanceDesc1.InstanceMask = 1;
 	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc1.Transform), m_RayTracingPassRenderItems[1]->world);
 //	instanceDesc1.Transform[0][0] = instanceDesc1.Transform[1][1] = instanceDesc1.Transform[2][2] = 1;
 	instanceDesc1.AccelerationStructure = m_DXRObjects.BLAS[1].pResult->GetGPUVirtualAddress();
-	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
+	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 
 	D3D12_RAYTRACING_INSTANCE_DESC descs[2] = { instanceDesc0, instanceDesc1 };
 
@@ -2036,7 +2036,7 @@ void Graphics::CreatePipelineStateObject()
 
 	// Add a state subobject for the ray tracing pipeline config
 	D3D12_RAYTRACING_PIPELINE_CONFIG pipelineConfig = {};
-	pipelineConfig.MaxTraceRecursionDepth = 1;
+	pipelineConfig.MaxTraceRecursionDepth = 3;
 
 	D3D12_STATE_SUBOBJECT pipelineConfigObject = {};
 	pipelineConfigObject.Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG;
