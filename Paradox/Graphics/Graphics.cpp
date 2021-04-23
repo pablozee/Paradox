@@ -585,7 +585,6 @@ void Graphics::CreateGBufferPassPSO()
 		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
-
 	D3D12_DEPTH_STENCIL_DESC desc;
 	desc.DepthEnable = TRUE;
 	desc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
@@ -1325,12 +1324,12 @@ void Graphics::CreateBottomLevelAS(RenderItem* renderItem, UINT blasIndex)
 	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(renderItem->indexCount);
 	geometryDesc.Triangles.IndexFormat = m_Geometries["Geometry"].get()->indexBufferFormat;
 	geometryDesc.Triangles.Transform3x4 = 0.0f;
-	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
 
 	m_VertexBufferOffset += sizeof(Vertex) * renderItem->vertexCount;
 	m_IndexBufferOffset += sizeof(uint32_t) * renderItem->indexCount;
 
-	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS ASInputs = {};
 	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
@@ -1382,24 +1381,22 @@ void Graphics::CreateBottomLevelAS(RenderItem* renderItem, UINT blasIndex)
 void Graphics::CreateTopLevelAS()
 {
 	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc0 = {};
-	instanceDesc0.InstanceID = 0;
 	instanceDesc0.InstanceContributionToHitGroupIndex = 0;
 	instanceDesc0.InstanceMask = 1;
 	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc0.Transform), m_RayTracingPassRenderItems[0]->world);
 //	instanceDesc0.Transform[0][0] = instanceDesc0.Transform[1][1] = instanceDesc0.Transform[2][2] = 1;
 	instanceDesc0.AccelerationStructure = m_DXRObjects.BLAS[0].pResult->GetGPUVirtualAddress();
-	instanceDesc0.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+	instanceDesc0.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
 
 	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc1 = {};
-	instanceDesc1.InstanceID = 1;
 	instanceDesc1.InstanceContributionToHitGroupIndex = 1;
 	instanceDesc1.InstanceMask = 1;
 	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc1.Transform), m_RayTracingPassRenderItems[1]->world);
 //	instanceDesc1.Transform[0][0] = instanceDesc1.Transform[1][1] = instanceDesc1.Transform[2][2] = 1;
 	instanceDesc1.AccelerationStructure = m_DXRObjects.BLAS[1].pResult->GetGPUVirtualAddress();
-	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
 
-	D3D12_RAYTRACING_INSTANCE_DESC descs[2] = { instanceDesc0, instanceDesc1 };
+	D3D12_RAYTRACING_INSTANCE_DESC* descs[2] = { &instanceDesc0, &instanceDesc1 };
 
 	UINT64 instanceDescSize = ALIGN(D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT, sizeof(descs));
 
@@ -1418,7 +1415,7 @@ void Graphics::CreateTopLevelAS()
 	memcpy(pData, &descs, sizeof(descs));
 	m_DXRObjects.TLAS.pInstanceDesc->Unmap(0, nullptr);
 
-	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS ASInputs = {};
 	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
@@ -2014,7 +2011,7 @@ void Graphics::CreatePipelineStateObject()
 	subobjects[index++] = rayGenRootSigObject;
 
 	// Create a list of the shader export names that use the root signature
-	const WCHAR* rootSigExports[] = { L"RayGen_12", L"HitGroup", L"Miss_5" };
+	const WCHAR* rootSigExports[] = { L"RayGen_12", L"Miss_5", L"HitGroup" };
 
 	// Add a state subobject for the association between the RayGen shader and the local root signature
 	D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION rayGenShaderRootSigAssociation = {};
@@ -2036,7 +2033,7 @@ void Graphics::CreatePipelineStateObject()
 
 	// Add a state subobject for the ray tracing pipeline config
 	D3D12_RAYTRACING_PIPELINE_CONFIG pipelineConfig = {};
-	pipelineConfig.MaxTraceRecursionDepth = 3;
+	pipelineConfig.MaxTraceRecursionDepth = 1;
 
 	D3D12_STATE_SUBOBJECT pipelineConfigObject = {};
 	pipelineConfigObject.Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG;
@@ -2278,7 +2275,7 @@ void Graphics::BuildCommandList()
 	desc.MissShaderTable.SizeInBytes = m_DXRObjects.shaderTableRecordSize;
 	desc.MissShaderTable.StrideInBytes = m_DXRObjects.shaderTableRecordSize;
 
-	desc.HitGroupTable.StartAddress = m_DXRObjects.shaderTable->GetGPUVirtualAddress() + (2 * m_DXRObjects.shaderTableRecordSize);
+	desc.HitGroupTable.StartAddress = m_DXRObjects.shaderTable->GetGPUVirtualAddress() + ((UINT)2 * m_DXRObjects.shaderTableRecordSize);
 	desc.HitGroupTable.SizeInBytes = m_DXRObjects.shaderTableRecordSize;
 	desc.HitGroupTable.StrideInBytes = m_DXRObjects.shaderTableRecordSize;
 

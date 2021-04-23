@@ -67,7 +67,9 @@ VSOutput main(VSInput vsInput)
 {
 	VSOutput vso;
 
+	// Can move this matrix matrix mul to CPU
 	matrix worldView = mul(world, gBufferView);
+
 	float4 homogPosW = mul(float4(vsInput.Pos, 1.0f), world);
 
 	vso.PosW = homogPosW.xyz / homogPosW.w;
