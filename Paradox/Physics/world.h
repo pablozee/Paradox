@@ -39,13 +39,13 @@ public:
 	// Calls each of the registered contact generators to report 
 	// their contacts. Returns total number of generated contacts.
 
-	unsigned generateContacts();
+	unsigned GenerateContacts();
 
-	void runPhysics(float duration);
+	void RunPhysics(float duration);
 
 	// Initializes the world for a simulation frame.
 	// Clears the force and torque accumulators for bodies in the world
 	// After calling this, the bodies can have their forces and torques
 	// for this frame added.
-	void startFrame();
+	void StartFrame();
 };
