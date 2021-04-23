@@ -41,7 +41,7 @@ public:
 
 	unsigned GenerateContacts();
 
-	void RunPhysics(float duration);
+	void RunPhysics(double duration);
 
 	// Initializes the world for a simulation frame.
 	// Clears the force and torque accumulators for bodies in the world

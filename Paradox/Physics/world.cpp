@@ -54,7 +54,7 @@ unsigned World::GenerateContacts()
 	return maxContacts - limit;
 }
 
-void World::RunPhysics(float duration)
+void World::RunPhysics(double duration)
 {
 	BodyRegistration* currentBodyReg = firstBody;
 
