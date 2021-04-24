@@ -8,28 +8,29 @@ class Rigidbody
 {
 protected:
 	double inverseMass;
-	XMFLOAT3X3 inverseInertiaTensor;
+	Matrix3 inverseInertiaTensor;
 	double linearDamping;
 	double angularDamping;
-	XMFLOAT3 position;
+	Vector3 position;
 	Quaternion orientation;
-	XMFLOAT3 velocity;
-	XMFLOAT3 rotation;
+	Vector3 velocity;
+	Vector3 rotation;
 	
 	// Derived Data:
-	XMFLOAT3X3 inverseInertiaTensorWorld;
+	Matrix3 inverseInertiaTensorWorld;
 	double motion;
 	bool isAwake;
 	bool canSleep;
-	XMFLOAT4X4 transformationMatrix;
+	Matrix4 transformationMatrix;
 
 	// Force and Torque Accumulators:
-	XMFLOAT3 forceAccum;
-	XMFLOAT3 torqueAccum;
-	XMFLOAT3 acceleration;
-	XMFLOAT3 lastFrameAcceleration;
+	Vector3 forceAccum;
+	Vector3 torqueAccum;
+	Vector3 acceleration;
+	Vector3 lastFrameAcceleration;
 
 public:
+	void ClearAccumulators();
 	void CalculateDerivedData();
 
 	// Integrates the rigidbody forward by the given amount
@@ -45,23 +46,23 @@ public:
 	// Sets inertia tensor which must be a full rank matrix and invertible
 	// Invalidates internal data for the rigidbody, must be called 
 	// After Integrate or CalculateInternals if trying to get data from the rigidbody
-	void SetInertiaTensor(const XMFLOAT3X3& inertiaTensor);
+	void SetInertiaTensor(const Matrix3& inertiaTensor);
 	
 	// Returns inertia tensor in RBs' local space
-	XMFLOAT3X3 GetInertiaTensor() const;
+	Matrix3 GetInertiaTensor() const;
 
 	// Copies the current inertia tensor of RB into given matrix
 	// Inertia tensor is expressed in world space
-	void GetInertiaTensorWorld(XMFLOAT3X3* inertiaTensor) const;
+	void GetInertiaTensorWorld(Matrix3* inertiaTensor) const;
 
-	XMFLOAT3X3 GetInertiaTensorWorld() const;
+	Matrix3 GetInertiaTensorWorld() const;
 
-	void SetInverseInertiaTensor(const XMFLOAT3X3& inverseInertiaTensor);
-	void GetInverseInertiaTensor(XMFLOAT3X3* inverseInertiaTensor) const;
-	XMFLOAT3X3 GetInverseInertiaTensor() const;
+	void SetInverseInertiaTensor(const Matrix3& inverseInertiaTensor);
+	void GetInverseInertiaTensor(Matrix3* inverseInertiaTensor) const;
+	Matrix3 GetInverseInertiaTensor() const;
 
-	void GetInverseInertiaTensorWorld(XMFLOAT3X3* inverseInertiaTensor) const;
-	XMFLOAT3X3 GetInverseInertiaTensorWorld() const;
+	void GetInverseInertiaTensorWorld(Matrix3* inverseInertiaTensor) const;
+	Matrix3 GetInverseInertiaTensorWorld() const;
 
 	void SetDamping(const double linearDamping, const double angularDamping);
 	
@@ -71,10 +72,10 @@ public:
 	void SetAngularDamping(const double angularDamping);
 	double GetAngularDamping() const;
 
-	void SetPosition(const XMFLOAT3 &position);
+	void SetPosition(const Vector3 &position);
 	void SetPosition(const double x, const double y, const double z);
-	void GetPosition(XMFLOAT3* position) const;
-	XMFLOAT3 GetPosition() const;
+	void GetPosition(Vector3* position) const;
+	Vector3 GetPosition() const;
 
 	// The given orientation does not have to be normalized and can be zero
 	void SetOrientation(const Quaternion& orientation);
@@ -84,7 +85,7 @@ public:
 
 	// Transforming a direction vector by this matrix turns it from
 	// transforms it from local space to world space
-	void GetOrientation(XMFLOAT3X3* orientationMatrix);
+	void GetOrientation(Matrix3* orientationMatrix);
 
 	// Transforming a vector by this matrix turns it from
 	// transforms it from local space to world space
@@ -92,32 +93,32 @@ public:
 	XMMATRIX GetTransform() const;
 
 	// Converts the given point from world space into bodys' local space
-	XMFLOAT3 GetPointInLocalSpace(const XMFLOAT3& wsPoint) const;
+	Vector3 GetPointInLocalSpace(const Vector3& wsPoint) const;
 
 	// Converts the given point from bodys' local space into world space
-	XMFLOAT3 GetPointInWorldSpace(const XMFLOAT3& lsPoint) const;
+	Vector3 GetPointInWorldSpace(const Vector3& lsPoint) const;
 
 	// Converts the given direction from world space into bodys' local space
-	XMFLOAT3 GetDirectionInLocalSpace(const XMFLOAT3& wsDirection) const;
+	Vector3 GetDirectionInLocalSpace(const Vector3& wsDirection) const;
 
 	// Converts the given direction from bodys' local space into world space
-	XMFLOAT3 GetDirectionInWorldSpace(const XMFLOAT3& wsDirection) const;
+	Vector3 GetDirectionInWorldSpace(const Vector3& wsDirection) const;
 
-	void SetVelocity(const XMFLOAT3& velocity);
+	void SetVelocity(const Vector3& velocity);
 	void SetVelocity(const double x, const double y, const double z);
 
-	void GetVelocity(XMFLOAT3* velocity) const;
-	XMFLOAT3 GetVelocity() const;
+	void GetVelocity(Vector3* velocity) const;
+	Vector3 GetVelocity() const;
 
-	void AddVelocity(const XMFLOAT3& deltaVelocity);
+	void AddVelocity(const Vector3& deltaVelocity);
 
-	void SetRotation(const XMFLOAT3& rotation);
+	void SetRotation(const Vector3& rotation);
 	void SetRotation(const double x, const double y, const double z);
 
-	void GetRotation(XMFLOAT3* rotation);
-	XMFLOAT3 GetRotation() const;
+	void GetRotation(Vector3* rotation);
+	Vector3 GetRotation() const;
 
-	void AddRotation(const XMFLOAT3& deltaRotation);
+	void AddRotation(const Vector3& deltaRotation);
 
 	bool GetAwakeStatus() const
 	{
@@ -155,8 +156,8 @@ public:
 
 	// Returns current accumulated value for linear accumulation in world space
 	// Acceleration accumulators are set during the integration step
-	void GetLastFrameAcceleration(XMFLOAT3* linearAcceleration) const;
-	XMFLOAT3 GetLastFrameAcceleration() const;
+	void GetLastFrameAcceleration(Vector3* linearAcceleration) const;
+	Vector3 GetLastFrameAcceleration() const;
 
 	/////////////////////////////////////////////
 	// Force, Torque and Acceleration set up functions
@@ -168,27 +169,27 @@ public:
 
 	// Adds given force to centre of mass of the rigid body.
 	// The force is expressed in world coordinates
-	void AddForce(const XMFLOAT3& force);
+	void AddForce(const Vector3& force);
 
 	// Adds given force to given point on the rigid body.
 	// The force and point are both expressed in world coordinates
 	// Because the force is not applied to the centre of mass, 
 	// It may be split into a force and a torque
-	void AddForceAtPoint(const XMFLOAT3& force, const XMFLOAT3& point);
+	void AddForceAtPoint(const Vector3& force, const Vector3& point);
 
 	// Adds given force to given point on the rigid body.
 	// The direction of the force is expressed in world coordinates
 	// The application point is expressed in body local coordinates
 	// This is useful for spring forces, or other forces fixed to the body
-	void AddForceAtBodyPoint(const XMFLOAT3& force, const XMFLOAT3& point);
+	void AddForceAtBodyPoint(const Vector3& force, const Vector3& point);
 
 	// Adds given torque expressed in world coordinates
-	void AddTorque(const XMFLOAT3& torque);
+	void AddTorque(const Vector3& torque);
 
 	// Sets the constant acceleration of the rigid body.
-	void SetAcceleration(const XMFLOAT3& acceleration);
+	void SetAcceleration(const Vector3& acceleration);
 	void SetAcceleration(const double x, const double y, const double z);
 
-	void GetAcceleration(XMFLOAT3* acceleration) const;
-	XMFLOAT3 GetAcceleration() const;
+	void GetAcceleration(Vector3* acceleration) const;
+	Vector3 GetAcceleration() const;
 };
