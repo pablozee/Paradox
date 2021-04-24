@@ -168,6 +168,8 @@
     <ClCompile Include="Graphics\FrameResource.cpp" />
     <ClCompile Include="Graphics\Graphics.cpp" />
     <ClCompile Include="Input.cpp" />
+    <ClCompile Include="Physics\body.cpp" />
+    <ClCompile Include="Physics\world.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
@@ -188,6 +190,10 @@
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="include\stb_image.h" />
     <ClInclude Include="include\tiny_obj_loader.h" />
+    <ClInclude Include="Physics\body.h" />
+    <ClInclude Include="Physics\contacts.h" />
+    <ClInclude Include="ParadoxMath.h" />
+    <ClInclude Include="Physics\world.h" />
     <ClInclude Include="Structures.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Window.h" />

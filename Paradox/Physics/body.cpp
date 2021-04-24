@@ -1,11 +1,11 @@
 #include "body.h"
 
-void Rigidbody::clearAccumulators()
+void Rigidbody::ClearAccumulators()
 {
 
 };
 
-void Rigidbody::calculateDerivedData()
+void Rigidbody::CalculateDerivedData()
 {
 
 };
