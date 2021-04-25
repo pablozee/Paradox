@@ -164,157 +164,264 @@ void Rigidbody::Integrate(double duration)
     }
 };
 
-void Rigidbody::CalculateDerivedData()
+void Rigidbody::SetMass(const double mass)
+{
+    assert(mass != 0);
+    Rigidbody::inverseMass = ((double)1.0 / inverseMass);
+};
+
+double Rigidbody::GetMass() const
+{
+    if (inverseMass == 0)
+    {
+        return INFINITY;
+    }
+    else
+    {
+        return ((double)1.0 / inverseMass);
+    }
+};
+
+void Rigidbody::SetInverseMass(const double inverseMass)
+{
+    Rigidbody::inverseMass = inverseMass;
+};
+
+double Rigidbody::GetInverseMass() const
+{
+    return inverseMass;
+};
+
+bool Rigidbody::HasFiniteMass() const
+{
+    return inverseMass >= 0.0f;
+};
+
+void Rigidbody::SetInertiaTensor(const Matrix3& inertiaTensor)
+{
+    inverseInertiaTensor.setInverse(inertiaTensor);
+};
+
+void Rigidbody::GetInertiaTensor(Matrix3* inertiaTensor) const
+{
+    inertiaTensor->setInverse(inverseInertiaTensor);
+};
+
+Matrix3 Rigidbody::GetInertiaTensor() const
+{
+    Matrix3 inertiaTensor;
+    GetInertiaTensor(&inertiaTensor);
+    return inertiaTensor;
+};
+
+void Rigidbody::GetInertiaTensorWorld(Matrix3* inertiaTensor) const
+{
+    inertiaTensor->setInverse(inverseInertiaTensorWorld);
+};
+
+Matrix3 Rigidbody::GetInertiaTensorWorld() const
+{
+    Matrix3 inertiaTensor;
+    GetInertiaTensorWorld(&inertiaTensor);
+    return inertiaTensor;
+};
+
+void Rigidbody::SetInverseInertiaTensor(const Matrix3& inverseInertiaTensor)
+{
+    Rigidbody::inverseInertiaTensor = inverseInertiaTensor;
+};
+
+void Rigidbody::GetInverseInertiaTensor(Matrix3* inverseInertiaTensor) const
+{
+    *inverseInertiaTensor = Rigidbody::inverseInertiaTensor;
+};
+
+Matrix3 Rigidbody::GetInverseInertiaTensor() const
+{
+    return inverseInertiaTensor;
+};
+
+void Rigidbody::SetDamping(const double linearDamping, const double angularDamping)
+{
+    Rigidbody::linearDamping = linearDamping;
+    Rigidbody::angularDamping = angularDamping;
+};
+
+void Rigidbody::SetLinearDamping(const double linearDamping)
+{
+    Rigidbody::linearDamping = linearDamping;
+};
+
+double Rigidbody::GetLinearDamping() const
+{
+    return linearDamping;
+};
+
+void Rigidbody::SetAngularDamping(const double angularDamping)
+{
+    Rigidbody::angularDamping = angularDamping;
+};
+
+double Rigidbody::GetAngularDamping() const
+{
+    return angularDamping;
+};
+
+void Rigidbody::SetPosition(const Vector3& position)
+{
+    Rigidbody::position = position;
+};
+
+void Rigidbody::SetPosition(const double x, const double y, const double z)
+{
+    position.x = x;
+    position.y = y;
+    position.z = z;
+};
+
+void Rigidbody::GetPosition(Vector3* position) const
+{
+    *position = Rigidbody::position;
+};
+
+Vector3 Rigidbody::GetPosition() const
+{
+    return position;
+};
+
+void Rigidbody::SetOrientation(const Quaternion& orientation)
+{
+    Rigidbody::orientation = orientation;
+    Rigidbody::orientation.Normalize();
+};
+
+void Rigidbody::SetOrientation(const double r, const double i, const double j, const double k)
+{
+    orientation.r = r;
+    orientation.i = i;
+    orientation.j = j;
+    orientation.k = k;
+    orientation.Normalize();
+};
+
+void Rigidbody::GetOrientation(Quaternion* orientation) const
+{
+    *orientation = Rigidbody::orientation;
+};
+
+Quaternion Rigidbody::GetOrientation() const
+{
+    return orientation;
+};
+
+void Rigidbody::GetOrientation(Matrix3* matrix) const
+{
+    GetOrientation(matrix->data);
+};
+
+void Rigidbody::GetOrientation(double matrix[9]) const
+{
+    matrix[0] = transformationMatrix.data[0];
+    matrix[1] = transformationMatrix.data[1];
+    matrix[2] = transformationMatrix.data[2];
+
+    matrix[3] = transformationMatrix.data[4];
+    matrix[4] = transformationMatrix.data[5];
+    matrix[5] = transformationMatrix.data[6];
+
+    matrix[6] = transformationMatrix.data[8];
+    matrix[7] = transformationMatrix.data[9];
+    matrix[8] = transformationMatrix.data[10];
+};
+
+void Rigidbody::GetTransform(Matrix4* transform) const
+{
+    memcpy(transform, &transformationMatrix.data, sizeof(Matrix4));
+};
+
+void Rigidbody::GetTransform(double matrix[16]) const
+{
+    memcpy(matrix, &transformationMatrix.data, sizeof(double) * 12);
+    matrix[12] = matrix[13] = matrix[14] = 0;
+    matrix[15] = 1;
+};
+
+Matrix4 Rigidbody::GetTransform()
+{
+    return transformationMatrix;
+};
+
+Vector3 Rigidbody::GetPointInLocalSpace(const Vector3& point) const
+{
+    return transformationMatrix.transformInverse(point);
+};
+
+Vector3 Rigidbody::GetPointInWorldSpace(const Vector3& point) const
+{
+    return transformationMatrix.transform(point);
+};
+
+Vector3 Rigidbody::GetDirectionInLocalSpace(const Vector3& direction) const
+{
+    return transformationMatrix.transformInverseDirection(direction);
+};
+
+Vector3 Rigidbody::GetDirectionInWorldSpace(const Vector3& direction) const
+{
+    return transformationMatrix.transformDirection(direction);
+};
+
+void Rigidbody::SetVelocity(const Vector3& velocity)
+{
+    Rigidbody::velocity = velocity;
+};
+
+void Rigidbody::SetVelocity(const double x, const double y, const double z)
+{
+    velocity.x = x;
+    velocity.y = y;
+    velocity.z = z;
+};
+
+Matrix4 Rigidbody::GetTransform()
 {
 
 };
 
-void Rigidbody::CalculateDerivedData()
+Matrix4 Rigidbody::GetTransform()
 {
 
 };
 
-void Rigidbody::ClearAccumulators()
+Matrix4 Rigidbody::GetTransform()
+{
+
+};
+Matrix4 Rigidbody::GetTransform()
 {
 
 };
 
-void Rigidbody::CalculateDerivedData()
+Matrix4 Rigidbody::GetTransform()
 {
 
 };
 
-void Rigidbody::CalculateDerivedData()
+Matrix4 Rigidbody::GetTransform()
+{
+
+};
+Matrix4 Rigidbody::GetTransform()
 {
 
 };
 
-void Rigidbody::ClearAccumulators()
+Matrix4 Rigidbody::GetTransform()
 {
 
 };
 
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::ClearAccumulators()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::ClearAccumulators()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::ClearAccumulators()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::ClearAccumulators()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::ClearAccumulators()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::ClearAccumulators()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::ClearAccumulators()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
-{
-
-};
-
-void Rigidbody::ClearAccumulators()
-{
-
-};
-
-void Rigidbody::CalculateDerivedData()
+Matrix4 Rigidbody::GetTransform()
 {
 
 };

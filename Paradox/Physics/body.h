@@ -48,6 +48,7 @@ public:
 	// After Integrate or CalculateInternals if trying to get data from the rigidbody
 	void SetInertiaTensor(const Matrix3& inertiaTensor);
 	
+	void GetInertiaTensor(Matrix3* inertiaTensor) const;
 	// Returns inertia tensor in RBs' local space
 	Matrix3 GetInertiaTensor() const;
 
@@ -85,12 +86,13 @@ public:
 
 	// Transforming a direction vector by this matrix turns it from
 	// transforms it from local space to world space
-	void GetOrientation(Matrix3* orientationMatrix);
+	void GetOrientation(Matrix3* orientationMatrix) const;
+	void GetOrientation(double matrix[9]) const;
 
 	// Transforming a vector by this matrix turns it from
 	// transforms it from local space to world space
-	void GetTransform(XMMATRIX* transform) const;
-	XMMATRIX GetTransform() const;
+	void GetTransform(Matrix4* transform) const;
+	void GetTransform(double matrix[16]) const;
 
 	// Converts the given point from world space into bodys' local space
 	Vector3 GetPointInLocalSpace(const Vector3& wsPoint) const;
