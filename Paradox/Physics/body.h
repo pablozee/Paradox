@@ -4,7 +4,7 @@
 
 using namespace DirectX;
 
-class Rigidbody
+class RigidBody
 {
 protected:
 	double inverseMass;
