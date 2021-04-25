@@ -1,7 +1,7 @@
 #pragma once
 
-#include "body.h"
-#include "contacts.h"
+#include "Body.h"
+#include "Contacts.h"
 #include <complex>
 
 class World
@@ -11,7 +11,7 @@ class World
 	// Linked list of bodies
 	struct BodyRegistration
 	{
-		Rigidbody *body;
+		RigidBody* body;
 		BodyRegistration* next;
 	};
 

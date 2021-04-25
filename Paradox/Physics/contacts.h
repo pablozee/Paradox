@@ -1,5 +1,5 @@
 #pragma once
-#include "body.h"
+#include "Body.h"
 
 //Forward declaration
 class ContactResolver;

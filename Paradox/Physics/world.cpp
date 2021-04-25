@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include "world.h"
+#include "World.h"
 
 World::World(unsigned maxContacts, unsigned iterations)
 	:

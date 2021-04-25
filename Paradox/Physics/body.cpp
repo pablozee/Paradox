@@ -1,4 +1,4 @@
-#include "body.h"
+#include "Body.h"
 #include <memory.h>
 #include <assert.h>
 
