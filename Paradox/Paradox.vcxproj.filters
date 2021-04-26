@@ -36,10 +36,13 @@
     <ClCompile Include="Graphics\Core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Physics\world.cpp">
+    <ClCompile Include="Physics\Body.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Physics\body.cpp">
+    <ClCompile Include="Physics\World.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Physics\Contacts.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -101,16 +104,16 @@
     <ClInclude Include="Graphics\core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Physics\world.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Physics\body.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Physics\contacts.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ParadoxMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics\World.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics\Contacts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics\Body.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
