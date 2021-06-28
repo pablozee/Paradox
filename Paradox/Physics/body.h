@@ -30,7 +30,6 @@ protected:
 	Vector3 lastFrameAcceleration;
 
 public:
-	void ClearAccumulators();
 	void CalculateDerivedData();
 
 	// Integrates the rigidbody forward by the given amount
@@ -93,6 +92,7 @@ public:
 	// transforms it from local space to world space
 	void GetTransform(Matrix4* transform) const;
 	void GetTransform(double matrix[16]) const;
+	Matrix4 GetTransform() const;
 
 	// Converts the given point from world space into bodys' local space
 	Vector3 GetPointInLocalSpace(const Vector3& wsPoint) const;

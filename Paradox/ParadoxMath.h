@@ -3,123 +3,6 @@
 
 using namespace DirectX;
 
-class Quaternion
-{
-public:
-	union 
-	{
-		struct
-		{
-			double r;
-			double i;
-			double j;
-			double k;
-		};
-
-		double data[4];
-	};
-
-	Quaternion() : r(1), i(0), j(0), k(0) {}
-
-	Quaternion(const double r, const double i, const double j, const double k)
-		:
-		r(r),
-		i(i),
-		j(j),
-		k(k)
-	{
-
-	}
-
-	void Quaternion::Normalize()
-	{
-		double length = r * r + i * i + j * j + k * k;
-
-		// Check for zero length quaternion 
-		// If so use no rotation quaternion
-		if (length < 0.001f)
-		{
-			r = 1;
-			return;
-		}
-
-		length = ((double)1.0f / (double)sqrt(length));
-		
-		r *= length;
-		i *= length;
-		j *= length;
-		k *= length;
-	}
-
-	// Multiplies Quaternion by the given Quaternion
-	void operator *=(const Quaternion& multiplier)
-	{
-		Quaternion q = *this;
-
-		r = q.r * multiplier.r - q.i * multiplier.i - q.j * multiplier.j - q.k * multiplier.k;
-		i = q.r * multiplier.i + q.i * multiplier.r + q.j * multiplier.k - q.k * multiplier.j;
-		j = q.r * multiplier.j + q.j * multiplier.r + q.k * multiplier.i - q.i * multiplier.k;
-		k = q.r * multiplier.k + q.k * multiplier.r + q.i * multiplier.j - q.j * multiplier.k;
-	}
-
-	void Quaternion::AddScaledVector(const Vector3& vector, double scale)
-	{
-		Quaternion q(0, vector.x * scale, vector.y * scale, vector.z * scale);
-		q *= *this;
-		
-		r += q.r * (0.5);
-		i += q.i * (0.5);
-		j += q.j * (0.5);
-		k += q.k * (0.5);
-	}
-
-	void Quaternion::RotateByVector(const Vector3& vector)
-	{
-		Quaternion q(0, vector.x, vector.y, vector.z);
-		(*this) *= q;
-	}
-};
-
-
-/*
-*Holds the value for energy under which a body will be put to
-* sleep.This is a global value for the whole solution.By
-* default it is 0.1, which is fine for simulation when gravity is
-* about 20 units per second squared, masses are about one, and
-* other forces are around that of gravity.It may need tweaking
-* if your simulation is drastically different to this.
-*/
-
-extern double sleepEpsilon;
-
-/**
- * Sets the current sleep epsilon value: the kinetic energy under
- * which a body may be put to sleep. Bodies are put to sleep if
- * they appear to have a stable kinetic energy less than this
- * value. For simulations that often have low values (such as slow
- * moving, or light objects), this may need reducing.
- *
- * The value is global; all bodies will use it.
- *
- * @see sleepEpsilon
- *
- * @see getSleepEpsilon
- *
- * @param value The sleep epsilon value to use from this point
- * on.
- */
-void setSleepEpsilon(double value);
-
-/**
- * Gets the current value of the sleep epsilon parameter.
- *
- * @see sleepEpsilon
- *
- * @see setSleepEpsilon
- *
- * @return The current value of the parameter.
- */
-double getSleepEpsilon();
 
 /**
  * Holds a vector in 3 dimensions. Four data members are allocated
@@ -310,7 +193,7 @@ public:
     /** Gets the magnitude of this vector. */
     double magnitude() const
     {
-        return double_sqrt(x * x + y * y + z * z);
+        return sqrt(x * x + y * y + z * z);
     }
 
     /** Gets the squared magnitude of this vector. */
@@ -426,6 +309,125 @@ public:
     }
 
 };
+
+
+class Quaternion
+{
+public:
+	union 
+	{
+		struct
+		{
+			double r;
+			double i;
+			double j;
+			double k;
+		};
+
+		double data[4];
+	};
+
+	Quaternion() : r(1), i(0), j(0), k(0) {}
+
+	Quaternion(const double r, const double i, const double j, const double k)
+		:
+		r(r),
+		i(i),
+		j(j),
+		k(k)
+	{
+
+	}
+
+	void Quaternion::Normalize()
+	{
+		double length = r * r + i * i + j * j + k * k;
+
+		// Check for zero length quaternion 
+		// If so use no rotation quaternion
+		if (length < 0.001f)
+		{
+			r = 1;
+			return;
+		}
+
+		length = ((double)1.0f / (double)sqrt(length));
+		
+		r *= length;
+		i *= length;
+		j *= length;
+		k *= length;
+	}
+
+	// Multiplies Quaternion by the given Quaternion
+	void operator *=(const Quaternion& multiplier)
+	{
+		Quaternion q = *this;
+
+		r = q.r * multiplier.r - q.i * multiplier.i - q.j * multiplier.j - q.k * multiplier.k;
+		i = q.r * multiplier.i + q.i * multiplier.r + q.j * multiplier.k - q.k * multiplier.j;
+		j = q.r * multiplier.j + q.j * multiplier.r + q.k * multiplier.i - q.i * multiplier.k;
+		k = q.r * multiplier.k + q.k * multiplier.r + q.i * multiplier.j - q.j * multiplier.k;
+	}
+
+	void Quaternion::AddScaledVector(const Vector3& vector, double scale)
+	{
+		Quaternion q(0, vector.x * scale, vector.y * scale, vector.z * scale);
+		q *= *this;
+		
+		r += q.r * (0.5);
+		i += q.i * (0.5);
+		j += q.j * (0.5);
+		k += q.k * (0.5);
+	}
+
+	void Quaternion::RotateByVector(const Vector3& vector)
+	{
+		Quaternion q(0, vector.x, vector.y, vector.z);
+		(*this) *= q;
+	}
+};
+
+
+/*
+*Holds the value for energy under which a body will be put to
+* sleep.This is a global value for the whole solution.By
+* default it is 0.1, which is fine for simulation when gravity is
+* about 20 units per second squared, masses are about one, and
+* other forces are around that of gravity.It may need tweaking
+* if your simulation is drastically different to this.
+*/
+
+extern double sleepEpsilon;
+
+/**
+ * Sets the current sleep epsilon value: the kinetic energy under
+ * which a body may be put to sleep. Bodies are put to sleep if
+ * they appear to have a stable kinetic energy less than this
+ * value. For simulations that often have low values (such as slow
+ * moving, or light objects), this may need reducing.
+ *
+ * The value is global; all bodies will use it.
+ *
+ * @see sleepEpsilon
+ *
+ * @see getSleepEpsilon
+ *
+ * @param value The sleep epsilon value to use from this point
+ * on.
+ */
+void setSleepEpsilon(double value);
+
+/**
+ * Gets the current value of the sleep epsilon parameter.
+ *
+ * @see sleepEpsilon
+ *
+ * @see setSleepEpsilon
+ *
+ * @return The current value of the parameter.
+ */
+double getSleepEpsilon();
 
 class Matrix4
 {

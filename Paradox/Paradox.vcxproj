@@ -168,6 +168,7 @@
     <ClCompile Include="Graphics\FrameResource.cpp" />
     <ClCompile Include="Graphics\Graphics.cpp" />
     <ClCompile Include="Input.cpp" />
+    <ClCompile Include="ParadoxMath.cpp" />
     <ClCompile Include="Physics\Body.cpp" />
     <ClCompile Include="Physics\Contacts.cpp" />
     <ClCompile Include="Physics\World.cpp" />

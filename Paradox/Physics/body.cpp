@@ -241,6 +241,17 @@ Matrix3 RigidBody::GetInverseInertiaTensor() const
     return inverseInertiaTensor;
 };
 
+void RigidBody::GetInverseInertiaTensorWorld(Matrix3* inverseInertiaTensor) const
+{
+    *inverseInertiaTensor = inverseInertiaTensorWorld;
+};
+
+Matrix3 RigidBody::GetInverseInertiaTensorWorld() const
+{
+    return inverseInertiaTensorWorld;
+};
+
+
 void RigidBody::SetDamping(const double linearDamping, const double angularDamping)
 {
     RigidBody::linearDamping = linearDamping;
@@ -346,7 +357,7 @@ void RigidBody::GetTransform(double matrix[16]) const
     matrix[15] = 1;
 };
 
-Matrix4 RigidBody::GetTransform()
+Matrix4 RigidBody::GetTransform() const
 {
     return transformationMatrix;
 };
@@ -474,7 +485,7 @@ void RigidBody::AddForceAtBodyPoint(const Vector3& force, const Vector3& point)
 {
     // Convert to coordinates to world space
     Vector3 wsPoint = GetPointInWorldSpace(point);
-    AddForceAtBodyPoint(force, point);
+    AddForceAtPoint(force, point);
 }
 
 void RigidBody::AddForceAtPoint(const Vector3& force, const Vector3& point)
