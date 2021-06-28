@@ -81,7 +81,7 @@ public:
 	// Creates new contact resolver with given number of iterations per resolution call
 	ContactResolver(unsigned iterations, double velocityEpsilon = 0.01, double positionEpsilon = 0.01);
 
-	ContactResolver(unsigned iterations, unsigned positionIterations, float velocityEpsilon = 0.01f, float positionEpsilon = 0.01f);
+	ContactResolver(unsigned iterations, unsigned positionIterations, double velocityEpsilon = 0.01, double positionEpsilon = 0.01);
 
 	bool isResolverValid()
 	{
@@ -106,6 +106,19 @@ protected:
 	// Configures internal data of contacts before processing 
 	// and makes sure the correct set of bodies is made alive
 	void PrepareContacts(Contact* contacts, unsigned numContacts, double duration);
+
+
+	//Resolves the velocity issues with the given array of constraints,
+	// using the given number of iterations.
+	void AdjustVelocities(Contact* contactArray,
+						  unsigned numContacts,
+						  double duration);
+
+	// Resolves the positional issues with the given array of constraints,
+	// using the given number of iterations.
+	void AdjustPositions(Contact* contacts,
+						 unsigned numContacts,
+						 double duration);
 
 protected:
 	unsigned velocityIterations;

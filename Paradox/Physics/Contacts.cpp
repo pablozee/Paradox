@@ -485,3 +485,198 @@ void Contact::ApplyPositionChange(Vector3 linearChange[2], Vector3 angularChange
 		if (!body[i]->GetAwakeStatus()) body[i]->CalculateDerivedData();
 	}
 }
+
+// Contact resolver implementation
+
+ContactResolver::ContactResolver(unsigned iterations,
+								 double velocityEpsilon,
+								 double positionEpsilon)
+{
+	SetIterations(iterations, iterations);
+	SetEpsilon(velocityEpsilon, positionEpsilon);
+}
+
+ContactResolver::ContactResolver(unsigned velocityIterations,
+								 unsigned positionIterations,
+								 double velocityEpsilon,
+								 double positionEpsilon)
+{
+	SetIterations(velocityIterations);
+	SetEpsilon(velocityEpsilon, positionEpsilon);
+}
+
+void ContactResolver::SetIterations(unsigned iterations)
+{
+	SetIterations(iterations, iterations);
+}
+
+void ContactResolver::SetIterations(unsigned velocityIterations,
+									unsigned positionIterations)
+{
+	ContactResolver::velocityIterations = velocityIterations;
+	ContactResolver::positionIterations = positionIterations;
+}
+
+void ContactResolver::SetEpsilon(double velocityEpsilon,
+	double positionEpsilon)
+{
+	ContactResolver::velocityEpsilon = velocityEpsilon;
+	ContactResolver::positionEpsilon = positionEpsilon;
+}
+
+void ContactResolver::ResolveContacts(Contact* contacts,
+									  unsigned numContacts,
+									  double duration)
+{
+	// Make sure we have something to do.
+	if (numContacts == 0) return;
+	if (!isResolverValid()) return;
+
+	// Prepare the contacts for processing
+	PrepareContacts(contacts, numContacts, duration);
+
+	// Resolve the interpenetration problems with the contacts.
+	AdjustPositions(contacts, numContacts, duration);
+
+	// Resolve the velocity problems with the contacts.
+	AdjustVelocities(contacts, numContacts, duration);
+}
+
+void ContactResolver::PrepareContacts(Contact* contacts,
+									  unsigned numContacts,
+									  double duration)
+{
+	// Generate contact velocity and axis information.
+	Contact* lastContact = contacts + numContacts;
+	for (Contact* contact = contacts; contact < lastContact; contact++)
+	{
+		// Calculate the internal contact data (inertia, basis, etc).
+		contact->CalculateInternals(duration);
+	}
+}
+
+void ContactResolver::AdjustVelocities(Contact* c,
+									   unsigned numContacts,
+									   double duration)
+{
+	Vector3 velocityChange[2], rotationChange[2];
+	Vector3 deltaVel;
+
+	// Iteratively handle impacts in order of severity.
+	velocityIterationsUsed = 0;
+	while (velocityIterationsUsed < velocityIterations)
+	{
+		// Find contact with maximum magnitude of probable velocity change
+		double max = velocityEpsilon;
+		unsigned index = numContacts;
+		
+		for (unsigned i = 0; i < numContacts; i++)
+		{
+			if (c[i].desiredDeltaVelocity > max)
+			{
+				max = c[i].desiredDeltaVelocity;
+				index = i;
+			}
+		}
+
+		if (index == numContacts) break;
+
+		// Match the awake state at the contact
+		c[index].MatchAwakeState();
+
+		// Do the resolution on the contact that came out top.
+		c[index].ApplyVelocityChange(velocityChange, rotationChange);
+
+		// With the change in velocity of the two bodies, the update
+		// of contact velocities means that some of the relative closing
+		// velocities need recomputing.
+		for (unsigned i = 0; i < numContacts; i++)
+		{
+			// Check each body in the contact
+			for (unsigned b = 0; b < 2; b++) if (c[i].body[b])
+			{
+				// Check for a match with each body in the newly
+				// resolved contact
+				for (unsigned d = 0; d < 2; d++)
+				{
+					if (c[i].body[b] == c[index].body[d])
+					{
+						deltaVel = velocityChange[d] +
+							rotationChange[d].vectorProduct(
+								c[i].relativeContactPosition[b]);
+					
+						// The sign of the change is negative if we're 
+						// dealing with the second body in a contact.
+						c[i].contactVelocity +=
+							c[i].contactToWorld.transformTranspose(deltaVel)
+							* (b ? -1 : 1);
+						c[i].CalculateDesiredDeltaVelocity(duration);
+					}
+				}
+			}
+		}
+		velocityIterationsUsed++;
+	}
+}
+
+void ContactResolver::AdjustPositions(Contact* c,
+	unsigned numContacts,
+	double duration)
+{
+	unsigned i, index;
+	Vector3 linearChange[2], angularChange[2];
+	double max;
+	Vector3 deltaPosition;
+
+	// Iteratively resolve interpenetrations in order of severity.
+	positionIterationsUsed = 0;
+	while (positionIterationsUsed < positionIterations)
+	{
+		// Find the biggest penetration
+		max = positionEpsilon;
+		index = numContacts;
+		for (i = 0; i < numContacts; i++)
+		{
+			if (c[i].penetration > max)
+			{
+				max = c[i].penetration;
+				index = i;
+			}
+		}
+
+		if (index == numContacts) break;
+
+		// Match the awake state at the contact
+		c[index].MatchAwakeState();
+
+		// Resolve the penetration
+		c[index].ApplyPositionChange(linearChange, angularChange, max);
+
+		// Again this action may have changed the penetration of other bodies,
+		// so we update contacts
+		for (i = 0; i < numContacts; i++)
+		{
+			// Check each body in the contact
+			for (unsigned b = 0; b < 2; b++) if (c[i].body[b])
+			{
+				// Check for a match with each body in the newly resolved contact
+				for (unsigned d = 0; d < 2; d++)
+				{
+					if (c[i].body[b] == c[index].body[d])
+					{
+						deltaPosition = linearChange[d] +
+							angularChange[d].vectorProduct(
+								c[i].relativeContactPosition[b]);
+
+						// The sign of the change is positive if we're dealing with
+						// the second body in a contact and negative otherwise
+						// (because we're subtracting the resolution)..
+						c[i].penetration += deltaPosition.scalarProduct(c[i].contactNormal)
+							* (b ? 1 : -1);
+					}
+				}
+			}
+		}
+		positionIterationsUsed++;
+	}
+}
