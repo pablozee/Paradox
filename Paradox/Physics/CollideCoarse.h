@@ -6,7 +6,7 @@
 #include "contacts.h"
 
 // Represents a bounding sphere that can be tested for overlap
-struct BoundingSphere
+struct BoundingSphereVolume
 {
 	Vector3 centre;
 	double radius;
@@ -14,13 +14,13 @@ struct BoundingSphere
 public:
 	
 	// Creates a new bounding sphere at the given centre and radius
-	BoundingSphere(const Vector3& centre, double radius);
+	BoundingSphereVolume(const Vector3& centre, double radius);
 
 	// Creates a bounding sphere to enclose the two given bounding spheres
-	BoundingSphere(const BoundingSphere& one, const BoundingSphere& two);
+	BoundingSphereVolume(const BoundingSphereVolume& one, const BoundingSphereVolume& two);
 
 	// Check if the bounding sphere overlaps with the other given bounding sphere
-	bool Overlaps(const BoundingSphere* other) const;
+	bool Overlaps(const BoundingSphereVolume* other) const;
 
 	/**
 	* Reports how much this bounding sphere would have to grow by to
@@ -30,7 +30,7 @@ public:
 	* In fact the best implementation takes into account the growth in
 	* surface area (after the Goldsmith-Salmon algorithm for tree construction).
 	*/
-	double GetGrowth(const BoundingSphere& other) const;
+	double GetGrowth(const BoundingSphereVolume& other) const;
 
 	/**
 	* Returns the volume of this bounding volume. This is used
@@ -76,13 +76,13 @@ public:
 	* but the code provided ignores this vector unless firstChild
 	* is NULL.
 	*/
-	Rigidbody* body;
+	RigidBody* body;
 
 	// Holds the node immediately above us in the truee.
 	BVHNode* parent;
 
 	// Creates a new node in the hierarchy with the given parameters.
-	BVHNode(BVHNode* parent, const BoundingVolumeClass& volume, Rigidbody* body = NULL)
+	BVHNode(BVHNode* parent, const BoundingVolumeClass& volume, RigidBody* body = NULL)
 		:
 		parent(parent),
 		volume(volume),
@@ -102,7 +102,7 @@ public:
 	* hierarchy, writing them to the given array (up to the given limit).
 	* Returns the number of potential contacts it founds.
 	*/
-	unsigned GetPotentialContacts(PotentialContact* contacts, unsigned limit) consts;
+	unsigned GetPotentialContacts(PotentialContact* contacts, unsigned limit) const;
 
 	/**
 	* Inserts the given rigidbody, with the given bounding volume,

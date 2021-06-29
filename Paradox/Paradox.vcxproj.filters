@@ -48,6 +48,9 @@
     <ClCompile Include="ParadoxMath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Physics\CollideCoarse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
