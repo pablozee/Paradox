@@ -178,6 +178,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
+    <ClInclude Include="Physics\CollideFine.h" />
     <ClInclude Include="Events\ApplicationEvent.h" />
     <ClInclude Include="Events\Event.h" />
     <ClInclude Include="Events\KeyEvent.h" />
