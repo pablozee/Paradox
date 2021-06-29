@@ -193,6 +193,7 @@
     <ClInclude Include="include\stb_image.h" />
     <ClInclude Include="include\tiny_obj_loader.h" />
     <ClInclude Include="Physics\Body.h" />
+    <ClInclude Include="Physics\CollideCoarse.h" />
     <ClInclude Include="Physics\Contacts.h" />
     <ClInclude Include="ParadoxMath.h" />
     <ClInclude Include="Physics\World.h" />

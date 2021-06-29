@@ -3,6 +3,7 @@
 
 using namespace DirectX;
 
+#define M_PI 3.14159265358979323846
 
 /**
  * Holds a vector in 3 dimensions. Four data members are allocated
