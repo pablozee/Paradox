@@ -230,7 +230,7 @@ protected:
 	 * vector per generator and having to update it manually as the
 	 * wind changes.
 	 */
-	const Vector3 windspeed;
+	const Vector3* windspeed;
 
 public:
 
@@ -255,7 +255,7 @@ protected:
 
 	virtual void updateForceFromTensor(RigidBody* body,
 									   double duration,
-									   const Matrix3* tensor);
+									   const Matrix3 &tensor);
 };
 
 /**
@@ -395,7 +395,7 @@ public:
 	/**
 	 * Creates a new buoyancy force with the given parameters.
 	 */
-	Buoyancy(const Vector3 centreOfBuoyancy,
+	Buoyancy(const Vector3 &cOfB,
 			 double maxDepth,
 			 double volume,
 			 double waterHeight,

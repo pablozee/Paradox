@@ -173,6 +173,7 @@
     <ClCompile Include="Physics\CollideCoarse.cpp" />
     <ClCompile Include="Physics\CollideFine.cpp" />
     <ClCompile Include="Physics\Contacts.cpp" />
+    <ClCompile Include="Physics\ForceGen.cpp" />
     <ClCompile Include="Physics\Random.cpp" />
     <ClCompile Include="Physics\World.cpp" />
     <ClCompile Include="Window.cpp" />
