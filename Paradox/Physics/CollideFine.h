@@ -161,9 +161,9 @@ public:
 	 */
 
 	static bool BoxAndHalfSpace(
-		const CollisionBox &box,
-		const CollisionPlane &plane
-	)
+		const CollisionBox& box,
+		const CollisionPlane& plane
+	);
 };
 
 /**

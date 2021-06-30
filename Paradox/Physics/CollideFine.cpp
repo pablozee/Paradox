@@ -317,8 +317,8 @@ static inline Vector3 ContactPoint(
 )
 {
 	Vector3 toSt, cOne, cTwo;
-	real dpStaOne, dpStaTwo, dpOneTwo, smOne, smTwo;
-	real denom, mua, mub;
+	double dpStaOne, dpStaTwo, dpOneTwo, smOne, smTwo;
+	double denom, mua, mub;
 
 	smOne = dOne.squareMagnitude();
 	smTwo = dTwo.squareMagnitude();
@@ -331,7 +331,7 @@ static inline Vector3 ContactPoint(
 	denom = smOne * smTwo - dpOneTwo * dpOneTwo;
 
 	// Zero denominator indicates parrallel lines
-	if (real_abs(denom) < 0.0001f) {
+	if (abs(denom) < 0.0001f) {
 		return useOne ? pOne : pTwo;
 	}
 
@@ -539,7 +539,7 @@ unsigned CollisionDetector::BoxAndSphere(const CollisionBox& box, const Collisio
 {
 	// Transform the centre of the sphere into box coordinates
 	Vector3 centre = sphere.GetAxis(3);
-	Vector3 relCentre = box.GetTransform.transformInverse(centre);
+	Vector3 relCentre = box.transform.transformInverse(centre);
 
 	// Early out check to see if we can exclude the contact
 	if (abs(relCentre.x) - sphere.radius > box.halfSize.x ||
