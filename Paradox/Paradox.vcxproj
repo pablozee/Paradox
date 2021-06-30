@@ -200,6 +200,7 @@
     <ClInclude Include="Physics\CollideCoarse.h" />
     <ClInclude Include="Physics\Contacts.h" />
     <ClInclude Include="ParadoxMath.h" />
+    <ClInclude Include="Physics\ForceGen.h" />
     <ClInclude Include="Physics\Random.h" />
     <ClInclude Include="Physics\World.h" />
     <ClInclude Include="Structures.h" />
