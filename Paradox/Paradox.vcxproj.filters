@@ -51,6 +51,9 @@
     <ClCompile Include="Physics\CollideCoarse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Physics\CollideFine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">

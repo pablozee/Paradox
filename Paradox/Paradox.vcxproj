@@ -171,6 +171,7 @@
     <ClCompile Include="ParadoxMath.cpp" />
     <ClCompile Include="Physics\Body.cpp" />
     <ClCompile Include="Physics\CollideCoarse.cpp" />
+    <ClCompile Include="Physics\CollideFine.cpp" />
     <ClCompile Include="Physics\Contacts.cpp" />
     <ClCompile Include="Physics\World.cpp" />
     <ClCompile Include="Window.cpp" />
