@@ -41,17 +41,17 @@ protected:
 	bool autoPauseSimulation;
 
 	// Processes the contact generation code
-	virtual void generateContacts() = 0;
+//	virtual void generateContacts() = 0;
 
 	// Processes the objects in the simulation forward in time
-	virtual void updateObjects(double duration) = 0;
+//	virtual void updateObjects(double duration) = 0;
 
 	// Finishes drawing the frame, adding debug information
 	// as needed
-	void drawDebug();
+//	void drawDebug();
 
 	// Resets the simulation
-	virtual void reset() = 0;
+//	virtual void reset() = 0;
 
 public:
 
@@ -59,7 +59,7 @@ public:
 	RigidBodyApplication();
 
 	// Display the application
-	virtual void display();
+//	virtual void display();
 
 	// Update the objects
 	virtual void update();

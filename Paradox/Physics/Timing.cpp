@@ -9,6 +9,7 @@ static bool qpcFlag;
 // Import the high performance timer (c. 4ms)
 #include <windows.h>
 #include <mmsystem.h>
+# pragma comment(lib, "winmm.lib")
 
 static double qpcFrequency;
 
@@ -34,10 +35,7 @@ unsigned TimingData::getTime()
 
 unsigned long systemClock()
 {
-	__asm 
-	{
-		rdtsc;
-	}
+	return __rdtsc();
 }
 
 unsigned long TimingData::getClock()

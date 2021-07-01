@@ -2,6 +2,7 @@
 
 #include "Events/ApplicationEvent.h"
 #include "Window.h"
+#include "Physics/PhysicsApp.h"
 
 class Application
 {
@@ -17,6 +18,8 @@ public:
 
 	inline Window& GetWindow() { return *m_Window; }
 
+	inline RigidBodyApplication& GetRigidBodyApp() { return *m_RigidBodyApp; }
+
 
 private:
 	bool m_Running = true;
@@ -24,4 +27,5 @@ private:
 
 	std::unique_ptr<Window> m_Window;
 	static Application* s_Instance;
+	std::unique_ptr<RigidBodyApplication> m_RigidBodyApp;
 };
