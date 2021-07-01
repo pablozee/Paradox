@@ -22,8 +22,8 @@ void Graphics::Init(HWND hwnd)
 	m_Geometry->name = name;
 	m_Geometries[m_Geometry->name] = std::move(m_Geometry);
 	
-	LoadModel("models/skull.obj", name, 0);
-	LoadModel("models/altar.obj", name, 1);
+	LoadModel("models/DefaultCube.obj", name, 0);
+	LoadModel("models/Plane.obj", name, 1);
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -958,10 +958,10 @@ void Graphics::BuildRenderItems()
 	skull->matCBIndex = 0;
 	skull->geometry = m_Geometries["Geometry"].get();
 	skull->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	skull->indexCount = skull->geometry->drawArgs["models/skull.obj"].get()->indexCount;
-	skull->vertexCount = skull->geometry->drawArgs["models/skull.obj"].get()->vertexCount;
-	skull->startIndexLocation = skull->geometry->drawArgs["models/skull.obj"].get()->startIndexLocation;
-	skull->baseVertexLocation = skull->geometry->drawArgs["models/skull.obj"].get()->baseVertexLocation;
+	skull->indexCount = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->indexCount;
+	skull->vertexCount = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->vertexCount;
+	skull->startIndexLocation = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->startIndexLocation;
+	skull->baseVertexLocation = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->baseVertexLocation;
 
 	m_GBufferPassRenderItems.push_back(skull.get());
 	m_RayTracingPassRenderItems.push_back(skull.get());
@@ -973,10 +973,10 @@ void Graphics::BuildRenderItems()
 	altar->matCBIndex = 1;
 	altar->geometry = m_Geometries["Geometry"].get();
 	altar->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	altar->indexCount = altar->geometry->drawArgs["models/altar.obj"].get()->indexCount;
-	altar->vertexCount = altar->geometry->drawArgs["models/altar.obj"].get()->vertexCount;
-	altar->startIndexLocation = altar->geometry->drawArgs["models/altar.obj"].get()->startIndexLocation;
-	altar->baseVertexLocation = altar->geometry->drawArgs["models/altar.obj"].get()->baseVertexLocation;
+	altar->indexCount = altar->geometry->drawArgs["models/Plane.obj"].get()->indexCount;
+	altar->vertexCount = altar->geometry->drawArgs["models/Plane.obj"].get()->vertexCount;
+	altar->startIndexLocation = altar->geometry->drawArgs["models/Plane.obj"].get()->startIndexLocation;
+	altar->baseVertexLocation = altar->geometry->drawArgs["models/Plane.obj"].get()->baseVertexLocation;
 
 
 	m_GBufferPassRenderItems.push_back(altar.get());
