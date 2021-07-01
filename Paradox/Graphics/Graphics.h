@@ -168,5 +168,5 @@ private:
 	Vector3 gravityAmount = Vector3(0.0, -3.0, 0.0);
 	ForceRegistry registry;
 
-	Gravity* m_Gravity;
+	Gravity m_Gravity;
 };

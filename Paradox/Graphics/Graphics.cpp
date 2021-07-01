@@ -8,7 +8,8 @@ using namespace DirectX;
 
 Graphics::Graphics(Config config)
 	:
-	m_D3DParams(config.width, config.height, true)
+	m_D3DParams(config.width, config.height, true),
+	m_Gravity(Vector3(0.0, -2.0, 0.0))
 {}
 
 Graphics::~Graphics()
@@ -26,11 +27,11 @@ void Graphics::Init(HWND hwnd)
 	LoadModel("models/DefaultCube.obj", name, 0);
 	LoadModel("models/Plane.obj", name, 1);
 
-	m_Gravity = &Gravity(gravityAmount);
+	m_Gravity = Gravity(gravityAmount);
 
 	cubeBody.body = new RigidBody;
 	cubeBody.body->SetPosition(Vector3(0, 4, 0));
-	cubeBody.body->SetMass(100.0f);
+	cubeBody.body->SetMass(1.0f);
 	Matrix3 tensor;
 	//	tensor.setBlockInertiaTensor(Vector3(5, 5, 5), 10.f);
 	//	cubeBody.body->SetInertiaTensor(tensor);
@@ -44,7 +45,7 @@ void Graphics::Init(HWND hwnd)
 	cubeBody.CalculateInternals();
 
 
-	registry.add(cubeBody.body, m_Gravity);
+	registry.add(cubeBody.body, &m_Gravity);
 
 	InitializeShaderCompiler();
 
@@ -120,46 +121,23 @@ void Graphics::Update()
 		CloseHandle(eventHandle);
 	}
 
-	for (auto& renderItem : m_AllRenderItems)
-	{
-		if (renderItem->name == "skull")
-		{
-			/**
-			 *
-			cubeBody.body->AddForce(gravityAmount);
-			cubeBody.body->CalculateDerivedData();
-			Matrix4 skullWorldMat = cubeBody.GetTransform();
-			float skullWorld0 = skullWorldMat.data[0];
-			float skullWorld1 = skullWorldMat.data[1];
-			float skullWorld2 = skullWorldMat.data[2];
-			float skullWorld3 = skullWorldMat.data[3];
-			float skullWorld4 = skullWorldMat.data[4];
-			float skullWorld5 = skullWorldMat.data[5];
-			float skullWorld6 = skullWorldMat.data[6];
-			float skullWorld7 = skullWorldMat.data[7];
-			float skullWorld8 = skullWorldMat.data[8];
-			float skullWorld9 = skullWorldMat.data[9];
-			float skullWorld10 = skullWorldMat.data[10];
-			float skullWorld11 = skullWorldMat.data[11];
-			float skullWorld04 = 0;
-			float skullWorld14 = 0;
-			float skullWorld24 = 0;
-			float skullWorld34 = 1;
 
-			//	float skullWorld15 = cubeBody.body->GetTransform();
+//	float duration = (float)TimingData::get().lastFrameDuration * 0.001f;
+//	if (duration <= 0.0f) return;
 
+	float duration = 0.03f;
 
-			XMMATRIX skullWorldMatXM = { skullWorld0, skullWorld1, skullWorld2, skullWorld04,
-				skullWorld3, skullWorld4, skullWorld5, skullWorld14,
-				skullWorld6, skullWorld7, skullWorld8, skullWorld24,
-				skullWorld9, skullWorld10, skullWorld11, skullWorld34 };
-			renderItem->world = skullWorldMatXM;
-			 */
-		}
-	}
-//	grav.updateForce(&cubeBodyRB, 1);
-//	cubeBody.body->Integrate(1);
-//	cubeBody.CalculateInternals();
+	// Start with no forces or acceleration
+	cubeBody.body->ClearAccumulators();
+
+	// Add the forces acting on the cube
+	registry.updateForces(duration);
+
+//	cubeBody.body->AddForce(gravityAmount);
+
+	// Update the cubes physics
+	cubeBody.body->Integrate(duration);
+
 	UpdateLightsSceneCB();
 	UpdateObjectCBs();
 	UpdateMaterialCBs();
@@ -1255,29 +1233,31 @@ void Graphics::UpdateObjectCBs()
 
 	for (auto& renderItem : m_AllRenderItems)
 	{
-		if (renderItem->numFramesDirty > 0)
-		{
 			if (renderItem->name == "skull")
 			{
 				/**
 				 * 
+				 */
 				Matrix4 skullWorldMat = cubeBody.GetTransform();
 				float skullWorld0 = skullWorldMat.data[0];
-				float skullWorld1 = skullWorldMat.data[1];
-				float skullWorld2 = skullWorldMat.data[2];
-				float skullWorld3 = skullWorldMat.data[3];
-				float skullWorld4 = skullWorldMat.data[4];
+				float skullWorld1 = skullWorldMat.data[4];
+				float skullWorld2 = skullWorldMat.data[8];
+				float skullWorld3 = 0;
+
+				float skullWorld4 = skullWorldMat.data[1];
 				float skullWorld5 = skullWorldMat.data[5];
-				float skullWorld6 = skullWorldMat.data[6];
-				float skullWorld7 = skullWorldMat.data[7];
-				float skullWorld8 = skullWorldMat.data[8];
-				float skullWorld9 = skullWorldMat.data[9];
+				float skullWorld6 = skullWorldMat.data[9];
+				float skullWorld7 = 0;
+				
+				float skullWorld8 = skullWorldMat.data[2];
+				float skullWorld9 = skullWorldMat.data[6];
 				float skullWorld10 = skullWorldMat.data[10];
-				float skullWorld11 = skullWorldMat.data[11];
-				float skullWorld04 = 1;
-				float skullWorld14 = 1;
-				float skullWorld24 = 1;
-				float skullWorld34 = 1;
+				float skullWorld11 = 0;
+
+				float skullWorld12 = skullWorldMat.data[3];
+				float skullWorld13 = skullWorldMat.data[7];
+				float skullWorld14 = skullWorldMat.data[11];
+				float skullWorld15 = 1;
 				
 			//	float skullWorld15 = cubeBody.body->GetTransform();
 
@@ -1285,10 +1265,12 @@ void Graphics::UpdateObjectCBs()
 				XMMATRIX skullWorldMatXM = { skullWorld0, skullWorld1, skullWorld2, skullWorld3,
 											 skullWorld4, skullWorld5, skullWorld6, skullWorld7,
 											 skullWorld8, skullWorld9, skullWorld10, skullWorld11,
-											 skullWorld04, skullWorld14, skullWorld24, skullWorld34 };
+											 skullWorld12, skullWorld13, skullWorld14, skullWorld15 };
 				renderItem->world = skullWorldMatXM;
-				 */
-			}
+				renderItem->numFramesDirty = 3;
+		}
+		if (renderItem->numFramesDirty > 0)
+		{
 			ObjectCB objectCB;
 			objectCB.world3x4 = renderItem->world3x4;
 			objectCB.objPadding = 0;
