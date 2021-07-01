@@ -1,5 +1,6 @@
 #include "Graphics.h"
 
+
 using namespace DirectX;
 
 #define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
@@ -97,7 +98,7 @@ void Graphics::Update()
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
 	}
-
+	grav.updateForce(&cubeBodyRB, 1);
 	UpdateLightsSceneCB();
 	UpdateObjectCBs();
 	UpdateMaterialCBs();
@@ -952,6 +953,7 @@ void Graphics::BuildRenderItems()
 	auto skull = std::make_unique<RenderItem>();
 	auto altar = std::make_unique<RenderItem>();
 
+	skull->name = "skull";
 	skull->world = XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0f, 4.0f, 0.0f);
 	XMStoreFloat3x4(&skull->world3x4, XMMatrixTranspose(skull->world));
 	skull->objCBIndex = 0;
@@ -967,6 +969,7 @@ void Graphics::BuildRenderItems()
 	m_RayTracingPassRenderItems.push_back(skull.get());
 	m_AllRenderItems.push_back(std::move(skull));
 
+	altar->name = "altar";
 	altar->world = XMMatrixScaling(6.3f, 6.3f, 6.3f) * XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, -7.6f, 0.0f);
 	XMStoreFloat3x4(&altar->world3x4, XMMatrixTranspose(altar->world));
 	altar->objCBIndex = 1;
@@ -1193,6 +1196,31 @@ void Graphics::UpdateObjectCBs()
 	{
 		if (renderItem->numFramesDirty > 0)
 		{
+			if (renderItem->name == "skull")
+			{
+				float skullWorld0 = cubeBody.body->GetTransform().data[0];
+				float skullWorld1 = cubeBody.body->GetTransform().data[1];
+				float skullWorld2 = cubeBody.body->GetTransform().data[2];
+				float skullWorld3 = cubeBody.body->GetTransform().data[3];
+				float skullWorld4 = cubeBody.body->GetTransform().data[4];
+				float skullWorld5 = cubeBody.body->GetTransform().data[5];
+				float skullWorld6 = cubeBody.body->GetTransform().data[6];
+				float skullWorld7 = cubeBody.body->GetTransform().data[7];
+				float skullWorld8 = cubeBody.body->GetTransform().data[8];
+				float skullWorld9 = cubeBody.body->GetTransform().data[9];
+				float skullWorld10 = cubeBody.body->GetTransform().data[10];
+				float skullWorld11 = cubeBody.body->GetTransform().data[11];
+				float skullWorld12 = cubeBody.body->GetTransform().data[12];
+				float skullWorld13 = cubeBody.body->GetTransform().data[13];
+				float skullWorld14 = cubeBody.body->GetTransform().data[14];
+				float skullWorld15 = cubeBody.body->GetTransform().data[15];
+
+				XMMATRIX skullWorldMat = { skullWorld0, skullWorld1, skullWorld2, skullWorld3,
+											 skullWorld4, skullWorld5, skullWorld6, skullWorld7,
+											 skullWorld8, skullWorld9, skullWorld10, skullWorld11,
+											 skullWorld12, skullWorld13, skullWorld14, skullWorld15 };
+				renderItem->world = skullWorldMat;
+			}
 			ObjectCB objectCB;
 			objectCB.world3x4 = renderItem->world3x4;
 			objectCB.objPadding = 0;
@@ -2452,4 +2480,25 @@ void Graphics::SeedRandomVector(XMFLOAT3 randomVector)
 	float z = float(rand() % 100) + static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
 	randomVector = XMFLOAT3{ x, y, z };
+}
+
+void Graphics::createCubeBody()
+{
+	cubeBody.body = new RigidBody;
+	}
+
+void Graphics::generateContacts()
+{
+	// Create the ground plane data
+	CollisionPlane plane;
+	plane.direction = Vector3(0, 1, 0);
+	plane.offset = 0;
+
+	// Set up the collision data structure
+	cData.Reset(maxContacts);
+	cData.friction = 0.9;
+	cData.restitution = 0.6;
+	cData.tolerance = 0.1;
+
+
 }

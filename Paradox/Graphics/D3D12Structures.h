@@ -74,6 +74,8 @@ struct RenderItem
 	RenderItem() = default;
 	RenderItem(const RenderItem& rhs) = delete;
 
+	string name;
+
 	XMMATRIX world = XMMatrixIdentity();
 	XMFLOAT3X4 world3x4 = XMFLOAT3X4(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 

@@ -3,8 +3,11 @@
 #include "../Structures.h"
 #include "D3D12Structures.h"
 #include "FrameResource.h"
+#include "../Physics/PhysicsApp.h"
+#include "../Physics/ForceGen.h"
 
-class Graphics
+
+class Graphics : public RigidBodyApplication
 {
 public:
 	Graphics(Config config);
@@ -115,6 +118,16 @@ private:
 	void DestroyShaders();
 	void DestroyD3D12Objects();
 
+public: 
+	
+	void createCubeBody();
+
+	virtual void generateContacts();
+
+//	virtual void updateObjects(double duration);
+
+//	virtual void reset();
+
 private:
 	D3D12Params m_D3DParams;
 	D3D12Objects m_D3DObjects;
@@ -149,4 +162,11 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Model>> m_Models;
 	std::unordered_map<std::string, std::unique_ptr<Material>> m_Materials;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
+
+	CollisionBox cubeBody;
+	RigidBody cubeBodyRB;
+	Vector3 gravityAmount = Vector3(0, -2, 0);
+
+
+	Gravity grav = Gravity(gravityAmount);
 };
