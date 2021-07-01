@@ -165,8 +165,8 @@ private:
 
 	CollisionBox cubeBody;
 	RigidBody cubeBodyRB;
-	Vector3 gravityAmount = Vector3(0, -2, 0);
+	Vector3 gravityAmount = Vector3(0.0, -3.0, 0.0);
+	ForceRegistry registry;
 
-
-	Gravity grav = Gravity(gravityAmount);
+	Gravity* m_Gravity;
 };

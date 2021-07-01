@@ -25,7 +25,27 @@ void Graphics::Init(HWND hwnd)
 	
 	LoadModel("models/DefaultCube.obj", name, 0);
 	LoadModel("models/Plane.obj", name, 1);
-	createCubeBody();
+
+	m_Gravity = &Gravity(gravityAmount);
+
+	cubeBody.body = new RigidBody;
+	cubeBody.body->SetPosition(Vector3(0, 4, 0));
+	cubeBody.body->SetMass(100.0f);
+	Matrix3 tensor;
+	//	tensor.setBlockInertiaTensor(Vector3(5, 5, 5), 10.f);
+	//	cubeBody.body->SetInertiaTensor(tensor);
+	cubeBody.body->SetLinearDamping(0.95f);
+	cubeBody.body->SetAngularDamping(0.8f);
+	cubeBody.body->ClearAccumulators();
+	cubeBody.body->SetAcceleration(Vector3::GRAVITY);
+	cubeBody.body->SetCanSleep(false);
+	cubeBody.body->SetAwakeStatus();
+	cubeBody.body->CalculateDerivedData();
+	cubeBody.CalculateInternals();
+
+
+	registry.add(cubeBody.body, m_Gravity);
+
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -106,7 +126,7 @@ void Graphics::Update()
 		{
 			/**
 			 *
-			 */
+			cubeBody.body->AddForce(gravityAmount);
 			cubeBody.body->CalculateDerivedData();
 			Matrix4 skullWorldMat = cubeBody.GetTransform();
 			float skullWorld0 = skullWorldMat.data[0];
@@ -134,11 +154,12 @@ void Graphics::Update()
 				skullWorld6, skullWorld7, skullWorld8, skullWorld24,
 				skullWorld9, skullWorld10, skullWorld11, skullWorld34 };
 			renderItem->world = skullWorldMatXM;
+			 */
 		}
 	}
-	grav.updateForce(&cubeBodyRB, 1);
-	cubeBody.body->Integrate(1);
-	cubeBody.CalculateInternals();
+//	grav.updateForce(&cubeBodyRB, 1);
+//	cubeBody.body->Integrate(1);
+//	cubeBody.CalculateInternals();
 	UpdateLightsSceneCB();
 	UpdateObjectCBs();
 	UpdateMaterialCBs();
@@ -2531,21 +2552,6 @@ void Graphics::SeedRandomVector(XMFLOAT3 randomVector)
 
 void Graphics::createCubeBody()
 {
-	cubeBody.body = new RigidBody;
-	cubeBody.body->SetPosition(Vector3(0, 4, 0));
-	cubeBody.body->SetMass(10.0f);
-	Matrix3 tensor;
-//	tensor.setBlockInertiaTensor(Vector3(5, 5, 5), 10.f);
-//	cubeBody.body->SetInertiaTensor(tensor);
-	cubeBody.body->SetLinearDamping(0.95f);
-	cubeBody.body->SetAngularDamping(0.8f);
-	cubeBody.body->ClearAccumulators();
-//	cubeBody.body->SetAcceleration(Vector3::GRAVITY);
-	cubeBody.body->SetCanSleep(false);
-	cubeBody.body->SetAwakeStatus();
-	cubeBody.body->CalculateDerivedData();
-	cubeBody.CalculateInternals();
-	
 	
 	}
 
