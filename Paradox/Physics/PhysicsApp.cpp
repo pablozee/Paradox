@@ -16,7 +16,8 @@ RigidBodyApplication::RigidBodyApplication()
 void RigidBodyApplication::update()
 {
 	// Find the duration of the last frame in seconds
-	float duration = (float)TimingData::get().lastFrameDuration * 0.001f;
+//	float duration = (float)TimingData::get().lastFrameDuration * 0.001f;
+	float duration = 0.03f;
 	if (duration < 0.0f) return;
 	else if (duration > 0.05f) duration = 0.05f;
 

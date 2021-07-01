@@ -25,6 +25,7 @@ void Graphics::Init(HWND hwnd)
 	
 	LoadModel("models/DefaultCube.obj", name, 0);
 	LoadModel("models/Plane.obj", name, 1);
+	createCubeBody();
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -98,7 +99,46 @@ void Graphics::Update()
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
 	}
+
+	for (auto& renderItem : m_AllRenderItems)
+	{
+		if (renderItem->name == "skull")
+		{
+			/**
+			 *
+			 */
+			cubeBody.body->CalculateDerivedData();
+			Matrix4 skullWorldMat = cubeBody.GetTransform();
+			float skullWorld0 = skullWorldMat.data[0];
+			float skullWorld1 = skullWorldMat.data[1];
+			float skullWorld2 = skullWorldMat.data[2];
+			float skullWorld3 = skullWorldMat.data[3];
+			float skullWorld4 = skullWorldMat.data[4];
+			float skullWorld5 = skullWorldMat.data[5];
+			float skullWorld6 = skullWorldMat.data[6];
+			float skullWorld7 = skullWorldMat.data[7];
+			float skullWorld8 = skullWorldMat.data[8];
+			float skullWorld9 = skullWorldMat.data[9];
+			float skullWorld10 = skullWorldMat.data[10];
+			float skullWorld11 = skullWorldMat.data[11];
+			float skullWorld04 = 0;
+			float skullWorld14 = 0;
+			float skullWorld24 = 0;
+			float skullWorld34 = 1;
+
+			//	float skullWorld15 = cubeBody.body->GetTransform();
+
+
+			XMMATRIX skullWorldMatXM = { skullWorld0, skullWorld1, skullWorld2, skullWorld04,
+				skullWorld3, skullWorld4, skullWorld5, skullWorld14,
+				skullWorld6, skullWorld7, skullWorld8, skullWorld24,
+				skullWorld9, skullWorld10, skullWorld11, skullWorld34 };
+			renderItem->world = skullWorldMatXM;
+		}
+	}
 	grav.updateForce(&cubeBodyRB, 1);
+	cubeBody.body->Integrate(1);
+	cubeBody.CalculateInternals();
 	UpdateLightsSceneCB();
 	UpdateObjectCBs();
 	UpdateMaterialCBs();
@@ -1198,28 +1238,35 @@ void Graphics::UpdateObjectCBs()
 		{
 			if (renderItem->name == "skull")
 			{
-				float skullWorld0 = cubeBody.body->GetTransform().data[0];
-				float skullWorld1 = cubeBody.body->GetTransform().data[1];
-				float skullWorld2 = cubeBody.body->GetTransform().data[2];
-				float skullWorld3 = cubeBody.body->GetTransform().data[3];
-				float skullWorld4 = cubeBody.body->GetTransform().data[4];
-				float skullWorld5 = cubeBody.body->GetTransform().data[5];
-				float skullWorld6 = cubeBody.body->GetTransform().data[6];
-				float skullWorld7 = cubeBody.body->GetTransform().data[7];
-				float skullWorld8 = cubeBody.body->GetTransform().data[8];
-				float skullWorld9 = cubeBody.body->GetTransform().data[9];
-				float skullWorld10 = cubeBody.body->GetTransform().data[10];
-				float skullWorld11 = cubeBody.body->GetTransform().data[11];
-				float skullWorld12 = cubeBody.body->GetTransform().data[12];
-				float skullWorld13 = cubeBody.body->GetTransform().data[13];
-				float skullWorld14 = cubeBody.body->GetTransform().data[14];
-				float skullWorld15 = cubeBody.body->GetTransform().data[15];
+				/**
+				 * 
+				Matrix4 skullWorldMat = cubeBody.GetTransform();
+				float skullWorld0 = skullWorldMat.data[0];
+				float skullWorld1 = skullWorldMat.data[1];
+				float skullWorld2 = skullWorldMat.data[2];
+				float skullWorld3 = skullWorldMat.data[3];
+				float skullWorld4 = skullWorldMat.data[4];
+				float skullWorld5 = skullWorldMat.data[5];
+				float skullWorld6 = skullWorldMat.data[6];
+				float skullWorld7 = skullWorldMat.data[7];
+				float skullWorld8 = skullWorldMat.data[8];
+				float skullWorld9 = skullWorldMat.data[9];
+				float skullWorld10 = skullWorldMat.data[10];
+				float skullWorld11 = skullWorldMat.data[11];
+				float skullWorld04 = 1;
+				float skullWorld14 = 1;
+				float skullWorld24 = 1;
+				float skullWorld34 = 1;
+				
+			//	float skullWorld15 = cubeBody.body->GetTransform();
 
-				XMMATRIX skullWorldMat = { skullWorld0, skullWorld1, skullWorld2, skullWorld3,
+
+				XMMATRIX skullWorldMatXM = { skullWorld0, skullWorld1, skullWorld2, skullWorld3,
 											 skullWorld4, skullWorld5, skullWorld6, skullWorld7,
 											 skullWorld8, skullWorld9, skullWorld10, skullWorld11,
-											 skullWorld12, skullWorld13, skullWorld14, skullWorld15 };
-				renderItem->world = skullWorldMat;
+											 skullWorld04, skullWorld14, skullWorld24, skullWorld34 };
+				renderItem->world = skullWorldMatXM;
+				 */
 			}
 			ObjectCB objectCB;
 			objectCB.world3x4 = renderItem->world3x4;
@@ -2485,6 +2532,21 @@ void Graphics::SeedRandomVector(XMFLOAT3 randomVector)
 void Graphics::createCubeBody()
 {
 	cubeBody.body = new RigidBody;
+	cubeBody.body->SetPosition(Vector3(0, 4, 0));
+	cubeBody.body->SetMass(10.0f);
+	Matrix3 tensor;
+//	tensor.setBlockInertiaTensor(Vector3(5, 5, 5), 10.f);
+//	cubeBody.body->SetInertiaTensor(tensor);
+	cubeBody.body->SetLinearDamping(0.95f);
+	cubeBody.body->SetAngularDamping(0.8f);
+	cubeBody.body->ClearAccumulators();
+//	cubeBody.body->SetAcceleration(Vector3::GRAVITY);
+	cubeBody.body->SetCanSleep(false);
+	cubeBody.body->SetAwakeStatus();
+	cubeBody.body->CalculateDerivedData();
+	cubeBody.CalculateInternals();
+	
+	
 	}
 
 void Graphics::generateContacts()
