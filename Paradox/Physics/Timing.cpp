@@ -9,7 +9,8 @@ static bool qpcFlag;
 // Import the high performance timer (c. 4ms)
 #include <windows.h>
 #include <mmsystem.h>
-# pragma comment(lib, "winmm.lib")
+#include <chrono>
+#include <ctime>
 
 static double qpcFrequency;
 
@@ -24,7 +25,12 @@ unsigned systemTime()
 	}
 	else
 	{
-		return unsigned(timeGetTime());
+		using std::chrono::duration_cast;
+		using std::chrono::milliseconds;
+		using std::chrono::seconds;
+		using std::chrono::system_clock;
+
+		auto millisec_since_epoch = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 	}
 }
 

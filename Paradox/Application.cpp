@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "Physics/Timing.h"
 
 #define BIND_EVENT_FN(x) std::bind(&x, this, std::placeholders::_1)
 
@@ -8,6 +9,7 @@ Application::Application(Config config)
 {
 	assert(!s_Instance);
 	s_Instance = this;
+	TimingData::init();
 	m_RigidBodyApp = std::make_unique<RigidBodyApplication>();
 	WindowProps props(config.windowTitle, config.width, config.height);
 	m_Window = std::unique_ptr<Window>(new Window(props, config));
@@ -30,11 +32,12 @@ int Application::Run()
 {
 	while (m_Running)
 	{
+		TimingData::get().update();
 		if (const auto ecode = Window::ProcessMessages())
 		{
 			return *ecode;
 		}
-	//	m_RigidBodyApp->update();
+		m_RigidBodyApp->update();
 		m_Window->GetGraphics()->Update();
 		m_Window->GetGraphics()->Render();
 	}
@@ -45,5 +48,6 @@ int Application::Run()
 bool Application::OnWindowClose(WindowCloseEvent& event)
 {
 	m_Running = false;
+	TimingData::deinit();
 	return true;
 }
