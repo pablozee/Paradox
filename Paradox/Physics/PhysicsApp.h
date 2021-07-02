@@ -62,7 +62,7 @@ public:
 //	virtual void display();
 
 	// Update the objects
-	virtual void update();
+	virtual void Update();
 
 	// TODO if necessary - mouse click, mouse drag, key press
 };

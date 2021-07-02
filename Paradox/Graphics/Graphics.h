@@ -7,7 +7,7 @@
 #include "../Physics/ForceGen.h"
 
 
-class Graphics : public RigidBodyApplication
+class Graphics
 {
 public:
 	Graphics(Config config);
@@ -122,11 +122,26 @@ public:
 	
 	void createCubeBody();
 
-	virtual void generateContacts();
+	void generateContacts();
 
-//	virtual void updateObjects(double duration);
+	void updateObjects(double duration);
 
 //	virtual void reset();
+
+
+protected:
+
+	// Holds the maximum number of contacts
+	const static unsigned maxContacts = 256;
+
+	// Holds the array of contacts
+	Contact contacts[maxContacts];
+
+	// Holds the collision data structure for collision detection
+	CollisionData cData;
+
+	// Holds the contact resolver
+	ContactResolver resolver;
 
 private:
 	D3D12Params m_D3DParams;

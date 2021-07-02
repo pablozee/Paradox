@@ -9,8 +9,11 @@ using namespace DirectX;
 Graphics::Graphics(Config config)
 	:
 	m_D3DParams(config.width, config.height, true),
-	m_Gravity(Vector3(0.0, -2.0, 0.0))
-{}
+	m_Gravity(Vector3(0.0, -2.0, 0.0)),
+	resolver(maxContacts * 8)
+{
+	cData.contactArray = contacts;
+}
 
 Graphics::~Graphics()
 {
@@ -136,7 +139,17 @@ void Graphics::Update()
 //	cubeBody.body->AddForce(gravityAmount);
 
 	// Update the cubes physics
-	cubeBody.body->Integrate(duration);
+//	cubeBody.body->Integrate(duration);
+
+	// Update the objects
+	updateObjects(duration);
+
+	// Perform the contact generation
+	generateContacts();
+
+	// Resolve the detected contacts
+	resolver.ResolveContacts(cData.contactArray, cData.contactCount, duration);
+
 
 	UpdateLightsSceneCB();
 	UpdateObjectCBs();
@@ -1258,14 +1271,12 @@ void Graphics::UpdateObjectCBs()
 				float skullWorld13 = 0;
 				float skullWorld14 = 0;
 				float skullWorld15 = 1;
-				
-			//	float skullWorld15 = cubeBody.body->GetTransform();
-
 
 				XMMATRIX skullWorldMatXM = { skullWorld0, skullWorld1, skullWorld2, skullWorld3,
 											 skullWorld4, skullWorld5, skullWorld6, skullWorld7,
 											 skullWorld8, skullWorld9, skullWorld10, skullWorld11,
 											 skullWorld12, skullWorld13, skullWorld14, skullWorld15 };
+				
 				renderItem->world = XMMatrixTranspose(skullWorldMatXM);
 				renderItem->numFramesDirty = 2;
 		}
@@ -2539,6 +2550,7 @@ void Graphics::createCubeBody()
 
 void Graphics::generateContacts()
 {
+	
 	// Create the ground plane data
 	CollisionPlane plane;
 	plane.direction = Vector3(0, 1, 0);
@@ -2550,5 +2562,16 @@ void Graphics::generateContacts()
 	cData.restitution = 0.6;
 	cData.tolerance = 0.1;
 
+	Matrix4 transform, otherTransform;
+	Vector3 position, otherPosition;
 
+	if (!cData.HasMoreContacts()) return;
+	CollisionDetector::BoxAndHalfSpace(cubeBody, plane, &cData);
 }
+
+void Graphics::updateObjects(double duration)
+{
+	cubeBody.body->Integrate(duration);
+	cubeBody.CalculateInternals();
+}
+

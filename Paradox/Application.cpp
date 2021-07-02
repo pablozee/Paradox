@@ -37,7 +37,7 @@ int Application::Run()
 		{
 			return *ecode;
 		}
-		m_RigidBodyApp->update();
+		m_RigidBodyApp->Update();
 		m_Window->GetGraphics()->Update();
 		m_Window->GetGraphics()->Render();
 	}

@@ -13,7 +13,7 @@ RigidBodyApplication::RigidBodyApplication()
 	cData.contactArray = contacts;
 }
 
-void RigidBodyApplication::update()
+void RigidBodyApplication::Update()
 {
 	// Find the duration of the last frame in seconds
 //	float duration = (float)TimingData::get().lastFrameDuration * 0.001f;
@@ -24,7 +24,7 @@ void RigidBodyApplication::update()
 	// Exit immediately if we aren't running the simulation
 	if (pauseSimulation)
 	{
-		// TODO May need to put in app.update.
+		// TODO May need to put in app.update / Graphics update
 		return;
 	}
 	else if (autoPauseSimulation)
@@ -32,14 +32,16 @@ void RigidBodyApplication::update()
 		pauseSimulation = true;
 		autoPauseSimulation = false;
 	}
-
+/**
+ * 
 	// Update the objects
-//	updateObjects(duration);
+	updateObjects(duration);
 
 	// Perform the contact generation
-//	generateContacts();
+	generateContacts();
 
 	// Resolve the detected contacts
 	resolver.ResolveContacts(cData.contactArray, cData.contactCount, duration);
+ */
 }
 
