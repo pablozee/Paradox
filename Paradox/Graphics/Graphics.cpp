@@ -35,6 +35,7 @@ void Graphics::Init(HWND hwnd)
 	cubeBody.body = new RigidBody;
 	cubeBody.body->SetPosition(Vector3(0, 4, 0));
 	cubeBody.body->SetMass(1.0f);
+	cubeBody.halfSize = Vector3(0.1, 0.1, 0.1);
 	Matrix3 tensor;
 	//	tensor.setBlockInertiaTensor(Vector3(5, 5, 5), 10.f);
 	//	cubeBody.body->SetInertiaTensor(tensor);
@@ -2559,14 +2560,17 @@ void Graphics::generateContacts()
 	// Set up the collision data structure
 	cData.Reset(maxContacts);
 	cData.friction = 0.9;
-	cData.restitution = 0.6;
-	cData.tolerance = 0.1;
+	cData.restitution = 0;
+	cData.tolerance = 0;
 
-	Matrix4 transform, otherTransform;
-	Vector3 position, otherPosition;
+//	Matrix4 transform, otherTransform;
+//	Vector3 position, otherPosition;
 
 	if (!cData.HasMoreContacts()) return;
-	CollisionDetector::BoxAndHalfSpace(cubeBody, plane, &cData);
+	if (CollisionDetector::BoxAndHalfSpace(cubeBody, plane, &cData))
+	{
+		cubeBody.body->SetAcceleration(Vector3(0, 0, 0));
+	};
 }
 
 void Graphics::updateObjects(double duration)
