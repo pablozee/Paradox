@@ -2570,6 +2570,7 @@ void Graphics::generateContacts()
 	if (CollisionDetector::BoxAndHalfSpace(cubeBody, plane, &cData))
 	{
 		cubeBody.body->SetAcceleration(Vector3(0, 0, 0));
+		cubeBody.body->SetVelocity(Vector3(0, 0, 0));
 	};
 }
 
