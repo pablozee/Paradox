@@ -10,7 +10,8 @@ Graphics::Graphics(Config config)
 	:
 	m_D3DParams(config.width, config.height, true),
 	m_Gravity(Vector3(0.0, -2.0, 0.0)),
-	resolver(maxContacts * 8)
+	resolver(maxContacts * 8),
+	physicsDemo(false)
 {
 	cData.contactArray = contacts;
 }
@@ -27,29 +28,38 @@ void Graphics::Init(HWND hwnd)
 	m_Geometry->name = name;
 	m_Geometries[m_Geometry->name] = std::move(m_Geometry);
 	
-	LoadModel("models/DefaultCube.obj", name, 0);
-	LoadModel("models/Plane.obj", name, 1);
+	if (physicsDemo)
+	{
+		LoadModel("models/DefaultCube.obj", name, 0);
+		LoadModel("models/Plane.obj", name, 1);
 
-	m_Gravity = Gravity(gravityAmount);
+		m_Gravity = Gravity(gravityAmount);
 
-	cubeBody.body = new RigidBody;
-	cubeBody.body->SetPosition(Vector3(0, 4, 0));
-	cubeBody.body->SetMass(1.0f);
-	cubeBody.halfSize = Vector3(0.1, 0.1, 0.1);
-	Matrix3 tensor;
-	//	tensor.setBlockInertiaTensor(Vector3(5, 5, 5), 10.f);
-	//	cubeBody.body->SetInertiaTensor(tensor);
-	cubeBody.body->SetLinearDamping(0.95f);
-	cubeBody.body->SetAngularDamping(0.8f);
-	cubeBody.body->ClearAccumulators();
-	cubeBody.body->SetAcceleration(Vector3::GRAVITY);
-	cubeBody.body->SetCanSleep(false);
-	cubeBody.body->SetAwakeStatus();
-	cubeBody.body->CalculateDerivedData();
-	cubeBody.CalculateInternals();
+		cubeBody.body = new RigidBody;
+		cubeBody.body->SetPosition(Vector3(0, 4, 0));
+		cubeBody.body->SetMass(1.0f);
+		cubeBody.halfSize = Vector3(0.1, 0.1, 0.1);
+		Matrix3 tensor;
+		//	tensor.setBlockInertiaTensor(Vector3(5, 5, 5), 10.f);
+		//	cubeBody.body->SetInertiaTensor(tensor);
+		cubeBody.body->SetLinearDamping(0.95f);
+		cubeBody.body->SetAngularDamping(0.8f);
+		cubeBody.body->ClearAccumulators();
+		cubeBody.body->SetAcceleration(Vector3::GRAVITY);
+		cubeBody.body->SetCanSleep(false);
+		cubeBody.body->SetAwakeStatus();
+		cubeBody.body->CalculateDerivedData();
+		cubeBody.CalculateInternals();
 
 
-	registry.add(cubeBody.body, &m_Gravity);
+		registry.add(cubeBody.body, &m_Gravity);
+
+	}
+	else
+	{
+		LoadModel("models/skull.obj", name, 0);
+		LoadModel("models/altar.obj", name, 1);
+	}
 
 	InitializeShaderCompiler();
 
@@ -125,32 +135,33 @@ void Graphics::Update()
 		CloseHandle(eventHandle);
 	}
 
+	if (physicsDemo)
+	{
+	//	float duration = (float)TimingData::get().lastFrameDuration * 0.001f;
+	//	if (duration <= 0.0f) return;
 
-//	float duration = (float)TimingData::get().lastFrameDuration * 0.001f;
-//	if (duration <= 0.0f) return;
+		float duration = 0.03f;
 
-	float duration = 0.03f;
+		// Start with no forces or acceleration
+		cubeBody.body->ClearAccumulators();
 
-	// Start with no forces or acceleration
-	cubeBody.body->ClearAccumulators();
+		// Add the forces acting on the cube
+		registry.updateForces(duration);
 
-	// Add the forces acting on the cube
-	registry.updateForces(duration);
+	//	cubeBody.body->AddForce(gravityAmount);
 
-//	cubeBody.body->AddForce(gravityAmount);
+		// Update the cubes physics
+	//	cubeBody.body->Integrate(duration);
 
-	// Update the cubes physics
-//	cubeBody.body->Integrate(duration);
+		// Update the objects
+		updateObjects(duration);
 
-	// Update the objects
-	updateObjects(duration);
+		// Perform the contact generation
+		generateContacts();
 
-	// Perform the contact generation
-	generateContacts();
-
-	// Resolve the detected contacts
-	resolver.ResolveContacts(cData.contactArray, cData.contactCount, duration);
-
+		// Resolve the detected contacts
+		resolver.ResolveContacts(cData.contactArray, cData.contactCount, duration);
+	}
 
 	UpdateLightsSceneCB();
 	UpdateObjectCBs();
@@ -1013,10 +1024,21 @@ void Graphics::BuildRenderItems()
 	skull->matCBIndex = 0;
 	skull->geometry = m_Geometries["Geometry"].get();
 	skull->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	skull->indexCount = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->indexCount;
-	skull->vertexCount = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->vertexCount;
-	skull->startIndexLocation = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->startIndexLocation;
-	skull->baseVertexLocation = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->baseVertexLocation;
+
+	if (physicsDemo)
+	{
+		skull->indexCount = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->indexCount;
+		skull->vertexCount = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->vertexCount;
+		skull->startIndexLocation = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->startIndexLocation;
+		skull->baseVertexLocation = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->baseVertexLocation;
+	}
+	else
+	{
+		skull->indexCount = skull->geometry->drawArgs["models/skull.obj"].get()->indexCount;
+		skull->vertexCount = skull->geometry->drawArgs["models/skull.obj"].get()->vertexCount;
+		skull->startIndexLocation = skull->geometry->drawArgs["models/skull.obj"].get()->startIndexLocation;
+		skull->baseVertexLocation = skull->geometry->drawArgs["models/skull.obj"].get()->baseVertexLocation;
+	}
 
 	m_GBufferPassRenderItems.push_back(skull.get());
 	m_RayTracingPassRenderItems.push_back(skull.get());
@@ -1029,11 +1051,21 @@ void Graphics::BuildRenderItems()
 	altar->matCBIndex = 1;
 	altar->geometry = m_Geometries["Geometry"].get();
 	altar->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	altar->indexCount = altar->geometry->drawArgs["models/Plane.obj"].get()->indexCount;
-	altar->vertexCount = altar->geometry->drawArgs["models/Plane.obj"].get()->vertexCount;
-	altar->startIndexLocation = altar->geometry->drawArgs["models/Plane.obj"].get()->startIndexLocation;
-	altar->baseVertexLocation = altar->geometry->drawArgs["models/Plane.obj"].get()->baseVertexLocation;
-
+	
+	if (physicsDemo)
+	{
+		altar->indexCount = altar->geometry->drawArgs["models/Plane.obj"].get()->indexCount;
+		altar->vertexCount = altar->geometry->drawArgs["models/Plane.obj"].get()->vertexCount;
+		altar->startIndexLocation = altar->geometry->drawArgs["models/Plane.obj"].get()->startIndexLocation;
+		altar->baseVertexLocation = altar->geometry->drawArgs["models/Plane.obj"].get()->baseVertexLocation;
+	}
+	else
+	{
+		altar->indexCount = altar->geometry->drawArgs["models/altar.obj"].get()->indexCount;
+		altar->vertexCount = altar->geometry->drawArgs["models/altar.obj"].get()->vertexCount;
+		altar->startIndexLocation = altar->geometry->drawArgs["models/altar.obj"].get()->startIndexLocation;
+		altar->baseVertexLocation = altar->geometry->drawArgs["models/altar.obj"].get()->baseVertexLocation;
+	}
 
 	m_GBufferPassRenderItems.push_back(altar.get());
 	m_RayTracingPassRenderItems.push_back(altar.get());
@@ -1247,11 +1279,12 @@ void Graphics::UpdateObjectCBs()
 
 	for (auto& renderItem : m_AllRenderItems)
 	{
+			
+		if (physicsDemo)
+		{
+
 			if (renderItem->name == "skull")
 			{
-				/**
-				 * 
-				 */
 				Matrix4 skullWorldMat = cubeBody.body->GetTransform();
 				float skullWorld0 = skullWorldMat.data[0];
 				float skullWorld1 = skullWorldMat.data[1];
@@ -1262,7 +1295,7 @@ void Graphics::UpdateObjectCBs()
 				float skullWorld5 = skullWorldMat.data[5];
 				float skullWorld6 = skullWorldMat.data[6];
 				float skullWorld7 = skullWorldMat.data[7];
-				
+
 				float skullWorld8 = skullWorldMat.data[8];
 				float skullWorld9 = skullWorldMat.data[9];
 				float skullWorld10 = skullWorldMat.data[10];
@@ -1277,9 +1310,10 @@ void Graphics::UpdateObjectCBs()
 											 skullWorld4, skullWorld5, skullWorld6, skullWorld7,
 											 skullWorld8, skullWorld9, skullWorld10, skullWorld11,
 											 skullWorld12, skullWorld13, skullWorld14, skullWorld15 };
-				
+
 				renderItem->world = XMMatrixTranspose(skullWorldMatXM);
 				renderItem->numFramesDirty = 2;
+			}
 		}
 		if (renderItem->numFramesDirty > 0)
 		{

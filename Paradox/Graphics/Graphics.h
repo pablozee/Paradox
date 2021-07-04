@@ -178,6 +178,8 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Material>> m_Materials;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
 
+	bool physicsDemo;
+
 	CollisionBox cubeBody;
 	RigidBody cubeBodyRB;
 	Vector3 gravityAmount = Vector3(0.0, -3.0, 0.0);
