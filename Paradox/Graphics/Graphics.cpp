@@ -95,8 +95,8 @@ void Graphics::Init(HWND hwnd)
 	BuildFrameResources();
 	//	CreateTexture(m_Material);
 
-	CreateBottomLevelAS(m_RayTracingPassRenderItems[0], 0u);
-	CreateBottomLevelAS(m_RayTracingPassRenderItems[1], 1u);
+	CreateBottomLevelAS(m_RayTracingPassRenderItems[0], m_RayTracingPassRenderItems[1], 0u);
+//	CreateBottomLevelAS(m_RayTracingPassRenderItems[1], 1u);
 	CreateTopLevelAS();
 	CreateDXROutput();
 	CreateDescriptorHeaps();
@@ -1426,7 +1426,7 @@ void Graphics::UpdateLightsSceneCB()
 }
 
 
-void Graphics::CreateBottomLevelAS(RenderItem* renderItem, UINT blasIndex)
+void Graphics::CreateBottomLevelAS(RenderItem* renderItem1, RenderItem* renderItem2, UINT blasIndex)
 {
 	UINT64 objectCBAddress = m_FrameResources[m_CurrFrameResourceIndex]->objectCB.get()->Resource()->GetGPUVirtualAddress();
 	UINT64 objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
@@ -1442,16 +1442,18 @@ void Graphics::CreateBottomLevelAS(RenderItem* renderItem, UINT blasIndex)
 	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 	geometryDesc.Triangles.VertexBuffer.StartAddress = vertexBufferStartAddress + m_VertexBufferOffset;
 	geometryDesc.Triangles.VertexBuffer.StrideInBytes = vertexBufferStrideInBytes;
-	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(renderItem->vertexCount);
+	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(renderItem1->vertexCount + renderItem2->vertexCount);
 	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 	geometryDesc.Triangles.IndexBuffer = indexBufferStartAddress + m_IndexBufferOffset;
-	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(renderItem->indexCount);
+	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(renderItem1->indexCount + renderItem2->indexCount);
 	geometryDesc.Triangles.IndexFormat = m_Geometries["Geometry"].get()->indexBufferFormat;
 	geometryDesc.Triangles.Transform3x4 = 0.0f;
 	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
 
-	m_VertexBufferOffset += sizeof(Vertex) * renderItem->vertexCount;
-	m_IndexBufferOffset += sizeof(uint32_t) * renderItem->indexCount;
+	m_VertexBufferOffset += sizeof(Vertex) * renderItem1->vertexCount;
+	m_IndexBufferOffset += sizeof(uint32_t) * renderItem1->indexCount;
+	m_VertexBufferOffset += sizeof(Vertex) * renderItem2->vertexCount;
+	m_IndexBufferOffset += sizeof(uint32_t) * renderItem2->indexCount;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
 
@@ -1511,7 +1513,7 @@ void Graphics::CreateTopLevelAS()
 //	instanceDesc0.Transform[0][0] = instanceDesc0.Transform[1][1] = instanceDesc0.Transform[2][2] = 1;
 	instanceDesc0.AccelerationStructure = m_DXRObjects.BLAS[0].pResult->GetGPUVirtualAddress();
 	instanceDesc0.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
-
+/*
 	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc1 = {};
 	instanceDesc1.InstanceContributionToHitGroupIndex = 1;
 	instanceDesc1.InstanceMask = 1;
@@ -1519,8 +1521,9 @@ void Graphics::CreateTopLevelAS()
 //	instanceDesc1.Transform[0][0] = instanceDesc1.Transform[1][1] = instanceDesc1.Transform[2][2] = 1;
 	instanceDesc1.AccelerationStructure = m_DXRObjects.BLAS[1].pResult->GetGPUVirtualAddress();
 	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
+*/
 
-	D3D12_RAYTRACING_INSTANCE_DESC* descs[2] = { &instanceDesc0, &instanceDesc1 };
+	D3D12_RAYTRACING_INSTANCE_DESC* descs[1] = { &instanceDesc0 };
 
 	UINT64 instanceDescSize = ALIGN(D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT, sizeof(descs));
 
