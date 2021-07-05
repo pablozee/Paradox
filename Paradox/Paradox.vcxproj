@@ -167,6 +167,7 @@
     <ClCompile Include="Graphics\Core.cpp" />
     <ClCompile Include="Graphics\FrameResource.cpp" />
     <ClCompile Include="Graphics\Graphics.cpp" />
+    <ClCompile Include="Graphics\SkinnedData.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="ParadoxMath.cpp" />
     <ClCompile Include="Physics\Body.cpp" />
@@ -184,6 +185,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
+    <ClInclude Include="Graphics\LoadM3d.h" />
+    <ClInclude Include="Graphics\SkinnedData.h" />
     <ClInclude Include="Physics\CollideFine.h" />
     <ClInclude Include="Events\ApplicationEvent.h" />
     <ClInclude Include="Events\Event.h" />

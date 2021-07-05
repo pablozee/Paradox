@@ -36,18 +36,18 @@ void BoneAnimation::Interpolate(float t, XMFLOAT4X4& M) const
 {
 	if (t <= Keyframes.front().TimePos)
 	{
-		XMVECTOR S = XMLoadFloat3((&Keyframes.front().Scale);
-		XMVECTOR P = XMLoadFloat3((&Keyframes.front().Translation);
-		XMVECTOR Q = XMLoadFloat3((&Keyframes.front().RotationQuat);
+		XMVECTOR S = XMLoadFloat3(&Keyframes.front().Scale);
+		XMVECTOR P = XMLoadFloat3(&Keyframes.front().Translation);
+		XMVECTOR Q = XMLoadFloat4(&Keyframes.front().RotationQuat);
 
 		XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 		XMStoreFloat4x4(&M, XMMatrixAffineTransformation(S, zero, Q, P));
 	}
 	else if (t >= Keyframes.back().TimePos)
 	{
-		XMVECTOR S = XMLoadFloat3((&Keyframes.back().Scale);
-		XMVECTOR P = XMLoadFloat3((&Keyframes.back().Translation);
-		XMVECTOR Q = XMLoadFloat3((&Keyframes.back().RotationQuat);
+		XMVECTOR S = XMLoadFloat3(&Keyframes.back().Scale);
+		XMVECTOR P = XMLoadFloat3(&Keyframes.back().Translation);
+		XMVECTOR Q = XMLoadFloat4(&Keyframes.back().RotationQuat);
 
 		XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 		XMStoreFloat4x4(&M, XMMatrixAffineTransformation(S, zero, Q, P));
@@ -66,12 +66,12 @@ void BoneAnimation::Interpolate(float t, XMFLOAT4X4& M) const
 				XMVECTOR p0 = XMLoadFloat3(&Keyframes[i].Translation);
 				XMVECTOR p1 = XMLoadFloat3(&Keyframes[i+1].Translation);
 				
-				XMVECTOR q0 = XMLoadFloat3(&Keyframes[i].RotationQuat);
-				XMVECTOR q1 = XMLoadFloat3(&Keyframes[i+1].RotationQuat);
+				XMVECTOR q0 = XMLoadFloat4(&Keyframes[i].RotationQuat);
+				XMVECTOR q1 = XMLoadFloat4(&Keyframes[i + 1].RotationQuat);
 				
-				XMVECTOR S = XMVectorLerp((s0, s1, lerpPercent);
-				XMVECTOR P = XMVectorLerp((p0, p1, lerpPercent);
-				XMVECTOR Q = XMVectorLerp((q0, q1, lerpPercent);
+				XMVECTOR S = XMVectorLerp(s0, s1, lerpPercent);
+				XMVECTOR P = XMVectorLerp(p0, p1, lerpPercent);
+				XMVECTOR Q = XMVectorLerp(q0, q1, lerpPercent);
 
 				XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 				XMStoreFloat4x4(&M, XMMatrixAffineTransformation(S, zero, Q, P));
@@ -161,7 +161,7 @@ void SkinnedData::GetFinalTransforms(const string& clipName, float timePos, vect
 	// Now find the toRootTransform of the children
 	for (UINT i = 1; i < numBones; ++i)
 	{
-		XMMATRIX toParent = XMLoadFloat4x4((&toParentTransforms[i]);
+		XMMATRIX toParent = XMLoadFloat4x4(&toParentTransforms[i]);
 
 		int parentIndex = mBoneHierarchy[i];
 		XMMATRIX parentToRoot = XMLoadFloat4x4(&toRootTransforms[parentIndex]);
