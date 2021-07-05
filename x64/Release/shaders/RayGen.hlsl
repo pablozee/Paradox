@@ -30,10 +30,10 @@ void RayGen()
 	//dirLight.directionalLightDirection = mul(dirLight.directionalLightDirection, (float3x3)view);
 	
 	RayDesc ray;
-	ray.Direction = normalize(-float3(0.0f, 15.0f, 15.0f));
+	ray.Direction = normalize(float3(0.0f, -15.0f, -15.0f));
 	ray.Origin = gBufWorldPos;
 	ray.TMin = 0.1f;
-	ray.TMax = 1000.0f;
+	ray.TMax = float3(0.0f, 15.0f, 15.0f) - gBufWorldPos;
 	
 	HitInfo payload;
 	payload.shadedColourAndHitT = float4(1.f, 0.f, 0.f, 0.f);
@@ -53,6 +53,7 @@ void RayGen()
 			colour = payload.shadedColourAndHitT.x * CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
 		//	colour = CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
 		}
+
 	
 	RTOutput[LaunchIndex.xy] = float4(colour, 1.f);
 }

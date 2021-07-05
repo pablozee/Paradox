@@ -57,8 +57,8 @@ void Graphics::Init(HWND hwnd)
 	}
 	else
 	{
-		LoadModel("models/skull.obj", name, 0);
-		LoadModel("models/altar.obj", name, 1);
+		LoadModel("models/Portals.obj", name, 0);
+		LoadModel("models/Ground.obj", name, 1);
 	}
 
 	InitializeShaderCompiler();
@@ -1018,7 +1018,7 @@ void Graphics::BuildRenderItems()
 	auto altar = std::make_unique<RenderItem>();
 
 	skull->name = "skull";
-	skull->world = XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0f, 4.0f, 0.0f);
+	skull->world = XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 	XMStoreFloat3x4(&skull->world3x4, XMMatrixTranspose(skull->world));
 	skull->objCBIndex = 0;
 	skull->matCBIndex = 0;
@@ -1034,10 +1034,10 @@ void Graphics::BuildRenderItems()
 	}
 	else
 	{
-		skull->indexCount = skull->geometry->drawArgs["models/skull.obj"].get()->indexCount;
-		skull->vertexCount = skull->geometry->drawArgs["models/skull.obj"].get()->vertexCount;
-		skull->startIndexLocation = skull->geometry->drawArgs["models/skull.obj"].get()->startIndexLocation;
-		skull->baseVertexLocation = skull->geometry->drawArgs["models/skull.obj"].get()->baseVertexLocation;
+		skull->indexCount = skull->geometry->drawArgs["models/Portals.obj"].get()->indexCount;
+		skull->vertexCount = skull->geometry->drawArgs["models/Portals.obj"].get()->vertexCount;
+		skull->startIndexLocation = skull->geometry->drawArgs["models/Portals.obj"].get()->startIndexLocation;
+		skull->baseVertexLocation = skull->geometry->drawArgs["models/Portals.obj"].get()->baseVertexLocation;
 	}
 
 	m_GBufferPassRenderItems.push_back(skull.get());
@@ -1045,7 +1045,7 @@ void Graphics::BuildRenderItems()
 	m_AllRenderItems.push_back(std::move(skull));
 
 	altar->name = "altar";
-	altar->world = XMMatrixScaling(6.3f, 6.3f, 6.3f) * XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, -7.6f, 0.0f);
+	altar->world = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, 0.f, 0.0f);
 	XMStoreFloat3x4(&altar->world3x4, XMMatrixTranspose(altar->world));
 	altar->objCBIndex = 1;
 	altar->matCBIndex = 1;
@@ -1061,10 +1061,10 @@ void Graphics::BuildRenderItems()
 	}
 	else
 	{
-		altar->indexCount = altar->geometry->drawArgs["models/altar.obj"].get()->indexCount;
-		altar->vertexCount = altar->geometry->drawArgs["models/altar.obj"].get()->vertexCount;
-		altar->startIndexLocation = altar->geometry->drawArgs["models/altar.obj"].get()->startIndexLocation;
-		altar->baseVertexLocation = altar->geometry->drawArgs["models/altar.obj"].get()->baseVertexLocation;
+		altar->indexCount = altar->geometry->drawArgs["models/Ground.obj"].get()->indexCount;
+		altar->vertexCount = altar->geometry->drawArgs["models/Ground.obj"].get()->vertexCount;
+		altar->startIndexLocation = altar->geometry->drawArgs["models/Ground.obj"].get()->startIndexLocation;
+		altar->baseVertexLocation = altar->geometry->drawArgs["models/Ground.obj"].get()->baseVertexLocation;
 	}
 
 	m_GBufferPassRenderItems.push_back(altar.get());
