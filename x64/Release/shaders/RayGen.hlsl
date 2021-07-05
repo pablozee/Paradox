@@ -38,7 +38,7 @@ void RayGen()
 	HitInfo payload;
 	payload.shadedColourAndHitT = float4(1.f, 0.f, 0.f, 0.f);
 	
-	TraceRay(SceneBVH, RAY_FLAG_NONE, 0, 1, 1, 0, ray, payload);
+	TraceRay(SceneBVH, RAY_FLAG_NONE, 0, 0, 0, 0, ray, payload);
 
 	//	TraceRay(SceneBVH, RAY_FLAG_NONE, 1, 0, 1, 0, ray, shadowRayPayload);
 

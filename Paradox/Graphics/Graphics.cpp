@@ -2116,7 +2116,7 @@ void Graphics::CreatePipelineStateObject()
 	subobjects[index++] = shaderConfigObject;
 
 	// Create a list of the shader export names that use the payload
-	const WCHAR* shaderExports[] = { L"RayGen_12", L"Miss_5", L"HitGroup" };
+	const WCHAR* shaderExports[] = { L"RayGen_12", L"HitGroup", L"Miss_5", };
 
 	// Add a state subobject for the association between shaders and the payload
 	D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION shaderPayloadAssociation = {};
