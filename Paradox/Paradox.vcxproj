@@ -167,6 +167,7 @@
     <ClCompile Include="Graphics\Core.cpp" />
     <ClCompile Include="Graphics\FrameResource.cpp" />
     <ClCompile Include="Graphics\Graphics.cpp" />
+    <ClCompile Include="Graphics\LoadM3d.cpp" />
     <ClCompile Include="Graphics\SkinnedData.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="ParadoxMath.cpp" />

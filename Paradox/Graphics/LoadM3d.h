@@ -44,23 +44,24 @@ public:
 		string MaterialTypeName;
 		string DiffuseMapName;
 		string NormalMapName;
+	};
 
-		bool LoadM3d(
-			const string& filename,
-			vector<Vertex>& vertices,
-			vector<USHORT>& indices,
-			vector<Subset>& subsets,
-			vector<M3dMaterial>& mats
-		);
+	bool LoadM3d(
+		const string& filename,
+		vector<Vertex>& vertices,
+		vector<USHORT>& indices,
+		vector<Subset>& subsets,
+		vector<M3dMaterial>& mats
+	);
 
-		bool LoadM3d(
-			const string& filename,
-			vector<Vertex>& vertices,
-			vector<USHORT>& indices,
-			vector<Subset>& subsets,
-			vector<M3dMaterial>& mats,
-			SkinnedData& skinInfo
-		);
+	bool LoadM3d(
+		const string& filename,
+		vector<SkinnedVertex>& vertices,
+		vector<USHORT>& indices,
+		vector<Subset>& subsets,
+		vector<M3dMaterial>& mats,
+		SkinnedData& skinInfo
+	);
 
 	private:
 
@@ -74,5 +75,5 @@ public:
 		void ReadAnimationClips(ifstream& fin, UINT numBones, UINT numAnimationClips, unordered_map<string, AnimationClip>& animations);
 		void ReadBoneKeyframes(ifstream& fin, UINT numBones, BoneAnimation& boneAnimation);
 
-	};
+
 };
