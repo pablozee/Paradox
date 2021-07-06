@@ -2,6 +2,7 @@
 
 #include "core.h"
 #include "../Structures.h"
+#include "SkinnedData.h"
 
 using namespace DirectX;
 
@@ -69,6 +70,35 @@ struct MeshGeometry
 
 };
 
+struct SkinnedModelInstance
+{
+	SkinnedData* SkinnedInfo = nullptr;
+	vector<XMFLOAT4X4> FinalTransforms;
+	string ClipName;
+	float TimePos = 0.0f;
+
+	/**
+	 * Called every frame and increments the time position, interpolates
+	 * the animations for each bone based on the current animation clip,
+	 * generates the final transforms which are ultimately set to the effect
+	 * for processing in the vertex shader.
+	 */
+	void UpdateSkinnedAnimation(float dt)
+	{
+		TimePos += dt;
+
+		// Loop animation
+		if (TimePos > SkinnedInfo->GetClipEndTime(ClipName))
+		{
+			TimePos = 0.0f;
+		}
+		
+		// Compute the final transforms for this time position
+		SkinnedInfo->GetFinalTransforms(ClipName, TimePos, FinalTransforms);
+
+	}
+};
+
 struct RenderItem
 {
 	RenderItem() = default;
@@ -94,6 +124,12 @@ struct RenderItem
 	UINT vertexCount = 0;
 	UINT startIndexLocation = 0;
 	int baseVertexLocation = 0;
+
+	// Only applicable to skinned render-items
+	UINT SkinnedCBIndex = -1;
+
+	// nullptr if this render-item is not animated by skinned mesh
+	SkinnedModelInstance* SkinnedModelInst = nullptr;
 };
 
 struct ObjectCB
