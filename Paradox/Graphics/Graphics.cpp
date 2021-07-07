@@ -14,6 +14,7 @@ Graphics::Graphics(Config config)
 	physicsDemo(false)
 {
 	cData.contactArray = contacts;
+	gt = GameTimer();
 }
 
 Graphics::~Graphics()
@@ -57,6 +58,7 @@ void Graphics::Init(HWND hwnd)
 	}
 	else
 	{
+		LoadSkinnedModel();
 		LoadModel("models/Portals.obj", name, 0);
 		LoadModel("models/Ground.obj", name, 1);
 	}
@@ -165,6 +167,7 @@ void Graphics::Update()
 
 	UpdateLightsSceneCB();
 	UpdateObjectCBs();
+	UpdateSkinnedCBs();
 	UpdateMaterialCBs();
 	UpdateGBufferPassSceneCB();
 	UpdateRayTracingPassSceneCB();
@@ -647,7 +650,11 @@ void Graphics::CreateGBufferPassPSO()
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		
 	};
 
 	D3D12_DEPTH_STENCIL_DESC desc;
@@ -2617,3 +2624,19 @@ void Graphics::updateObjects(double duration)
 	cubeBody.CalculateInternals();
 }
 
+void Graphics::UpdateSkinnedCBs(const GameTimer& gt)
+{
+	auto currSkinnedCB = m_CurrFrameResource->skinnedCB.get();
+
+	// We only have one skinned model being animated.
+	m_SkinnedModelInst->UpdateSkinnedAnimation(gt.DeltaTime());
+
+	SkinnedCB skinnedConstants;
+	copy(
+		begin(m_SkinnedModelInst->FinalTransforms),
+		end(m_SkinnedModelInst->FinalTransforms),
+		&skinnedConstants.BoneTransforms[0];
+
+	currSkinnedCB->CopyData(0, skinnedConstants);
+	)
+}

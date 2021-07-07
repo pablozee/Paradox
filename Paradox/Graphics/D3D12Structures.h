@@ -140,6 +140,11 @@ struct ObjectCB
 	XMMATRIX invWorld = XMMatrixIdentity();
 };
 
+struct SkinnedCB
+{
+	XMFLOAT4X4 BoneTransforms[96];
+};
+
 struct GBufferPassSceneCB
 {
 	XMMATRIX gBufferView = XMMatrixIdentity();

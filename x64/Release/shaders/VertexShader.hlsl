@@ -53,7 +53,6 @@ struct VSInput
 	float3 Pos : POSITION;
 	float2 TexC : TEXCOORD;
 	float3 Normal : NORMAL;
-	float4 BoneWeights : WEIGHTS;
 };
 
 struct VSOutput

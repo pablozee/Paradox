@@ -14,6 +14,7 @@ public:
 
 	// Constant Buffer per frame as we cannot update the buffer until the GPU is done processing the commands that use it
 	std::unique_ptr<UploadBuffer<ObjectCB>> objectCB = nullptr;
+	std::unique_ptr<UploadBuffer<SkinnedCB>> skinnedCB = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialCB>> materialCB = nullptr;
 	std::unique_ptr<UploadBuffer<GBufferPassSceneCB>> gBufferPassSceneCB = nullptr;
 	std::unique_ptr<UploadBuffer<RayTracingPassSceneCB>> rayTracingPassSceneCB = nullptr;

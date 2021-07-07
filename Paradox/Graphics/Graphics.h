@@ -5,6 +5,8 @@
 #include "FrameResource.h"
 #include "../Physics/PhysicsApp.h"
 #include "../Physics/ForceGen.h"
+#include "LoadM3d.h"
+#include "../GameTimer.h"
 
 
 class Graphics
@@ -61,9 +63,12 @@ private:
 	void CreateTexture(Material &material);
 	void UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture);
 
+	void LoadSkinnedModel();
+
 	void BuildFrameResources();
 	
 	void UpdateObjectCBs();
+	void UpdateSkinnedCBs(const GameTimer& gt);
 	void UpdateMaterialCBs();
 	void UpdateGBufferPassSceneCB();
 	void UpdateRayTracingPassSceneCB();
@@ -186,4 +191,13 @@ private:
 	ForceRegistry registry;
 
 	Gravity m_Gravity;
+
+	string m_SkinnedModelFilename = "Models\\soldier.m3d";
+	unique_ptr<SkinnedModelInstance> m_SkinnedModelInst;
+	SkinnedData m_SkinnedInfo;
+	vector<M3DLoader::Subset> m_SkinnedSubsets;
+	vector<M3DLoader::M3dMaterial> m_SkinnedMats;
+	vector<string> m_SkinnedTextureNames;
+
+	GameTimer gt;
 };
