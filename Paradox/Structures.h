@@ -36,6 +36,10 @@ struct Vertex
 	XMFLOAT3 position;
 	XMFLOAT2 uv;
 	XMFLOAT3 normal;
+	XMFLOAT3 TangentU;
+	XMFLOAT3 BoneWeights;
+	BYTE BoneIndices[4];
+
 
 	bool operator==(const Vertex& v) const
 	{
@@ -54,6 +58,8 @@ struct Vertex
 		position = v.position;
 		uv = v.uv;
 		normal = v.normal;
+		TangentU = v.TangentU;
+		BoneWeights = v.BoneWeights;
 		return *this;
 	}
 };

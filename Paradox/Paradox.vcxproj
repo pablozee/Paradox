@@ -164,6 +164,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="Graphics\Core.cpp" />
     <ClCompile Include="Graphics\FrameResource.cpp" />
     <ClCompile Include="Graphics\Graphics.cpp" />
@@ -186,6 +187,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
+    <ClInclude Include="GameTimer.h" />
     <ClInclude Include="Graphics\LoadM3d.h" />
     <ClInclude Include="Graphics\SkinnedData.h" />
     <ClInclude Include="Physics\CollideFine.h" />

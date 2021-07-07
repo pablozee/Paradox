@@ -58,9 +58,9 @@ void Graphics::Init(HWND hwnd)
 	}
 	else
 	{
-		LoadSkinnedModel();
 		LoadModel("models/Portals.obj", name, 0);
 		LoadModel("models/Ground.obj", name, 1);
+		LoadSkinnedModel();
 	}
 
 	InitializeShaderCompiler();
@@ -167,7 +167,7 @@ void Graphics::Update()
 
 	UpdateLightsSceneCB();
 	UpdateObjectCBs();
-	UpdateSkinnedCBs();
+	UpdateSkinnedCBs(gt);
 	UpdateMaterialCBs();
 	UpdateGBufferPassSceneCB();
 	UpdateRayTracingPassSceneCB();
@@ -1023,6 +1023,7 @@ void Graphics::BuildRenderItems()
 {
 	auto skull = std::make_unique<RenderItem>();
 	auto altar = std::make_unique<RenderItem>();
+	auto skinnedSoldier = std::make_unique<RenderItem>();
 
 	skull->name = "skull";
 	skull->world = XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0f, 0.0f, 0.0f);
@@ -1077,13 +1078,39 @@ void Graphics::BuildRenderItems()
 	m_GBufferPassRenderItems.push_back(altar.get());
 	m_RayTracingPassRenderItems.push_back(altar.get());
 	m_AllRenderItems.push_back(std::move(altar));
+
+	if (!physicsDemo)
+	{
+		skinnedSoldier->name = "soldier";
+		skinnedSoldier->world = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(-90.0f)) * XMMatrixTranslation(0.0, 0.f, -3.0f);
+		XMStoreFloat3x4(&skinnedSoldier->world3x4, XMMatrixTranspose(skinnedSoldier->world));
+		skinnedSoldier->objCBIndex = 2;
+		skinnedSoldier->matCBIndex = 2;
+		skinnedSoldier->geometry = m_Geometries["Geometry"].get();
+		skinnedSoldier->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		for (UINT i = 0; i < m_SkinnedMats.size(); ++i)
+		{
+			string submeshName = "sm_" + to_string(i);
+			skinnedSoldier->indexCount = skinnedSoldier->geometry->drawArgs[submeshName].get()->indexCount;
+			skinnedSoldier->vertexCount = skinnedSoldier->geometry->drawArgs[submeshName].get()->vertexCount;
+			skinnedSoldier->startIndexLocation = skinnedSoldier->geometry->drawArgs[submeshName].get()->startIndexLocation;
+			skinnedSoldier->baseVertexLocation = skinnedSoldier->geometry->drawArgs[submeshName].get()->baseVertexLocation;
+		}
+		skinnedSoldier->SkinnedCBIndex = 0;
+		skinnedSoldier->SkinnedModelInst = m_SkinnedModelInst.get();
+
+		m_GBufferPassRenderItems.push_back(skinnedSoldier.get());
+		m_RayTracingPassRenderItems.push_back(skinnedSoldier.get());
+		m_AllRenderItems.push_back(std::move(skinnedSoldier));
+
+	}
 }
 
 void Graphics::BuildFrameResources()
 {
 	for (int i = 0; i < gNumFrameResources; i++)
 	{
-		m_FrameResources.push_back(std::make_unique<FrameResource>(m_D3DObjects.device, 2, (UINT)m_AllRenderItems.size(), (UINT)m_Materials.size()));
+		m_FrameResources.push_back(std::make_unique<FrameResource>(m_D3DObjects.device, 2, (UINT)m_AllRenderItems.size() - 1, 1, (UINT)m_Materials.size()));
 	}
 }
 
@@ -1092,10 +1119,12 @@ void Graphics::DrawRenderItems(const std::vector<RenderItem*>& renderItems)
 	UINT objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
 	UINT materialCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(MaterialCB));
 	UINT gBufferPassCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(GBufferPassSceneCB));
+	UINT skinnedCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(SkinnedCB));
 
 	auto objectCB = m_CurrFrameResource->objectCB->Resource();
 	auto materialCB = m_CurrFrameResource->materialCB->Resource();
 	auto gBufferPassCB = m_CurrFrameResource->gBufferPassSceneCB->Resource();
+	auto skinnedCB = m_CurrFrameResource->skinnedCB->Resource();
 
 	for (size_t i = 0; i < renderItems.size(); i++)
 	{
@@ -1114,6 +1143,16 @@ void Graphics::DrawRenderItems(const std::vector<RenderItem*>& renderItems)
 		D3D12_GPU_VIRTUAL_ADDRESS gBufferPassCBAddress = gBufferPassCB->GetGPUVirtualAddress();
 
 		m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(2, gBufferPassCBAddress);
+
+		if (renderItem->SkinnedModelInst != nullptr)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS skinnedCBAddress = skinnedCB->GetGPUVirtualAddress() + renderItem->SkinnedCBIndex * skinnedCBByteSize;
+			m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(3, skinnedCBAddress);
+		}
+		else
+		{
+			m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(3, 0);
+		}
 
 		m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(renderItem->indexCount, 1, renderItem->startIndexLocation, renderItem->baseVertexLocation, 0);
 	}
@@ -2635,8 +2674,131 @@ void Graphics::UpdateSkinnedCBs(const GameTimer& gt)
 	copy(
 		begin(m_SkinnedModelInst->FinalTransforms),
 		end(m_SkinnedModelInst->FinalTransforms),
-		&skinnedConstants.BoneTransforms[0];
+		&skinnedConstants.BoneTransforms[0]);
 
 	currSkinnedCB->CopyData(0, skinnedConstants);
-	)
+}
+
+void Graphics::LoadSkinnedModel()
+{
+	vector<M3DLoader::SkinnedVertex> vertices;
+	vector <uint16_t> indices;
+
+	M3DLoader m3dLoader;
+	m3dLoader.LoadM3d(m_SkinnedModelFilename, vertices, indices,
+		m_SkinnedSubsets, m_SkinnedMats, m_SkinnedInfo);
+
+	m_SkinnedModelInst = make_unique<SkinnedModelInstance>();
+	m_SkinnedModelInst->SkinnedInfo = &m_SkinnedInfo;
+	m_SkinnedModelInst->FinalTransforms.resize(m_SkinnedInfo.BoneCount());
+	m_SkinnedModelInst->ClipName = "Take1";
+	m_SkinnedModelInst->TimePos = 0.0f;
+
+	auto memory = malloc(sizeof(unique_ptr<Model>));
+
+	auto model = new (memory) unique_ptr<Model>();
+	*model = std::make_unique<Model>();
+	auto material = std::make_unique<Material>();
+
+	auto geo = make_unique<MeshGeometry>();
+	geo->name = m_SkinnedModelFilename;
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(uint16_t);
+	
+	geo->vertexByteStride = sizeof(Vertex);
+	geo->vertexBufferByteSize = vbByteSize;
+	geo->indexBufferFormat = DXGI_FORMAT_R16_UINT;
+	geo->indexBufferByteSize = ibByteSize;
+
+	for (UINT i = 0; i < (UINT)m_SkinnedSubsets.size(); ++i)
+	{
+		unique_ptr<SubmeshGeometry> submesh;
+		string name = "sm_" + to_string(i);
+
+		submesh->indexCount = (UINT)m_SkinnedSubsets[i].FaceCount * 3;
+		submesh->startIndexLocation = m_SkinnedSubsets[i].FaceStart * 3;
+		submesh->baseVertexLocation = 0;
+
+		m_Geometries[geo->name]->drawArgs[m_SkinnedModelFilename] = move(submesh);
+	}
+
+	m_D3DValues.vertexCount += (UINT)model->get()->vertices.size();
+	m_D3DValues.indicesCount += (UINT)model->get()->indices.size();
+
+
+	m_Geometries[geo->name] = move(geo);
+
+/**
+ * TODO Check this is done by build mesh geometry
+
+	//TODO may need to fix vertex and replace with skinned vertex
+	
+	Validate(D3DCreateBlob(vbByteSize, &geo->vertexBufferCPU), L"Failed to create Skinned Model Vertex Buffer CPU");
+	CopyMemory(geo->vertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+	Validate(D3DCreateBlob(ibByteSize, &geo->indexBufferCPU), L"Failed to create Skinned Model Index Buffer CPU");
+	CopyMemory(geo->indexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	
+	geo->vertexBufferGPU = CreateDefaultBuffer(vertices.data(),
+
+	// Use below
+
+	auto memory = malloc(sizeof(unique_ptr<Model>));
+
+	auto model = new (memory) unique_ptr<Model>();
+	*model = std::make_unique<Model>();
+	auto material = std::make_unique<Material>();
+
+	Validate(D3DCreateBlob(vb))
+	
+	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+	for (const auto& shape : shapes)
+	{
+		for (const auto& index : shape.mesh.indices)
+		{
+			Vertex vertex = {};
+			vertex.position =
+			{
+				attrib.vertices[3 * index.vertex_index + 2],
+				attrib.vertices[3 * index.vertex_index + 1],
+				attrib.vertices[3 * index.vertex_index + 0]
+			};
+
+			vertex.uv =
+			{
+				attrib.texcoords[2 * index.texcoord_index + 0],
+				1 - attrib.texcoords[2 * index.texcoord_index + 1]
+			};
+
+			vertex.normal =
+			{
+				attrib.normals[3 * index.normal_index + 2],
+				attrib.normals[3 * index.normal_index + 1],
+				attrib.normals[3 * index.normal_index + 0]
+			};
+
+			if (uniqueVertices.count(vertex) == 0)
+			{
+				uniqueVertices[vertex] = static_cast<uint32_t>(model->get()->vertices.size());
+				model->get()->vertices.push_back(vertex);
+			}
+
+			model->get()->indices.push_back(uniqueVertices[vertex]);
+		};
+	}
+
+	unique_ptr<SubmeshGeometry> submeshGeo = make_unique<SubmeshGeometry>();
+
+	submeshGeo->indexCount = model->get()->indices.size();
+	submeshGeo->startIndexLocation = m_D3DValues.indicesCount;
+	submeshGeo->vertexCount = (UINT)model->get()->vertices.size();
+	submeshGeo->baseVertexLocation = m_D3DValues.vertexCount;
+
+
+	m_Models[filename] = std::move(*model);
+	m_Materials[filename] = std::move(material);
+
+	m_Geometries[geometryName]->drawArgs[filename] = std::move(submeshGeo);
+ */
+
 }
