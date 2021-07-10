@@ -99,7 +99,7 @@ void Graphics::Init(HWND hwnd)
 	BuildFrameResources();
 	//	CreateTexture(m_Material);
 
-	CreateBottomLevelAS(m_RayTracingPassRenderItems[0], m_RayTracingPassRenderItems[1], 0u);
+	CreateBottomLevelAS(m_RayTracingPassRenderItems[0], m_RayTracingPassRenderItems[1], m_RayTracingPassRenderItems[2], 0u);
 //	CreateBottomLevelAS(m_RayTracingPassRenderItems[1], 1u);
 	CreateTopLevelAS();
 	CreateDXROutput();
@@ -170,7 +170,7 @@ void Graphics::Update()
 
 	UpdateLightsSceneCB();
 	UpdateObjectCBs();
-	UpdateSkinnedCBs(gt);
+//TODO UNCOMMENT	UpdateSkinnedCBs(gt);
 	UpdateMaterialCBs();
 	UpdateGBufferPassSceneCB();
 	UpdateRayTracingPassSceneCB();
@@ -1035,7 +1035,9 @@ void Graphics::BuildRenderItems()
 	skull->matCBIndex = 0;
 	skull->geometry = m_Geometries["Geometry"].get();
 	skull->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-
+	skull->SkinnedModelInst = &SkinnedModelInstance();
+	skull->SkinnedModelInst->name = "";
+	
 	if (physicsDemo)
 	{
 		skull->indexCount = skull->geometry->drawArgs["models/DefaultCube.obj"].get()->indexCount;
@@ -1062,7 +1064,9 @@ void Graphics::BuildRenderItems()
 	altar->matCBIndex = 1;
 	altar->geometry = m_Geometries["Geometry"].get();
 	altar->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	
+	altar->SkinnedModelInst = &SkinnedModelInstance();
+	altar->SkinnedModelInst->name = "";
+
 	if (physicsDemo)
 	{
 		altar->indexCount = altar->geometry->drawArgs["models/Plane.obj"].get()->indexCount;
@@ -1087,8 +1091,8 @@ void Graphics::BuildRenderItems()
 		skinnedSoldier->name = "soldier";
 		skinnedSoldier->world = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(-90.0f)) * XMMatrixTranslation(0.0, 0.f, -3.0f);
 		XMStoreFloat3x4(&skinnedSoldier->world3x4, XMMatrixTranspose(skinnedSoldier->world));
-		skinnedSoldier->objCBIndex = 2;
-		skinnedSoldier->matCBIndex = 2;
+		skinnedSoldier->objCBIndex = 1;
+		skinnedSoldier->matCBIndex = 1;
 		skinnedSoldier->geometry = m_Geometries["Geometry"].get();
 		skinnedSoldier->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		for (UINT i = 0; i < m_SkinnedMats.size(); ++i)
@@ -1101,6 +1105,8 @@ void Graphics::BuildRenderItems()
 		}
 		skinnedSoldier->SkinnedCBIndex = 0;
 		skinnedSoldier->SkinnedModelInst = m_SkinnedModelInst.get();
+		skinnedSoldier->SkinnedModelInst->name = "soldier";
+		skinnedSoldier->SkinnedModelInst->SkinnedInfo = &m_SkinnedInfo;
 
 		m_GBufferPassRenderItems.push_back(skinnedSoldier.get());
 		m_RayTracingPassRenderItems.push_back(skinnedSoldier.get());
@@ -1141,21 +1147,24 @@ void Graphics::DrawRenderItems(const std::vector<RenderItem*>& renderItems)
 		D3D12_GPU_VIRTUAL_ADDRESS materialCBAddress = materialCB->GetGPUVirtualAddress() + (materialCBByteSize * renderItem->matCBIndex);
 
 		m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(0, objectCBAddress);
+
 		m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(1, materialCBAddress);
-
-		D3D12_GPU_VIRTUAL_ADDRESS gBufferPassCBAddress = gBufferPassCB->GetGPUVirtualAddress();
-
-		m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(2, gBufferPassCBAddress);
-
-		if (renderItem->SkinnedModelInst != nullptr)
+		if (renderItem->SkinnedModelInst->name == "soldier")
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS skinnedCBAddress = skinnedCB->GetGPUVirtualAddress() + renderItem->SkinnedCBIndex * skinnedCBByteSize;
-			m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(3, skinnedCBAddress);
+		//	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(3, skinnedCBAddress);
+
 		}
 		else
 		{
-			m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(3, 0);
+		//	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(1, materialCBAddress);
+
+		//	m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(3, 0);
 		}
+		
+		D3D12_GPU_VIRTUAL_ADDRESS gBufferPassCBAddress = gBufferPassCB->GetGPUVirtualAddress();
+
+		m_D3DObjects.gBufferPassCommandList->SetGraphicsRootConstantBufferView(2, gBufferPassCBAddress);
 
 		m_D3DObjects.gBufferPassCommandList->DrawIndexedInstanced(renderItem->indexCount, 1, renderItem->startIndexLocation, renderItem->baseVertexLocation, 0);
 	}
@@ -1475,7 +1484,7 @@ void Graphics::UpdateLightsSceneCB()
 }
 
 
-void Graphics::CreateBottomLevelAS(RenderItem* renderItem1, RenderItem* renderItem2, UINT blasIndex)
+void Graphics::CreateBottomLevelAS(RenderItem* renderItem1, RenderItem* renderItem2, RenderItem* renderItem3, UINT blasIndex)
 {
 	UINT64 objectCBAddress = m_FrameResources[m_CurrFrameResourceIndex]->objectCB.get()->Resource()->GetGPUVirtualAddress();
 	UINT64 objectCBByteSize = ALIGN(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(ObjectCB));
@@ -1486,23 +1495,29 @@ void Graphics::CreateBottomLevelAS(RenderItem* renderItem1, RenderItem* renderIt
 
 
 	const size_t rtPassRenderItemsCount = m_RayTracingPassRenderItems.size();
+
+	/**
+	 * 
+	m_VertexBufferOffset += sizeof(Vertex) * renderItem1->vertexCount;
+	m_IndexBufferOffset += sizeof(uint32_t) * renderItem1->indexCount;
+	m_VertexBufferOffset += sizeof(Vertex) * renderItem2->vertexCount;
+	m_IndexBufferOffset += sizeof(uint32_t) * renderItem2->indexCount;
+	m_VertexBufferOffset += sizeof(Vertex) * renderItem3->vertexCount;
+	m_IndexBufferOffset += sizeof(uint32_t) * renderItem3->indexCount;
+	 */
 	
 	D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
 	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 	geometryDesc.Triangles.VertexBuffer.StartAddress = vertexBufferStartAddress + m_VertexBufferOffset;
 	geometryDesc.Triangles.VertexBuffer.StrideInBytes = vertexBufferStrideInBytes;
-	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(renderItem1->vertexCount + renderItem2->vertexCount);
+	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(renderItem1->vertexCount + renderItem2->vertexCount + renderItem3->vertexCount);
 	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 	geometryDesc.Triangles.IndexBuffer = indexBufferStartAddress + m_IndexBufferOffset;
-	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(renderItem1->indexCount + renderItem2->indexCount);
+	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(renderItem1->indexCount + renderItem2->indexCount + renderItem3->indexCount);
 	geometryDesc.Triangles.IndexFormat = m_Geometries["Geometry"].get()->indexBufferFormat;
 	geometryDesc.Triangles.Transform3x4 = 0.0f;
 	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
 
-	m_VertexBufferOffset += sizeof(Vertex) * renderItem1->vertexCount;
-	m_IndexBufferOffset += sizeof(uint32_t) * renderItem1->indexCount;
-	m_VertexBufferOffset += sizeof(Vertex) * renderItem2->vertexCount;
-	m_IndexBufferOffset += sizeof(uint32_t) * renderItem2->indexCount;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
 
@@ -1597,7 +1612,7 @@ void Graphics::CreateTopLevelAS()
 	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 	ASInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	ASInputs.InstanceDescs = m_DXRObjects.TLAS.pInstanceDesc->GetGPUVirtualAddress();
-	ASInputs.NumDescs = 2;
+	ASInputs.NumDescs = 1;
 	ASInputs.Flags = buildFlags;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO ASPreBuildInfo = {};

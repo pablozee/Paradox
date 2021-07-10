@@ -77,7 +77,7 @@ private:
 
 	void SeedRandomVector(XMFLOAT3 seed);
 
-	void CreateBottomLevelAS(RenderItem* renderItem1, RenderItem* renderItem2, UINT blasIndex);
+	void CreateBottomLevelAS(RenderItem* renderItem1, RenderItem* renderItem2, RenderItem* renderItem3, UINT blasIndex);
 	void CreateTopLevelAS();
 	void CreateDXROutput();
 

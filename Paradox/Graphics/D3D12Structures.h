@@ -75,6 +75,7 @@ struct MeshGeometry
 struct SkinnedModelInstance
 {
 	SkinnedData* SkinnedInfo = nullptr;
+	string name;
 	vector<XMFLOAT4X4> FinalTransforms;
 	string ClipName;
 	float TimePos = 0.0f;
