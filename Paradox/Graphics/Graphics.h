@@ -192,7 +192,7 @@ private:
 
 	Gravity m_Gravity;
 
-	string m_SkinnedModelFilename = "../Models/soldier.m3d";
+	string m_SkinnedModelFilename = "..\\Models\\soldier.m3d";
 	unique_ptr<SkinnedModelInstance> m_SkinnedModelInst;
 	SkinnedData m_SkinnedInfo;
 	vector<M3DLoader::Subset> m_SkinnedSubsets;

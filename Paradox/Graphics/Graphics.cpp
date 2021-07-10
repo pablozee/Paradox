@@ -15,10 +15,12 @@ Graphics::Graphics(Config config)
 {
 	cData.contactArray = contacts;
 	gt = GameTimer();
+	gt.Start();
 }
 
 Graphics::~Graphics()
 {
+	gt.Stop();
 	Shutdown();
 }
 
@@ -123,6 +125,7 @@ void Graphics::Init(HWND hwnd)
 
 void Graphics::Update()
 {
+	gt.Tick();
 	m_CurrFrameResourceIndex = (m_CurrFrameResourceIndex + 1) % gNumFrameResources;
 	m_CurrFrameResource = m_FrameResources[m_CurrFrameResourceIndex].get();
 
@@ -2685,7 +2688,7 @@ void Graphics::LoadSkinnedModel()
 	vector <uint16_t> indices;
 
 	M3DLoader m3dLoader;
-	m3dLoader.LoadM3d(m_SkinnedModelFilename, vertices, indices,
+	m3dLoader.LoadM3d("models/soldier.m3d", vertices, indices,
 		m_SkinnedSubsets, m_SkinnedMats, m_SkinnedInfo);
 
 	m_SkinnedModelInst = make_unique<SkinnedModelInstance>();
