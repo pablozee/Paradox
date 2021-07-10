@@ -41,6 +41,8 @@ struct MeshGeometry
 
 	// Container holding submesh for each geometry in index / vertex buffer
 	std::unordered_map<std::string, unique_ptr<SubmeshGeometry>> drawArgs;
+	std::unordered_map<std::string, SubmeshGeometry> skinnedDrawArgs;
+
 
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
 	{

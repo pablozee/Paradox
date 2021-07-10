@@ -123,6 +123,7 @@ float SkinnedData::GetClipStartTime(const std::string& clipName) const
 float SkinnedData::GetClipEndTime(const std::string& clipName) const
 {
 	auto clip = mAnimations.find(clipName);
+	// TODO NEXT
 	return clip->second.GetClipEndTime();
 }
 

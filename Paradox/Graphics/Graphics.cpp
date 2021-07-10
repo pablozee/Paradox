@@ -1094,10 +1094,10 @@ void Graphics::BuildRenderItems()
 		for (UINT i = 0; i < m_SkinnedMats.size(); ++i)
 		{
 			string submeshName = "sm_" + to_string(i);
-			skinnedSoldier->indexCount = skinnedSoldier->geometry->drawArgs[submeshName].get()->indexCount;
-			skinnedSoldier->vertexCount = skinnedSoldier->geometry->drawArgs[submeshName].get()->vertexCount;
-			skinnedSoldier->startIndexLocation = skinnedSoldier->geometry->drawArgs[submeshName].get()->startIndexLocation;
-			skinnedSoldier->baseVertexLocation = skinnedSoldier->geometry->drawArgs[submeshName].get()->baseVertexLocation;
+			skinnedSoldier->indexCount = skinnedSoldier->geometry->skinnedDrawArgs[submeshName].indexCount;
+			skinnedSoldier->vertexCount = skinnedSoldier->geometry->skinnedDrawArgs[submeshName].vertexCount;
+			skinnedSoldier->startIndexLocation = skinnedSoldier->geometry->skinnedDrawArgs[submeshName].startIndexLocation;
+			skinnedSoldier->baseVertexLocation = skinnedSoldier->geometry->skinnedDrawArgs[submeshName].baseVertexLocation;
 		}
 		skinnedSoldier->SkinnedCBIndex = 0;
 		skinnedSoldier->SkinnedModelInst = m_SkinnedModelInst.get();
@@ -2716,14 +2716,14 @@ void Graphics::LoadSkinnedModel()
 
 	for (UINT i = 0; i < (UINT)m_SkinnedSubsets.size(); ++i)
 	{
-		unique_ptr<SubmeshGeometry> submesh;
+		SubmeshGeometry submesh;
 		string name = "sm_" + to_string(i);
 
-		submesh->indexCount = (UINT)m_SkinnedSubsets[i].FaceCount * 3;
-		submesh->startIndexLocation = m_SkinnedSubsets[i].FaceStart * 3;
-		submesh->baseVertexLocation = 0;
+		submesh.indexCount = (UINT)m_SkinnedSubsets[i].FaceCount * 3;
+		submesh.startIndexLocation = m_SkinnedSubsets[i].FaceStart * 3;
+		submesh.baseVertexLocation = 0;
 
-		m_Geometries[geo->name]->drawArgs[m_SkinnedModelFilename] = move(submesh);
+		geo->skinnedDrawArgs[m_SkinnedModelFilename] = move(submesh);
 	}
 
 	m_D3DValues.vertexCount += (UINT)model->get()->vertices.size();
