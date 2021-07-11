@@ -60,9 +60,10 @@ void Graphics::Init(HWND hwnd)
 	}
 	else
 	{
-		LoadModel("models/Portals.obj", name, 0);
-		LoadModel("models/Ground.obj", name, 1);
-		LoadSkinnedModel();
+		LoadModel("models/PortalGround.obj", name, 0);
+	//	LoadModel("models/Ground.obj", name, 1);
+		LoadModel("models/Batman.obj", name, 1);
+		//LoadSkinnedModel();
 	}
 
 	InitializeShaderCompiler();
@@ -95,14 +96,14 @@ void Graphics::Init(HWND hwnd)
 	CreateBackBufferRTV();
 
 	BuildMeshGeometry("Geometry");
-	BuildMeshGeometry("SkinnedGeometry");
+//	BuildMeshGeometry("SkinnedGeometry");
 	BuildRenderItems();
 	BuildFrameResources();
 	//	CreateTexture(m_Material);
 
 	CreateBottomLevelAS(m_RayTracingPassRenderItems[0], 0u, false);
 	CreateBottomLevelAS(m_RayTracingPassRenderItems[1], 1u, false);
-	CreateBottomLevelAS(m_RayTracingPassRenderItems[2], 2u, true);
+//	CreateBottomLevelAS(m_RayTracingPassRenderItems[2], 2u, false);
 	CreateTopLevelAS();
 	CreateDXROutput();
 	CreateDescriptorHeaps();
@@ -1028,7 +1029,8 @@ void Graphics::BuildRenderItems()
 {
 	auto skull = std::make_unique<RenderItem>();
 	auto altar = std::make_unique<RenderItem>();
-	auto skinnedSoldier = std::make_unique<RenderItem>();
+	auto batman = std::make_unique<RenderItem>();
+//	auto skinnedSoldier = std::make_unique<RenderItem>();
 
 	skull->name = "skull";
 	skull->world = XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0f, 0.0f, 0.0f);
@@ -1049,16 +1051,16 @@ void Graphics::BuildRenderItems()
 	}
 	else
 	{
-		skull->indexCount = skull->geometry->drawArgs["models/Portals.obj"].get()->indexCount;
-		skull->vertexCount = skull->geometry->drawArgs["models/Portals.obj"].get()->vertexCount;
-		skull->startIndexLocation = skull->geometry->drawArgs["models/Portals.obj"].get()->startIndexLocation;
-		skull->baseVertexLocation = skull->geometry->drawArgs["models/Portals.obj"].get()->baseVertexLocation;
+		skull->indexCount = skull->geometry->drawArgs["models/PortalGround.obj"].get()->indexCount;
+		skull->vertexCount = skull->geometry->drawArgs["models/PortalGround.obj"].get()->vertexCount;
+		skull->startIndexLocation = skull->geometry->drawArgs["models/PortalGround.obj"].get()->startIndexLocation;
+		skull->baseVertexLocation = skull->geometry->drawArgs["models/PortalGround.obj"].get()->baseVertexLocation;
 	}
 
 	m_GBufferPassRenderItems.push_back(skull.get());
 	m_RayTracingPassRenderItems.push_back(skull.get());
 	m_AllRenderItems.push_back(std::move(skull));
-
+	/*
 	altar->name = "altar";
 	altar->world = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, 0.f, 0.0f);
 	XMStoreFloat3x4(&altar->world3x4, XMMatrixTranspose(altar->world));
@@ -1087,7 +1089,9 @@ void Graphics::BuildRenderItems()
 	m_GBufferPassRenderItems.push_back(altar.get());
 	m_RayTracingPassRenderItems.push_back(altar.get());
 	m_AllRenderItems.push_back(std::move(altar));
-
+	*/
+/**
+ * 
 	if (!physicsDemo)
 	{
 		skinnedSoldier->name = "soldier";
@@ -1115,6 +1119,28 @@ void Graphics::BuildRenderItems()
 		m_AllRenderItems.push_back(std::move(skinnedSoldier));
 
 	}
+ */
+
+	batman->name = "batman";
+	batman->world = XMMatrixRotationY(XMConvertToRadians(180.0f)) * XMMatrixTranslation(0.0f, 0.0f, -5.0f);
+	XMStoreFloat3x4(&batman->world3x4, XMMatrixTranspose(batman->world));
+	batman->objCBIndex = 1;
+	batman->matCBIndex = 1;
+	batman->geometry = m_Geometries["Geometry"].get();
+	batman->primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	batman->SkinnedModelInst = &SkinnedModelInstance();
+	batman->SkinnedModelInst->name = "";
+
+	
+	batman->indexCount = batman->geometry->drawArgs["models/Batman.obj"].get()->indexCount;
+	batman->vertexCount = batman->geometry->drawArgs["models/Batman.obj"].get()->vertexCount;
+	batman->startIndexLocation = batman->geometry->drawArgs["models/Batman.obj"].get()->startIndexLocation;
+	batman->baseVertexLocation = batman->geometry->drawArgs["models/Batman.obj"].get()->baseVertexLocation;
+	
+
+	m_GBufferPassRenderItems.push_back(batman.get());
+	m_RayTracingPassRenderItems.push_back(batman.get());
+	m_AllRenderItems.push_back(std::move(batman));
 }
 
 void Graphics::BuildFrameResources()
@@ -1622,7 +1648,7 @@ void Graphics::CreateTopLevelAS()
 //	instanceDesc1.Transform[0][0] = instanceDesc1.Transform[1][1] = instanceDesc1.Transform[2][2] = 1;
 	instanceDesc1.AccelerationStructure = m_DXRObjects.BLAS[1].pResult->GetGPUVirtualAddress();
 	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
-
+	/*
 	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc2 = {};
 	instanceDesc2.InstanceContributionToHitGroupIndex = 2;
 	instanceDesc2.InstanceMask = 2;
@@ -1630,10 +1656,10 @@ void Graphics::CreateTopLevelAS()
 	//	instanceDesc2.Transform[0][0] = instanceDesc2.Transform[1][1] = instanceDesc2.Transform[2][2] = 1;
 	instanceDesc2.AccelerationStructure = m_DXRObjects.BLAS[2].pResult->GetGPUVirtualAddress();
 	instanceDesc2.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
-
+	*/
 	// m_RTPASSRenderItems.size descs number
 
-	D3D12_RAYTRACING_INSTANCE_DESC* descs[3] = { &instanceDesc0, &instanceDesc1, &instanceDesc2 };
+	D3D12_RAYTRACING_INSTANCE_DESC* descs[2] = { &instanceDesc0, &instanceDesc1 };
 
 	UINT64 instanceDescSize = ALIGN(D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT, sizeof(descs));
 
@@ -1658,7 +1684,7 @@ void Graphics::CreateTopLevelAS()
 	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 	ASInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	ASInputs.InstanceDescs = m_DXRObjects.TLAS.pInstanceDesc->GetGPUVirtualAddress();
-	ASInputs.NumDescs = 3;
+	ASInputs.NumDescs = 2;
 	ASInputs.Flags = buildFlags;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO ASPreBuildInfo = {};
