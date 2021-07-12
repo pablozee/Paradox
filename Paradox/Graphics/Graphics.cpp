@@ -1642,7 +1642,7 @@ void Graphics::CreateTopLevelAS()
 	instanceDesc0.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
 	
 	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc1 = {};
-	instanceDesc1.InstanceContributionToHitGroupIndex = 1;
+	instanceDesc1.InstanceContributionToHitGroupIndex = 0;
 	instanceDesc1.InstanceMask = 1;
 	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc1.Transform), m_RayTracingPassRenderItems[1]->world);
 //	instanceDesc1.Transform[0][0] = instanceDesc1.Transform[1][1] = instanceDesc1.Transform[2][2] = 1;

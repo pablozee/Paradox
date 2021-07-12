@@ -30,13 +30,13 @@ void RayGen()
 	//dirLight.directionalLightDirection = mul(dirLight.directionalLightDirection, (float3x3)view);
 	
 	RayDesc ray;
-	ray.Direction = normalize(float3(0.0f, -15.0f, -15.0f));
+	ray.Direction = normalize(float3(0.0f, 15.0f, 15.0f) - gBufWorldPos);
 	ray.Origin = gBufWorldPos;
 	ray.TMin = 0.1f;
-	ray.TMax = float3(0.0f, 15.0f, 15.0f) - gBufWorldPos;
+	ray.TMax = 100000;
 	
 	HitInfo payload;
-	payload.shadedColourAndHitT = float4(1.f, 0.f, 0.f, 0.f);
+	payload.shadedColourAndHitT = float4(0.f, 0.f, 0.f, 0.f);
 	
 	TraceRay(SceneBVH, RAY_FLAG_NONE, 0, 0, 0, 0, ray, payload);
 
