@@ -967,7 +967,7 @@ void Graphics::BuildRenderItems()
 	m_RayTracingPassRenderItems.push_back(skull.get());
 	m_AllRenderItems.push_back(std::move(skull));
 
-	altar->world = XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, 0.0f, 0.0f);
+	altar->world = XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, -3.60f, 0.0f);
 	XMStoreFloat3x4(&altar->world3x4, XMMatrixTranspose(altar->world));
 	altar->objCBIndex = 1;
 	altar->matCBIndex = 1;

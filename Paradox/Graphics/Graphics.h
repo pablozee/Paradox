@@ -120,7 +120,7 @@ private:
 	D3D12ShaderCompilerInfo m_ShaderCompilerInfo;
 	D3D12Resources m_D3DResources;
 	UINT m_FrameCount = 2;
-	XMVECTOR m_EyeInit = { 0.f, 0.f, -27.0f };
+	XMVECTOR m_EyeInit = { 0.f, 0.f, -7.0f };
 	XMVECTOR m_FocusInit = { 0.f, 0.f, 0.f };
 	XMVECTOR m_UpInit = { 0.f, 1.f, 0.f };
 	XMVECTOR m_Eye = m_EyeInit;

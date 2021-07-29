@@ -31,7 +31,7 @@ void RayGen()
 	else
 	{
 		DirectionalLight dirLight;
-		dirLight.directionalLightDirection = normalize(float3(0.0f, -30.0f, 0.0f));
+		dirLight.directionalLightDirection = normalize(float3(0.0f, -30.0f, -30.0f));
 		dirLight.padding = 0.1f;
 		dirLight.directionalLightColour = float3(1.0f, 1.0f, 1.0f);
 		dirLight.padding1 = 0.1f;
@@ -44,7 +44,7 @@ void RayGen()
 
 		ShadowPayload shadowPayload;
 
-		// TraceRay(SceneBVH, 0, 0xFF, 0, 0, 0, ray, shadowPayload);
+		TraceRay(SceneBVH, 0, 0xFF, 0, 0, 0, ray, shadowPayload);
 
 		float factor = shadowPayload.hit ? 0.1 : 1.0;
 
