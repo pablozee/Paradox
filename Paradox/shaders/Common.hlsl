@@ -2,7 +2,12 @@
 
 struct HitInfo
 {
-	float4			 shadedColourAndHitT;
+	float4			shadedColourAndHitT;
+};
+
+struct ShadowPayload
+{
+	bool			hit;
 };
 
 struct Attributes

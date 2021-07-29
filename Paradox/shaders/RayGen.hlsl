@@ -21,20 +21,34 @@ void RayGen()
 	float3 eyePos = viewOriginAndTanHalfFovY.xyz;
 	float3 viewDir = normalize(eyePos - gBufWorldPos);
 
+	
+	
+
 	if (gBufDiffuse.w != 1.0f)
 	{
 		colour = float3(0.2f, 0.2f, 0.2f);
-
 	}
 	else
 	{
 		DirectionalLight dirLight;
-		dirLight.directionalLightDirection = float3(0.0f, -15.0f, -15.0f);
+		dirLight.directionalLightDirection = normalize(float3(0.0f, -30.0f, 0.0f));
 		dirLight.padding = 0.1f;
 		dirLight.directionalLightColour = float3(1.0f, 1.0f, 1.0f);
 		dirLight.padding1 = 0.1f;
+		
+		RayDesc ray;
+		ray.Origin = gBufWorldPos;
+		ray.Direction = normalize(gBufWorldPos - normalize(float3(0.0f, -30.0f, 0.0f)));
+		ray.TMin = 0.01;
+		ray.TMax = 100000;
 
-		colour = CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
+		ShadowPayload shadowPayload;
+
+		// TraceRay(SceneBVH, 0, 0xFF, 0, 0, 0, ray, shadowPayload);
+
+		float factor = shadowPayload.hit ? 0.1 : 1.0;
+
+		colour = factor * CalculateDirectionalLightColourGBuffer(dirLight, eyePos, viewDir, gBufNormalizedNormal, gBufShininess, gBufDiffuse.xyz, gBufSpecular);
 	}
 
 	RTOutput[LaunchIndex.xy] = float4(colour, 1.f);

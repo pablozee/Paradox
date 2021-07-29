@@ -1,7 +1,7 @@
 #include "Common.hlsl"
 
 [shader("miss")]
-void Miss(inout HitInfo payload)
+void Miss(inout ShadowPayload shadowPayload)
 {
-	payload.shadedColourAndHitT = float4(0.2f, 0.2f, 0.2f, -1.f);
+	shadowPayload.hit = false;
 }

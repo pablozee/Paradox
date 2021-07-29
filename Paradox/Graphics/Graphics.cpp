@@ -967,7 +967,7 @@ void Graphics::BuildRenderItems()
 	m_RayTracingPassRenderItems.push_back(skull.get());
 	m_AllRenderItems.push_back(std::move(skull));
 
-	altar->world = XMMatrixScaling(3.3f, 3.3f, 3.3f) * XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, -7.6f, 0.0f);
+	altar->world = XMMatrixRotationY(XMConvertToRadians(90.0f)) * XMMatrixTranslation(0.0, 0.0f, 0.0f);
 	XMStoreFloat3x4(&altar->world3x4, XMMatrixTranspose(altar->world));
 	altar->objCBIndex = 1;
 	altar->matCBIndex = 1;
@@ -1384,7 +1384,7 @@ void Graphics::CreateTopLevelAS()
 	instanceDesc0.InstanceID = 0;
 	instanceDesc0.InstanceContributionToHitGroupIndex = 0;
 	instanceDesc0.InstanceMask = 0xFF;
-	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc0.Transform), m_RayTracingPassRenderItems[0]->world);
+//	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc0.Transform), m_RayTracingPassRenderItems[0]->world);
 //	instanceDesc0.Transform[0][0] = instanceDesc0.Transform[1][1] = instanceDesc0.Transform[2][2] = 1;
 	instanceDesc0.AccelerationStructure = m_DXRObjects.BLAS[0].pResult->GetGPUVirtualAddress();
 	instanceDesc0.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
@@ -1393,7 +1393,7 @@ void Graphics::CreateTopLevelAS()
 	instanceDesc1.InstanceID = 1;
 	instanceDesc1.InstanceContributionToHitGroupIndex = 0;
 	instanceDesc1.InstanceMask = 0xFF;
-	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc1.Transform), m_RayTracingPassRenderItems[1]->world);
+//	XMStoreFloat3x4(reinterpret_cast<XMFLOAT3X4*>(instanceDesc1.Transform), m_RayTracingPassRenderItems[1]->world);
 //	instanceDesc1.Transform[0][0] = instanceDesc1.Transform[1][1] = instanceDesc1.Transform[2][2] = 1;
 	instanceDesc1.AccelerationStructure = m_DXRObjects.BLAS[1].pResult->GetGPUVirtualAddress();
 	instanceDesc1.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;

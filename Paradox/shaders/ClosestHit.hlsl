@@ -1,7 +1,7 @@
 #include "Common.hlsl"
 
 [shader("closesthit")]
-void ClosestHit(inout HitInfo payload, Attributes attrib)
+void ClosestHit(inout ShadowPayload payload, Attributes attrib)
 {
 	/*	
 	uint triangleIndex = PrimitiveIndex();
@@ -33,5 +33,5 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 	*/
 	
 
-	payload.shadedColourAndHitT = float4(0.f, 0.f, 0.f, RayTCurrent());
+	payload.hit = true;
 }
