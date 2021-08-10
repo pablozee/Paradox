@@ -21,6 +21,7 @@ Graphics::~Graphics()
 void Graphics::Init(HWND hwnd)
 {
 	LoadModel("models/skull.obj", m_Model, m_Material);
+	LoadModel("models/skull2.obj", m_Model2, m_Material2);
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -33,8 +34,8 @@ void Graphics::Init(HWND hwnd)
 
 	CreateDescriptorHeaps();
 	CreateBackBufferRtv();
-	CreateVertexBuffer(m_Model);
-	CreateIndexBuffer(m_Model);
+	CreateVertexBuffer(m_Model, m_Model2);
+	CreateIndexBuffer(m_Model, m_Model2);
 
 //	CreateTexture(m_Material);
 
@@ -47,7 +48,7 @@ void Graphics::Init(HWND hwnd)
 	CreateTopLevelAS();
 	CreateDXROutput();
 
-	CreateDescriptorHeaps(m_Model);
+	CreateDescriptorHeaps(m_Model, m_Model2);
 	CreateRayGenProgram();
 	CreateMissProgram();
 	CreateClosestHitProgram();
@@ -396,9 +397,9 @@ void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppReso
 	Helpers::Validate(hr, L"Failed to create buffer resource!");
 }
 
-void Graphics::CreateVertexBuffer(Model& model)
+void Graphics::CreateVertexBuffer(Model& model, Model& model2)
 {
-	D3D12BufferCreateInfo info((UINT)model.vertices.size() * sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	D3D12BufferCreateInfo info(((UINT)model.vertices.size() + (UINT)model2.vertices.size()) * sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
 	CreateBuffer(info, &m_D3DResources.vertexBuffer);
 
 #if NAME_D3D_RESOURCES
@@ -410,7 +411,12 @@ void Graphics::CreateVertexBuffer(Model& model)
 	HRESULT hr = m_D3DResources.vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
 	Helpers::Validate(hr, L"Failed to map vertex buffer");
 
-	memcpy(pVertexDataBegin, model.vertices.data(), info.size);
+	std::vector<Vertex> allVertices;
+	allVertices.reserve(model.vertices.size() + model2.vertices.size());
+	allVertices.insert(allVertices.end(), model.vertices.begin(), model.vertices.end());
+	allVertices.insert(allVertices.end(), model2.vertices.begin(), model2.vertices.end());
+
+	memcpy(pVertexDataBegin, allVertices.data(), info.size);
 	m_D3DResources.vertexBuffer->Unmap(0, nullptr);
 
 	m_D3DResources.vertexBufferView.BufferLocation = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
@@ -418,9 +424,9 @@ void Graphics::CreateVertexBuffer(Model& model)
 	m_D3DResources.vertexBufferView.StrideInBytes = sizeof(Vertex);
 }
 
-void Graphics::CreateIndexBuffer(Model& model)
+void Graphics::CreateIndexBuffer(Model& model, Model& model2)
 {
-	D3D12BufferCreateInfo info((UINT)model.indices.size() * sizeof(UINT), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	D3D12BufferCreateInfo info(((UINT)model.indices.size() + (UINT)model2.indices.size()) * sizeof(UINT), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
 	CreateBuffer(info, &m_D3DResources.indexBuffer);
 
 #if NAME_D3D_RESOURCES
@@ -431,6 +437,14 @@ void Graphics::CreateIndexBuffer(Model& model)
 	D3D12_RANGE readRange = {};
 	HRESULT hr = m_D3DResources.indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pIndexDataBegin));
 	Helpers::Validate(hr, L"Failed to map index buffer");
+
+
+	std::vector<uint32_t> allIndices;
+	allIndices.reserve(model.indices.size() + model2.indices.size());
+	allIndices.insert(allIndices.end(), model.indices.begin(), model.indices.end());
+	allIndices.insert(allIndices.end(), model2.indices.begin(), model2.indices.end());
+
+
 
 	memcpy(pIndexDataBegin, model.indices.data(), info.size);
 	m_D3DResources.indexBuffer->Unmap(0, nullptr);
@@ -577,10 +591,10 @@ void Graphics::CreateBottomLevelAS()
 	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 	geometryDesc.Triangles.VertexBuffer.StartAddress = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
 	geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_D3DResources.vertexBufferView.StrideInBytes;
-	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_Model.vertices.size());
+	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_Model.vertices.size() + m_Model2.vertices.size());
 	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 	geometryDesc.Triangles.IndexBuffer = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
-	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_Model.indices.size());
+	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_Model.indices.size() + m_Model2.indices.size());
 	geometryDesc.Triangles.IndexFormat = m_D3DResources.indexBufferView.Format;
 	geometryDesc.Triangles.Transform3x4 = 0;
 	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
@@ -721,7 +735,7 @@ void Graphics::CreateDXROutput()
 #endif
 }
 
-void Graphics::CreateDescriptorHeaps(const Model& model)
+void Graphics::CreateDescriptorHeaps(const Model& model, const Model& model2)
 {
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
 	heapDesc.NumDescriptors = 7;
@@ -776,7 +790,7 @@ void Graphics::CreateDescriptorHeaps(const Model& model)
 	indexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	indexSrvDesc.Buffer.StructureByteStride = 0;
 	indexSrvDesc.Buffer.FirstElement = 0;
-	indexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model.indices.size()) * sizeof(UINT)) / sizeof(float);
+	indexSrvDesc.Buffer.NumElements = ((static_cast<UINT>(model.indices.size()) + static_cast<UINT>(model.indices.size())) * sizeof(UINT)) / sizeof(float);
 	indexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	handle.ptr += handleIncrement;
@@ -789,7 +803,7 @@ void Graphics::CreateDescriptorHeaps(const Model& model)
 	vertexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	vertexSrvDesc.Buffer.StructureByteStride = 0;
 	vertexSrvDesc.Buffer.FirstElement = 0;
-	vertexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model.vertices.size()) * sizeof(Vertex)) / sizeof(float);
+	vertexSrvDesc.Buffer.NumElements = ((static_cast<UINT>(model.vertices.size()) + static_cast<UINT>(model.vertices.size())) * sizeof(Vertex)) / sizeof(float);
 	vertexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	handle.ptr += handleIncrement;
