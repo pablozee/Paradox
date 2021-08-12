@@ -121,8 +121,14 @@ struct D3D12Resources
 	ID3D12Resource*				vertexBuffer = nullptr;
 	D3D12_VERTEX_BUFFER_VIEW	vertexBufferView;
 
+	ID3D12Resource*				vertexBuffer2 = nullptr;
+	D3D12_VERTEX_BUFFER_VIEW	vertexBufferView2;
+
 	ID3D12Resource*				indexBuffer = nullptr;
 	D3D12_INDEX_BUFFER_VIEW		indexBufferView;
+
+	ID3D12Resource*				indexBuffer2 = nullptr;
+	D3D12_INDEX_BUFFER_VIEW		indexBufferView2;
 
 	ID3D12Resource*				texture = nullptr;
 	ID3D12Resource*				textureUploadResource = nullptr;

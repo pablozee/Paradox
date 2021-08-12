@@ -397,9 +397,9 @@ void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppReso
 	Helpers::Validate(hr, L"Failed to create buffer resource!");
 }
 
-void Graphics::CreateVertexBuffer(Model& model, Model& model2)
+void Graphics::CreateVertexBuffer(Model& model)
 {
-	D3D12BufferCreateInfo info(((UINT)model.vertices.size() + (UINT)model2.vertices.size()) * sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	D3D12BufferCreateInfo info((UINT)model.vertices.size()* sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
 	CreateBuffer(info, &m_D3DResources.vertexBuffer);
 
 #if NAME_D3D_RESOURCES
@@ -411,12 +411,7 @@ void Graphics::CreateVertexBuffer(Model& model, Model& model2)
 	HRESULT hr = m_D3DResources.vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
 	Helpers::Validate(hr, L"Failed to map vertex buffer");
 
-	std::vector<Vertex> allVertices;
-	allVertices.reserve(model.vertices.size() + model2.vertices.size());
-	allVertices.insert(allVertices.end(), model.vertices.begin(), model.vertices.end());
-	allVertices.insert(allVertices.end(), model2.vertices.begin(), model2.vertices.end());
-
-	memcpy(pVertexDataBegin, allVertices.data(), info.size);
+	memcpy(pVertexDataBegin, model.vertices.data(), info.size);
 	m_D3DResources.vertexBuffer->Unmap(0, nullptr);
 
 	m_D3DResources.vertexBufferView.BufferLocation = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
@@ -424,7 +419,29 @@ void Graphics::CreateVertexBuffer(Model& model, Model& model2)
 	m_D3DResources.vertexBufferView.StrideInBytes = sizeof(Vertex);
 }
 
-void Graphics::CreateIndexBuffer(Model& model, Model& model2)
+void Graphics::CreateVertexBuffer2(Model& model)
+{
+	D3D12BufferCreateInfo info((UINT)model.vertices.size() * sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	CreateBuffer(info, &m_D3DResources.vertexBuffer);
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.vertexBuffer->SetName(L"Vertex Buffer");
+#endif
+
+	UINT8* pVertexDataBegin;
+	D3D12_RANGE readRange = {};
+	HRESULT hr = m_D3DResources.vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
+	Helpers::Validate(hr, L"Failed to map vertex buffer");
+
+	memcpy(pVertexDataBegin, model.vertices.data(), info.size);
+	m_D3DResources.vertexBuffer->Unmap(0, nullptr);
+
+	m_D3DResources.vertexBufferView.BufferLocation = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
+	m_D3DResources.vertexBufferView.SizeInBytes = static_cast<UINT>(info.size);
+	m_D3DResources.vertexBufferView.StrideInBytes = sizeof(Vertex);
+}
+
+void Graphics::CreateIndexBuffer(Model& model)
 {
 	D3D12BufferCreateInfo info(((UINT)model.indices.size() + (UINT)model2.indices.size()) * sizeof(UINT), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
 	CreateBuffer(info, &m_D3DResources.indexBuffer);
@@ -585,16 +602,16 @@ void Graphics::CreateMaterialConstantBuffer(const Material& material)
 	memcpy(m_D3DResources.materialCBStart, &m_D3DResources.materialCBData, sizeof(MaterialCB));
 };
 
-void Graphics::CreateBottomLevelAS()
+void Graphics::CreateBottomLevelAS(Model& m_Model, UINT index)
 {
 	D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
 	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 	geometryDesc.Triangles.VertexBuffer.StartAddress = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
 	geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_D3DResources.vertexBufferView.StrideInBytes;
-	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_Model.vertices.size() + m_Model2.vertices.size());
+	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_Model.vertices.size());
 	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 	geometryDesc.Triangles.IndexBuffer = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
-	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_Model.indices.size() + m_Model2.indices.size());
+	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_Model.indices.size());
 	geometryDesc.Triangles.IndexFormat = m_D3DResources.indexBufferView.Format;
 	geometryDesc.Triangles.Transform3x4 = 0;
 	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
@@ -652,7 +669,7 @@ void Graphics::CreateTopLevelAS()
 	instanceDesc.Transform[0][0] = instanceDesc.Transform[1][1] = instanceDesc.Transform[2][2] = 1;
 	instanceDesc.AccelerationStructure = m_DXRObjects.BLAS.pResult->GetGPUVirtualAddress();
 	instanceDesc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
-
+	
 	D3D12BufferCreateInfo instanceBufferInfo = {};
 	instanceBufferInfo.size = sizeof(instanceDesc);
 	instanceBufferInfo.heapType = D3D12_HEAP_TYPE_UPLOAD;
