@@ -38,6 +38,7 @@ private:
 	void CreateVertexBuffer(Model& model);
 	void CreateVertexBuffer2(Model& model);
 	void CreateIndexBuffer(Model& model);
+	void CreateIndexBuffer2(Model& model);
 	
 	void CreateTexture(Material &material);
 	void UploadTexture(ID3D12Resource* destResource, ID3D12Resource* srcResource, const TextureInfo& texture);
@@ -47,7 +48,7 @@ private:
 	void SeedRandomVector(XMFLOAT3 seed);
 	void CreateMaterialConstantBuffer(const Material& material);
 
-	void CreateBottomLevelAS(Model& m_Model, UINT index);
+	void CreateBottomLevelAS();
 	void CreateTopLevelAS();
 	void CreateDXROutput();
 

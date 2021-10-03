@@ -34,8 +34,10 @@ void Graphics::Init(HWND hwnd)
 
 	CreateDescriptorHeaps();
 	CreateBackBufferRtv();
-	CreateVertexBuffer(m_Model, m_Model2);
-	CreateIndexBuffer(m_Model, m_Model2);
+	CreateVertexBuffer(m_Model);
+	CreateIndexBuffer(m_Model);
+	CreateVertexBuffer2(m_Model2);
+	CreateIndexBuffer2(m_Model2);
 
 //	CreateTexture(m_Material);
 
@@ -422,28 +424,28 @@ void Graphics::CreateVertexBuffer(Model& model)
 void Graphics::CreateVertexBuffer2(Model& model)
 {
 	D3D12BufferCreateInfo info((UINT)model.vertices.size() * sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
-	CreateBuffer(info, &m_D3DResources.vertexBuffer);
+	CreateBuffer(info, &m_D3DResources.vertexBuffer2);
 
 #if NAME_D3D_RESOURCES
-	m_D3DResources.vertexBuffer->SetName(L"Vertex Buffer");
+	m_D3DResources.vertexBuffer2->SetName(L"Vertex Buffer");
 #endif
 
 	UINT8* pVertexDataBegin;
 	D3D12_RANGE readRange = {};
-	HRESULT hr = m_D3DResources.vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
+	HRESULT hr = m_D3DResources.vertexBuffer2->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
 	Helpers::Validate(hr, L"Failed to map vertex buffer");
 
 	memcpy(pVertexDataBegin, model.vertices.data(), info.size);
-	m_D3DResources.vertexBuffer->Unmap(0, nullptr);
+	m_D3DResources.vertexBuffer2->Unmap(0, nullptr);
 
-	m_D3DResources.vertexBufferView.BufferLocation = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
-	m_D3DResources.vertexBufferView.SizeInBytes = static_cast<UINT>(info.size);
-	m_D3DResources.vertexBufferView.StrideInBytes = sizeof(Vertex);
+	m_D3DResources.vertexBufferView2.BufferLocation = m_D3DResources.vertexBuffer2->GetGPUVirtualAddress();
+	m_D3DResources.vertexBufferView2.SizeInBytes = static_cast<UINT>(info.size);
+	m_D3DResources.vertexBufferView2.StrideInBytes = sizeof(Vertex);
 }
 
 void Graphics::CreateIndexBuffer(Model& model)
 {
-	D3D12BufferCreateInfo info(((UINT)model.indices.size() + (UINT)model2.indices.size()) * sizeof(UINT), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	D3D12BufferCreateInfo info((UINT)model.indices.size() * sizeof(UINT), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
 	CreateBuffer(info, &m_D3DResources.indexBuffer);
 
 #if NAME_D3D_RESOURCES
@@ -455,20 +457,34 @@ void Graphics::CreateIndexBuffer(Model& model)
 	HRESULT hr = m_D3DResources.indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pIndexDataBegin));
 	Helpers::Validate(hr, L"Failed to map index buffer");
 
-
-	std::vector<uint32_t> allIndices;
-	allIndices.reserve(model.indices.size() + model2.indices.size());
-	allIndices.insert(allIndices.end(), model.indices.begin(), model.indices.end());
-	allIndices.insert(allIndices.end(), model2.indices.begin(), model2.indices.end());
-
-
-
 	memcpy(pIndexDataBegin, model.indices.data(), info.size);
 	m_D3DResources.indexBuffer->Unmap(0, nullptr);
 
 	m_D3DResources.indexBufferView.BufferLocation = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
 	m_D3DResources.indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 	m_D3DResources.indexBufferView.SizeInBytes = static_cast<UINT>(info.size);
+}
+
+void Graphics::CreateIndexBuffer2(Model& model)
+{
+	D3D12BufferCreateInfo info((UINT)model.indices.size() * sizeof(UINT), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+	CreateBuffer(info, &m_D3DResources.indexBuffer2);
+
+#if NAME_D3D_RESOURCES
+	m_D3DResources.indexBuffer2->SetName(L"Index Buffer");
+#endif
+
+	UINT8* pIndexDataBegin;
+	D3D12_RANGE readRange = {};
+	HRESULT hr = m_D3DResources.indexBuffer2->Map(0, &readRange, reinterpret_cast<void**>(&pIndexDataBegin));
+	Helpers::Validate(hr, L"Failed to map index buffer");
+
+	memcpy(pIndexDataBegin, model.indices.data(), info.size);
+	m_D3DResources.indexBuffer2->Unmap(0, nullptr);
+
+	m_D3DResources.indexBufferView2.BufferLocation = m_D3DResources.indexBuffer2->GetGPUVirtualAddress();
+	m_D3DResources.indexBufferView2.Format = DXGI_FORMAT_R32_UINT;
+	m_D3DResources.indexBufferView2.SizeInBytes = static_cast<UINT>(info.size);
 }
 
 void Graphics::CreateTexture(Material& material)
@@ -602,27 +618,40 @@ void Graphics::CreateMaterialConstantBuffer(const Material& material)
 	memcpy(m_D3DResources.materialCBStart, &m_D3DResources.materialCBData, sizeof(MaterialCB));
 };
 
-void Graphics::CreateBottomLevelAS(Model& m_Model, UINT index)
+void Graphics::CreateBottomLevelAS()
 {
-	D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
-	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-	geometryDesc.Triangles.VertexBuffer.StartAddress = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
-	geometryDesc.Triangles.VertexBuffer.StrideInBytes = m_D3DResources.vertexBufferView.StrideInBytes;
-	geometryDesc.Triangles.VertexCount = static_cast<uint32_t>(m_Model.vertices.size());
-	geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-	geometryDesc.Triangles.IndexBuffer = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
-	geometryDesc.Triangles.IndexCount = static_cast<uint32_t>(m_Model.indices.size());
-	geometryDesc.Triangles.IndexFormat = m_D3DResources.indexBufferView.Format;
-	geometryDesc.Triangles.Transform3x4 = 0;
-	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+	std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> geometryDesc;
+	geometryDesc.reserve(2);
+
+	geometryDesc[0].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+	geometryDesc[0].Triangles.VertexBuffer.StartAddress = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
+	geometryDesc[0].Triangles.VertexBuffer.StrideInBytes = m_D3DResources.vertexBufferView.StrideInBytes;
+	geometryDesc[0].Triangles.VertexCount = static_cast<uint32_t>(m_Model.vertices.size());
+	geometryDesc[0].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+	geometryDesc[0].Triangles.IndexBuffer = m_D3DResources.indexBuffer->GetGPUVirtualAddress();
+	geometryDesc[0].Triangles.IndexCount = static_cast<uint32_t>(m_Model.indices.size());
+	geometryDesc[0].Triangles.IndexFormat = m_D3DResources.indexBufferView.Format;
+	geometryDesc[0].Triangles.Transform3x4 = 0;
+	geometryDesc[0].Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+
+	geometryDesc[1].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+	geometryDesc[1].Triangles.VertexBuffer.StartAddress = m_D3DResources.vertexBuffer2->GetGPUVirtualAddress();
+	geometryDesc[1].Triangles.VertexBuffer.StrideInBytes = m_D3DResources.vertexBufferView2.StrideInBytes;
+	geometryDesc[1].Triangles.VertexCount = static_cast<uint32_t>(m_Model2.vertices.size());
+	geometryDesc[1].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+	geometryDesc[1].Triangles.IndexBuffer = m_D3DResources.indexBuffer2->GetGPUVirtualAddress();
+	geometryDesc[1].Triangles.IndexCount = static_cast<uint32_t>(m_Model2.indices.size());
+	geometryDesc[1].Triangles.IndexFormat = m_D3DResources.indexBufferView2.Format;
+	geometryDesc[1].Triangles.Transform3x4 = 0;
+	geometryDesc[1].Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS ASInputs = {};
 	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
 	ASInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-	ASInputs.pGeometryDescs = &geometryDesc;
-	ASInputs.NumDescs = 1;
+	ASInputs.pGeometryDescs = geometryDesc.data();
+	ASInputs.NumDescs = 2;
 	ASInputs.Flags = buildFlags;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO ASPreBuildInfo = {};
@@ -755,7 +784,7 @@ void Graphics::CreateDXROutput()
 void Graphics::CreateDescriptorHeaps(const Model& model, const Model& model2)
 {
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 7;
+	heapDesc.NumDescriptors = 9;
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
@@ -807,11 +836,24 @@ void Graphics::CreateDescriptorHeaps(const Model& model, const Model& model2)
 	indexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	indexSrvDesc.Buffer.StructureByteStride = 0;
 	indexSrvDesc.Buffer.FirstElement = 0;
-	indexSrvDesc.Buffer.NumElements = ((static_cast<UINT>(model.indices.size()) + static_cast<UINT>(model.indices.size())) * sizeof(UINT)) / sizeof(float);
+	indexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model.indices.size()) * sizeof(UINT)) / sizeof(float);
 	indexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	handle.ptr += handleIncrement;
 	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.indexBuffer, &indexSrvDesc, handle);
+
+	// Create the Index Buffer SRV
+	indexSrvDesc = {};
+	indexSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+	indexSrvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	indexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+	indexSrvDesc.Buffer.StructureByteStride = 0;
+	indexSrvDesc.Buffer.FirstElement = 0;
+	indexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model2.indices.size()) * sizeof(UINT)) / sizeof(float);
+	indexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	handle.ptr += handleIncrement;
+	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.indexBuffer2, &indexSrvDesc, handle);
 
 	// Create the Vertex Buffer SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC vertexSrvDesc = {};
@@ -820,11 +862,24 @@ void Graphics::CreateDescriptorHeaps(const Model& model, const Model& model2)
 	vertexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	vertexSrvDesc.Buffer.StructureByteStride = 0;
 	vertexSrvDesc.Buffer.FirstElement = 0;
-	vertexSrvDesc.Buffer.NumElements = ((static_cast<UINT>(model.vertices.size()) + static_cast<UINT>(model.vertices.size())) * sizeof(Vertex)) / sizeof(float);
+	vertexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model.vertices.size()) * sizeof(Vertex)) / sizeof(float);
 	vertexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	handle.ptr += handleIncrement;
 	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.vertexBuffer, &vertexSrvDesc, handle);
+
+	// Create the Vertex Buffer SRV
+	vertexSrvDesc = {};
+	vertexSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+	vertexSrvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	vertexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+	vertexSrvDesc.Buffer.StructureByteStride = 0;
+	vertexSrvDesc.Buffer.FirstElement = 0;
+	vertexSrvDesc.Buffer.NumElements = (static_cast<UINT>(model2.vertices.size()) * sizeof(Vertex)) / sizeof(float);
+	vertexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	handle.ptr += handleIncrement;
+	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.vertexBuffer2, &vertexSrvDesc, handle);
 
 	// Create the material texture SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC textureSrvDesc = {};
