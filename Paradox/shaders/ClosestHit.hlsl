@@ -18,27 +18,18 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 	} 
 	else
 	{
-		/*
 		for (int i = 0; i < numDirLights; i++)
 		{
-		//	colour += CalculateDirectionalLightColour(directionalLights[i], barycentrics, normalizedNormal, eyePos, viewDir);
+			colour += CalculateDirectionalLightColour(directionalLights[i], barycentrics, normalizedNormal, eyePos, viewDir);
 		}
 		
 		for (int i = 0; i < numPointLights; i++)
 		{
-		//	colour += CalculatePointLightColour(pointLights[i], barycentrics, normalizedNormal, eyePos, viewDir);
+			colour += CalculatePointLightColour(pointLights[i], barycentrics, normalizedNormal, eyePos, viewDir);
 		}
-		*/
-		float3 normalizedLightDirection = normalize(float3(0, 1, 0));
-		float3 halfVec = normalize(normalizedLightDirection + viewDir);
-		float  nDotL = dot(normalizedNormal, normalizedLightDirection);
-		float  nDotH = dot(normalizedNormal, halfVec);
-		float3 lambert = diffuse * max(nDotL, 0) * float3(1, 1, 1);
-		float3 phong = specular * pow(max(nDotH, 0), shininess) * float3(1, 1, 1);
-		colour = lambert + phong;
 	}
 	
-	float3 finalColour =  colour ;
+	float3 finalColour =  ambient + colour + emission;
 
 	payload.shadedColourAndHitT = float4(finalColour, RayTCurrent());
 }
