@@ -13,11 +13,12 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 
 	if (useTex == 1)
 	{
-		int2 coord = floor(vertex.uv * textureResolution.x);
-		colour = albedo.Load(int3(coord, 0)).rgb;
+	//	int2 coord = floor(vertex.uv * textureResolution.x);
+	//	colour = albedo.Load(int3(coord, 0)).rgb;
 	} 
 	else
 	{
+		/*
 		for (int i = 0; i < numDirLights; i++)
 		{
 		//	colour += CalculateDirectionalLightColour(directionalLights[i], barycentrics, normalizedNormal, eyePos, viewDir);
@@ -27,9 +28,17 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 		{
 		//	colour += CalculatePointLightColour(pointLights[i], barycentrics, normalizedNormal, eyePos, viewDir);
 		}
+		*/
+		float3 normalizedLightDirection = normalize(float3(0, 1, 0));
+		float3 halfVec = normalize(normalizedLightDirection + viewDir);
+		float  nDotL = dot(normalizedNormal, normalizedLightDirection);
+		float  nDotH = dot(normalizedNormal, halfVec);
+		float3 lambert = diffuse * max(nDotL, 0) * float3(1, 1, 1);
+		float3 phong = specular * pow(max(nDotH, 0), shininess) * float3(1, 1, 1);
+		colour = lambert + phong;
 	}
 	
-	float3 finalColour =  vertex.normal ;
+	float3 finalColour =  colour ;
 
 	payload.shadedColourAndHitT = float4(finalColour, RayTCurrent());
 }
