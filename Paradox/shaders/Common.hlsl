@@ -104,6 +104,8 @@ VertexAttributes GetVertexAttributes(uint triangleIndex, float3 barycentrics)
 		// Offset address by 12 bytes, to account for position float3 of 12 bytes
 		address += (3 * 4);
 		v.uv += asfloat(vertices.Load2(address)) * barycentrics[i];
+		address += (2 * 4);
+		v.normal += asfloat(vertices.Load3(address)) * barycentrics[i];
 	}
 	return v;
 }

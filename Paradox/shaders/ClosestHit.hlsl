@@ -8,7 +8,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 	VertexAttributes vertex = GetVertexAttributes(triangleIndex, barycentrics);
 	float3 colour = float3(0, 0, 0);
 	float3 eyePos = float3(viewOriginAndTanHalfFovY.x, viewOriginAndTanHalfFovY.y, viewOriginAndTanHalfFovY.z);
-//	float3 normalizedNormal = normalize(vertex.normal);
+	float3 normalizedNormal = normalize(vertex.normal);
 	float3 viewDir = normalize(eyePos - barycentrics);
 
 	if (useTex == 1)
@@ -29,7 +29,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 		}
 	}
 	
-	float3 finalColour = vertex.position;
+	float3 finalColour =  vertex.normal ;
 
 	payload.shadedColourAndHitT = float4(finalColour, RayTCurrent());
 }
