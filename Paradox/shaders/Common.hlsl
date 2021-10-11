@@ -66,10 +66,8 @@ RWTexture2D<float4> RTOutput					: register(u0);
 RaytracingAccelerationStructure SceneBVH		: register(t0);
 
 ByteAddressBuffer indices						: register(t1);
-ByteAddressBuffer indices2						: register(t2);
-ByteAddressBuffer vertices						: register(t3);
-ByteAddressBuffer vertices2						: register(t4);
-Texture2D<float4> albedo						: register(t5);
+ByteAddressBuffer vertices						: register(t2);
+Texture2D<float4> albedo						: register(t3);
 
 // Helper Functions
 

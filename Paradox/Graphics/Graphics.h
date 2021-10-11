@@ -35,9 +35,9 @@ private:
 	void CreateDescriptorHeaps();
 	void CreateBackBufferRtv();
 	void CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource);
-	void CreateVertexBuffer(Model& model);
+	void CreateVertexBuffer(Model& model, Model& model2);
 	void CreateVertexBuffer2(Model& model);
-	void CreateIndexBuffer(Model& model);
+	void CreateIndexBuffer(Model& model, Model& model2);
 	void CreateIndexBuffer2(Model& model);
 	
 	void CreateTexture(Material &material);
