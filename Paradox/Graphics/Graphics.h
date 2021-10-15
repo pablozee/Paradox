@@ -91,7 +91,7 @@ private:
 	Material m_Material;
 	Model m_Model2;
 	Material m_Material2;
-	XMVECTOR m_EyeInit = { 0.f, 0.f, 17.f };
+	XMVECTOR m_EyeInit = { 0.f, 1.f, 17.f };
 	XMVECTOR m_FocusInit = { 0.f, 0.f, 0.f };
 	XMVECTOR m_UpInit = { 0.f, 1.f, 0.f };
 	XMVECTOR m_Eye = m_EyeInit;

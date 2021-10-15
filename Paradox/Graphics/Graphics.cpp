@@ -20,8 +20,8 @@ Graphics::~Graphics()
 
 void Graphics::Init(HWND hwnd)
 {
-	LoadModel("models/skull.obj", m_Model, m_Material);
-	LoadModel("models/acr.obj", m_Model2, m_Material2);
+	LoadModel("models/Cube1.obj", m_Model, m_Material);
+	LoadModel("models/Ground.obj", m_Model2, m_Material2);
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -1277,7 +1277,7 @@ void Graphics::UpdateSceneCB()
 	XMFLOAT3 floatFocus;
 	XMStoreFloat3(&floatFocus, m_Focus);
 
-	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].direction = XMFLOAT3(0.f, 0.f, floatFocus.z + 3.f);
+	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].direction = XMFLOAT3(10.f, 10.f, floatFocus.z + 3.f);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].dirLightPadding = 1.f;
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].colour = XMFLOAT3(1.f, 1.f, 0.f);
 	m_D3DResources.sceneCBData[m_D3DValues.frameIndex].directionalLights[0].dirLightPadding1 = 1.f;
