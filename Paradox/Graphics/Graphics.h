@@ -35,9 +35,9 @@ private:
 	void CreateDescriptorHeaps();
 	void CreateBackBufferRtv();
 	void CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppResource);
-	void CreateVertexBuffer(Model& model, Model& model2);
+	void CreateVertexBuffer(Model& model, Model& model2, Model& model3);
 	void CreateVertexBuffer2(Model& model);
-	void CreateIndexBuffer(Model& model, Model& model2);
+	void CreateIndexBuffer(Model& model, Model& model2, Model& model3);
 	void CreateIndexBuffer2(Model& model);
 	
 	void CreateTexture(Material &material);
@@ -52,7 +52,7 @@ private:
 	void CreateTopLevelAS();
 	void CreateDXROutput();
 
-	void CreateDescriptorHeaps(const Model& model,const Model& model2);
+	void CreateDescriptorHeaps(const Model& model, const Model& model2, const Model& model3);
 
 	void CompileShader(RtProgram &program);
 	void CompileShader(D3D12ShaderInfo &info, IDxcBlob** blob);
@@ -91,7 +91,9 @@ private:
 	Material m_Material;
 	Model m_Model2;
 	Material m_Material2;
-	XMVECTOR m_EyeInit = { 0.f, 1.f, 17.f };
+	Model m_Model3;
+	Material m_Material3;
+	XMVECTOR m_EyeInit = { 0.f, 3.f, 33.f };
 	XMVECTOR m_FocusInit = { 0.f, 0.f, 0.f };
 	XMVECTOR m_UpInit = { 0.f, 1.f, 0.f };
 	XMVECTOR m_Eye = m_EyeInit;

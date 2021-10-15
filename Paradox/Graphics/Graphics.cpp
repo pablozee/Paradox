@@ -22,6 +22,7 @@ void Graphics::Init(HWND hwnd)
 {
 	LoadModel("models/Cube1.obj", m_Model, m_Material);
 	LoadModel("models/Ground.obj", m_Model2, m_Material2);
+	LoadModel("models/Cube2.obj", m_Model3, m_Material3);
 	InitializeShaderCompiler();
 
 	CreateDevice();
@@ -34,8 +35,8 @@ void Graphics::Init(HWND hwnd)
 
 	CreateDescriptorHeaps();
 	CreateBackBufferRtv();
-	CreateVertexBuffer(m_Model, m_Model2);
-	CreateIndexBuffer(m_Model, m_Model2);
+	CreateVertexBuffer(m_Model, m_Model2, m_Model3);
+	CreateIndexBuffer(m_Model, m_Model2, m_Model3);
 
 //	CreateTexture(m_Material);
 
@@ -48,7 +49,7 @@ void Graphics::Init(HWND hwnd)
 	CreateTopLevelAS();
 	CreateDXROutput();
 
-	CreateDescriptorHeaps(m_Model, m_Model2);
+	CreateDescriptorHeaps(m_Model, m_Model2, m_Model3);
 	CreateRayGenProgram();
 	CreateMissProgram();
 	CreateClosestHitProgram();
@@ -397,9 +398,9 @@ void Graphics::CreateBuffer(D3D12BufferCreateInfo& info, ID3D12Resource** ppReso
 	Helpers::Validate(hr, L"Failed to create buffer resource!");
 }
 
-void Graphics::CreateVertexBuffer(Model& model, Model& model2)
+void Graphics::CreateVertexBuffer(Model& model, Model& model2, Model& model3)
 {
-	D3D12BufferCreateInfo info(((UINT)model.vertices.size() + (UINT)model2.vertices.size()) * sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);	CreateBuffer(info, &m_D3DResources.vertexBuffer);
+	D3D12BufferCreateInfo info(((UINT)model.vertices.size() + (UINT)model2.vertices.size() + (UINT)model3.vertices.size()) * sizeof(Vertex), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);	CreateBuffer(info, &m_D3DResources.vertexBuffer);
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.vertexBuffer->SetName(L"Vertex Buffer");
@@ -411,9 +412,10 @@ void Graphics::CreateVertexBuffer(Model& model, Model& model2)
 	Helpers::Validate(hr, L"Failed to map vertex buffer");
 
 	std::vector<Vertex> allVertices;
-	allVertices.reserve(model.vertices.size() + model2.vertices.size());
+	allVertices.reserve(model.vertices.size() + model2.vertices.size() + model3.vertices.size());
 	allVertices.insert(allVertices.end(), model.vertices.begin(), model.vertices.end());
 	allVertices.insert(allVertices.end(), model2.vertices.begin(), model2.vertices.end());
+	allVertices.insert(allVertices.end(), model3.vertices.begin(), model3.vertices.end());
 
 	memcpy(pVertexDataBegin, allVertices.data(), info.size);	
 	m_D3DResources.vertexBuffer->Unmap(0, nullptr);
@@ -445,9 +447,9 @@ void Graphics::CreateVertexBuffer2(Model& model)
 	m_D3DResources.vertexBufferView2.StrideInBytes = sizeof(Vertex);
 }
 
-void Graphics::CreateIndexBuffer(Model& model, Model& model2)
+void Graphics::CreateIndexBuffer(Model& model, Model& model2, Model& model3)
 {
-	D3D12BufferCreateInfo info(((UINT)model.indices.size() + (UINT)model2.indices.size()) * sizeof(UINT), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);	CreateBuffer(info, &m_D3DResources.indexBuffer);
+	D3D12BufferCreateInfo info(((UINT)model.indices.size() + (UINT)model2.indices.size() + (UINT)model3.indices.size()) * sizeof(UINT), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);	CreateBuffer(info, &m_D3DResources.indexBuffer);
 
 #if NAME_D3D_RESOURCES
 	m_D3DResources.indexBuffer->SetName(L"Index Buffer");
@@ -459,9 +461,10 @@ void Graphics::CreateIndexBuffer(Model& model, Model& model2)
 	Helpers::Validate(hr, L"Failed to map index buffer");
 
 	std::vector<uint32_t> allIndices;
-	allIndices.reserve(model.indices.size() + model2.indices.size());
+	allIndices.reserve(model.indices.size() + model2.indices.size() + model3.indices.size());
 	allIndices.insert(allIndices.end(), model.indices.begin(), model.indices.end());
-	allIndices.insert(allIndices.end(), model2.indices.begin(), model2.indices.end());	
+	allIndices.insert(allIndices.end(), model2.indices.begin(), model2.indices.end());
+	allIndices.insert(allIndices.end(), model3.indices.begin(), model3.indices.end());	
 	
 	memcpy(pIndexDataBegin, allIndices.data(), info.size);
 
@@ -629,7 +632,7 @@ void Graphics::CreateMaterialConstantBuffer(const Material& material)
 void Graphics::CreateBottomLevelAS()
 {
 	std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> geometryDesc;
-	geometryDesc.reserve(2);
+	geometryDesc.reserve(3);
 
 	geometryDesc[0].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 	geometryDesc[0].Triangles.VertexBuffer.StartAddress = m_D3DResources.vertexBuffer->GetGPUVirtualAddress();
@@ -653,13 +656,24 @@ void Graphics::CreateBottomLevelAS()
 	geometryDesc[1].Triangles.Transform3x4 = 0;
 	geometryDesc[1].Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
 
+	geometryDesc[2].Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+	geometryDesc[2].Triangles.VertexBuffer.StartAddress = m_D3DResources.vertexBuffer->GetGPUVirtualAddress() + (m_Model.vertices.size() + m_Model2.vertices.size()) * sizeof(Vertex);
+	geometryDesc[2].Triangles.VertexBuffer.StrideInBytes = m_D3DResources.vertexBufferView.StrideInBytes;
+	geometryDesc[2].Triangles.VertexCount = static_cast<uint32_t>(m_Model3.vertices.size());
+	geometryDesc[2].Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+	geometryDesc[2].Triangles.IndexBuffer = m_D3DResources.indexBuffer->GetGPUVirtualAddress() + (m_Model.indices.size() + m_Model2.indices.size()) * sizeof(uint32_t);
+	geometryDesc[2].Triangles.IndexCount = static_cast<uint32_t>(m_Model3.indices.size());
+	geometryDesc[2].Triangles.IndexFormat = m_D3DResources.indexBufferView.Format;
+	geometryDesc[2].Triangles.Transform3x4 = 0;
+	geometryDesc[2].Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+				 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS ASInputs = {};
 	ASInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
 	ASInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	ASInputs.pGeometryDescs = geometryDesc.data();
-	ASInputs.NumDescs = 2;
+	ASInputs.NumDescs = 3;
 	ASInputs.Flags = buildFlags;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO ASPreBuildInfo = {};
@@ -789,7 +803,7 @@ void Graphics::CreateDXROutput()
 #endif
 }
 
-void Graphics::CreateDescriptorHeaps(const Model& model, const Model& model2)
+void Graphics::CreateDescriptorHeaps(const Model& model, const Model& model2, const Model& model3)
 {
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
 	heapDesc.NumDescriptors = 7;
@@ -844,7 +858,8 @@ void Graphics::CreateDescriptorHeaps(const Model& model, const Model& model2)
 	indexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	indexSrvDesc.Buffer.StructureByteStride = 0;
 	indexSrvDesc.Buffer.FirstElement = 0;
-	indexSrvDesc.Buffer.NumElements = ((static_cast<UINT>(model.indices.size()) + static_cast<UINT>(model2.indices.size())) * sizeof(UINT)) / sizeof(float);	indexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	indexSrvDesc.Buffer.NumElements = ((static_cast<UINT>(model.indices.size()) + static_cast<UINT>(model2.indices.size()) + static_cast<UINT>(model3.indices.size())) * sizeof(UINT)) / sizeof(float);	
+	indexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	handle.ptr += handleIncrement;
 	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.indexBuffer, &indexSrvDesc, handle);
@@ -857,7 +872,7 @@ void Graphics::CreateDescriptorHeaps(const Model& model, const Model& model2)
 	vertexSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 	vertexSrvDesc.Buffer.StructureByteStride = 0;
 	vertexSrvDesc.Buffer.FirstElement = 0;
-	vertexSrvDesc.Buffer.NumElements = ((static_cast<UINT>(model.vertices.size()) + static_cast<UINT>(model2.vertices.size())) * sizeof(Vertex)) / sizeof(float);	vertexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	vertexSrvDesc.Buffer.NumElements = ((static_cast<UINT>(model.vertices.size()) + static_cast<UINT>(model2.vertices.size()) + static_cast<UINT>(model3.vertices.size())) * sizeof(Vertex)) / sizeof(float);	vertexSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	handle.ptr += handleIncrement;
 	m_D3DObjects.device->CreateShaderResourceView(m_D3DResources.vertexBuffer, &vertexSrvDesc, handle);
